@@ -11,5 +11,6 @@ void kernel_init()
   printf("=============\n");
 
   // debug
-  DBG_page_table((page_table_t *)kernel_pgd_base());
+  
+  // DBG_pagetable(kernel_pgd_base());
 }

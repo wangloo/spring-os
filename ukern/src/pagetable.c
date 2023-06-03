@@ -3,38 +3,42 @@
 
 
 
-// paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
-// {
-//   pte_t pud, pmd, pte;
-//   paddr_t pa;
+paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
+{
+  pte_t pgde, pude, pmde, pte;
+  page_table_t *next_table;
 
-//   // get pud and check block or table
-//   pud = pagetable->entry[pgd_index(va)];
-//   assert(is_vaild_entry(pud));
-//   if (pud_is_block(pud)) { // 2M
-//     pa = pud.l1_block.pfn << PUD_SHIFT;
-//     return pa;
-//   }
+  pgde = pagetable->entry[pgd_index(va)];
+  assert(pte_is_vaild(pgde));
+  assert(pte_is_table(pgde));
 
-//   // get pmd and check block or table
-//   pmd = (pud_table_addr(pud))->entry[pud_index(va)];
-//   assert(is_vaild_entry(pmd));
-//   if (pmd_is_block(pmd)) {  // 64K
-//     pa = pmd.l2_block.pfn << PMD_SHIFT;
-//     return pa;
-//   }
+  // pud
+  next_table = pte_table_addr(pgde);
+  pude = next_table->entry[pud_index(va)];
+  assert(pte_is_vaild(pude));
+  if (!pte_is_table(pude)) {
+    return (paddr_t)pud_block_addr(pude);
+  }
 
-//   // get pte and return pa
-//   pte = (pmd_table_addr(pud))->entry[pmd_index(va)];
-//   assert(is_vaild_entry(pte));
-//   pa = pte.l3_page.pfn << PAGE_SHIFT;
-//   return pa;
-// }
+  // pmd
+  next_table = pte_table_addr(pude);
+  pmde = next_table->entry[pmd_index(va)];
+  assert(pte_is_vaild(pmde));
+  if (!pte_is_table(pmde)) {
+    return (paddr_t)pmd_block_addr(pmde);
+  }
+
+  // pt
+  next_table = pte_table_addr(pmde);
+  pte = next_table->entry[pt_index(va)];
+  assert(pte_is_vaild(pte));
+  return (paddr_t)pt_page_addr(pte);
+}
 
 
-vaddr_t kernel_pgd_base(void)
+page_table_t *kernel_pgd_base(void)
 {
   extern unsigned char __kernel_page_table;
 
-  return (vaddr_t)&__kernel_page_table;
+  return (page_table_t *)&__kernel_page_table;
 }

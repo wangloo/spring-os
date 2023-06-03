@@ -20,8 +20,8 @@ static void _DBG_pagetable_level3(page_table_t *table, int idxL0, int idxL1, int
 
     for (idx = 0; idx < PTP_ENTRIES; idx++) {
       entry = table->entry[idx];
-      if (is_null_pte(entry)) continue;
-      assert(is_vaild_pte(entry));
+      if (pte_is_null(entry)) continue;
+      assert(pte_is_vaild(entry));
       print_space(2*4);
       printf("- page(4K), va: 0x%lx, pa: 0x%lx\n", 
                 pack_va(idxL0, idxL1, idxL2, idx), pt_page_addr(entry));
@@ -36,8 +36,8 @@ static void _DBG_pagetable_level2(page_table_t *table, int idxL0, int idxL1)
 
   for (idx = 0; idx < PTP_ENTRIES; idx++) {
     entry = table->entry[idx];
-    if (is_null_pte(entry)) continue;
-    assert(is_vaild_pte(entry));
+    if (pte_is_null(entry)) continue;
+    assert(pte_is_vaild(entry));
 
     if (pte_is_table(entry)) {
       next_tab = pte_table_addr(entry);
@@ -61,8 +61,8 @@ static void _DBG_pagetable_level1(page_table_t *table, int idxL0)
 
   for (idx = 0; idx < PTP_ENTRIES; idx++) {
     entry = table->entry[idx];
-    if (is_null_pte(entry)) continue;
-    assert(is_vaild_pte(entry));
+    if (pte_is_null(entry)) continue;
+    assert(pte_is_vaild(entry));
 
     if (pte_is_table(entry)) {
       next_tab = pte_table_addr(entry);
@@ -86,8 +86,8 @@ static void _DBG_pagetable_level0(page_table_t *table)
 
   for (idx = 0; idx < PTP_ENTRIES; idx++) {
     entry = table->entry[idx];
-    if (is_null_pte(entry)) continue;
-    assert(is_vaild_pte(entry));
+    if (pte_is_null(entry)) continue;
+    assert(pte_is_vaild(entry));
     assert (pte_is_table(entry));
 
     next_tab = pte_table_addr(entry);
@@ -101,7 +101,7 @@ static void _DBG_pagetable_level0(page_table_t *table)
 /**
  * pagetable: virtual address of pagetable
  */
-void DBG_page_table(page_table_t *pagetable)
+void DBG_pagetable(page_table_t *pagetable)
 {
   printf("L0 table addr: %p\n", (vaddr_t)pagetable);
   _DBG_pagetable_level0(pagetable);

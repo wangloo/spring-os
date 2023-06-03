@@ -2,32 +2,32 @@
 #include <types.h>
 #include <sys_size.h>
 
-#define PGD_SHIFT           (39)
-#define PUD_SHIFT           (30)
-#define PMD_SHIFT           (21)
+#define PGD_SHIFT            (39)
+#define PUD_SHIFT            (30)
+#define PMD_SHIFT            (21)
 // #define PAGE_SHIFT           (12)
 
-#define PGD_SIZE            (1UL << PGD_SHIFT) // 顶级页表 一项能存的大小
-#define PUD_SIZE            (1UL << PUD_SHIFT)
-#define PMD_SIZE            (1UL << PMD_SHIFT)
+#define PGD_SIZE             (1UL << PGD_SHIFT) // 顶级页表 一项能存的大小
+#define PUD_SIZE             (1UL << PUD_SHIFT)
+#define PMD_SIZE             (1UL << PMD_SHIFT)
 // #define PAGE_SIZE            (1UL << PAGE_SHIFT)
 
 /* The number of entries in one page table page */
-#define PTP_ENTRIES         (1UL << (PAGE_SHIFT - 3))
+#define PTP_ENTRIES          (1UL << (PAGE_SHIFT - 3))
 
 
-#define pgd_index(va)       (((va) >> PGD_SHIFT) & (PTP_ENTRIES - 1))
-#define pud_index(va)       (((va) >> PUD_SHIFT) & (PTP_ENTRIES - 1))
-#define pmd_index(va)       (((va) >> PMD_SHIFT) & (PTP_ENTRIES - 1))
-#define pte_index(va)       (((va) >> PAGE_SHIFT) & (PTP_ENTRIES - 1))
+#define pgd_index(va)        (((va) >> PGD_SHIFT) & (PTP_ENTRIES - 1))
+#define pud_index(va)        (((va) >> PUD_SHIFT) & (PTP_ENTRIES - 1))
+#define pmd_index(va)        (((va) >> PMD_SHIFT) & (PTP_ENTRIES - 1))
+#define pt_index(va)         (((va) >> PAGE_SHIFT) & (PTP_ENTRIES - 1))
 
-#define pud_block_addr(pud) ((pud).l1_block.pfn << PUD_SHIFT) // 1G
-#define pmd_block_addr(pmd) ((pmd).l2_block.pfn << PMD_SHIFT) // 2M
-#define pt_page_addr(pte)   ((pte).l3_page.pfn << PAGE_SHIFT) // 4K
+#define pud_block_addr(pude) ((pude).l1_block.pfn << PUD_SHIFT) // 1G
+#define pmd_block_addr(pmde) ((pmde).l2_block.pfn << PMD_SHIFT) // 2M
+#define pt_page_addr(pte)    ((pte).l3_page.pfn << PAGE_SHIFT)  // 4K
 
-#define is_vaild_pte(entry) ((entry).table.is_valid)
-#define is_null_pte(entry)  ((entry).pte == 0)
-#define pte_is_table(entry) ((entry).table.is_table)
+#define pte_is_vaild(entry)  ((entry).table.is_valid)
+#define pte_is_null(entry)   ((entry).pte == 0)
+#define pte_is_table(entry)  ((entry).table.is_table)
 
 #define pte_table_addr(pte)                                                    \
   (page_table_t *)((paddr_t)((pte).table.next_table_addr) << PAGE_SHIFT)
@@ -93,5 +93,6 @@ typedef struct _page_table {
 } page_table_t __attribute__((aligned(PAGE_SIZE)));
 
 
-void DBG_page_table(page_table_t *pagetable);
-vaddr_t kernel_pgd_base(void);
+page_table_t *kernel_pgd_base(void);
+paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va);
+void DBG_pagetable(page_table_t *pagetable);
