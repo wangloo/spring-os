@@ -1,7 +1,7 @@
-ctags
-.vscode
-
-
+**/tags
+**/.vscode
+**/.cache
+**/compile_commands.json
 
 # 中间文件
 ukern/build
