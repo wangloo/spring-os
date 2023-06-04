@@ -57,24 +57,6 @@ map_boot_mem:
 	// alloc all the 4GB memory's PUD
 	bl	build_page_table
 
-	// ================ Test ===================
-	/*
-	ldr	tmp, =__start_code
-	mov paddr, tmp
-	ldr	pte_attr, =HOST_1G_BLK_ATTR 
-	orr	paddr, paddr, pte_attr
-	mov pte_index, #1
-
-	str	paddr, [ttb0_pud, pte_index, lsl #3]
-
-	ret x26
-	*/
-	// ================ Test ===================
-
-
-
-
-
 	// map the reserve memory as rw
 	adr	vaddr, kernel_start
 	ldr	vaddr, [vaddr]
@@ -327,7 +309,7 @@ loop_fill_pmd_tbl:
 	cbnz	x3, loop_fill_pmd_tbl  // fill entries in PMD for 4K pages
 
 	// continue map the 2M block memory
-	ldr	x2, =CONFIG_RAM_SIZE
+	ldr	x2, =CONFIG_KERNEL_RAM_SIZE
 	sub	size, x2, size
 	lsr	size, size, #21  // size: number of pmd entry for 2M block
 	ldr	entry_mask, =0x200000 // 这里不是

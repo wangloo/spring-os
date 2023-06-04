@@ -176,25 +176,34 @@ boot_panic:
   .balignl 16, 0xdeadbeef
 
 kernel_start:         .quad  0x0
-kernel_bootmem_base:    .quad  0x0
+kernel_bootmem_base:  .quad  0x0
 kernel_stack_top:     .quad  0x0
 kernel_stack_bottom:  .quad  0x0
 kernel_end:           .quad  0x0
 
 /*
-  ------------------------ kernel_start /
-                           __start_kernel
+  ------------------------------- kernel_start /
+                                  __start_kernel
 
         .text, .data, .bss
         .rodata, ...
 
-  ------------------------ __stop_kernel
+  ------------------------------- __stop_kernel
         ALIGN(4K)
-  ------------------------ kernel_bootmem_base /
-                           kernel_stack_bottom
+  ------------------------------- kernel_bootmem_base /
+                                  kernel_stack_bottom
            STACK
 
-  ------------------------ kernel_stack_top
+  ------------------------------- kernel_stack_top
+
+        BOOT PAGETABLEs  
+    (uncertain size, 4K aligned)
+
+  ------------------------------- kernel_end
+
+        KERNEL FREE MEM
+
+  ------------------------------- CONFIG_KERNEL_RAM_SIZE
 
 
  */

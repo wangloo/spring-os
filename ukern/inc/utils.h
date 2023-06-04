@@ -12,8 +12,11 @@
 #define _UL(x)          (_AC(x, UL))
 #define _ULL(x)         (_AC(x, ULL))
 
-#define _BITUL(x)       (_UL(1) << (x))
-#define _BITULL(x)      (_ULL(1) << (x))
-
 #define UL(x)           (_UL(x))
 #define ULL(x)          (_ULL(x))
+
+#define BIT(x)          (1ul << (x))
+
+#define div_round_up(n, d)  (((n) + (d)-1) / (d))
+#define align_up(addr, x)   (((addr) + ((x)-1)) & (~((typeof(addr))(x)-1)))
+#define align_down(addr, x) ((addr) & (~((typeof(addr))(x)-1)))
