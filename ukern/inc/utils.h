@@ -9,6 +9,9 @@
 #define _AT(T,X)        ((T)(X))
 #endif
 
+#define stringify_no_expansion(x) #x
+#define stringify(x) stringify_no_expansion(x)
+
 #define _UL(x)          (_AC(x, UL))
 #define _ULL(x)         (_AC(x, ULL))
 

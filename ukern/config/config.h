@@ -7,6 +7,7 @@
 
 
 // hardware config
+#define CONFIG_AARCH64
 #define CONFIG_KERNEL_ENTRY_ADDR    0x40000000
 #define CONFIG_KERNEL_RAM_SIZE      0x1000000  // 16M
 #define CONFIG_NORMAL_RAM_SIZE      0x40000000 // 1G
