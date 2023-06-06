@@ -20,6 +20,9 @@
 
 #define BIT(x)          (1ul << (x))
 
+#define max(a, b)	(a) > (b) ? (a) : (b)
+#define min(a, b)	(a) < (b) ? (a) : (b)
+
 #define div_round_up(n, d)  (((n) + (d)-1) / (d))
 #define align_up(addr, x)   (((addr) + ((x)-1)) & (~((typeof(addr))(x)-1)))
 #define align_down(addr, x) ((addr) & (~((typeof(addr))(x)-1)))
