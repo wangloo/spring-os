@@ -1,6 +1,8 @@
 #pragma once
+#include <memattr.h>
 #include <types.h>
 #include <sys_size.h>
+#include <stage1.h>
 
 #define PGD_SHIFT            (39)
 #define PUD_SHIFT            (30)
@@ -15,6 +17,8 @@
 /* The number of entries in one page table page */
 #define PTP_ENTRIES          (1UL << (PAGE_SHIFT - 3))
 
+#define IS_1G_BLOCK_ALIGN(x) (!((unsigned long)(x) & (PUD_SIZE-1)))
+#define IS_2M_BLOCK_ALIGN(x) (!((unsigned long)(x) & (PMD_SIZE-1)))
 
 #define pgd_index(va)        (((va) >> PGD_SHIFT) & (PTP_ENTRIES - 1))
 #define pud_index(va)        (((va) >> PUD_SHIFT) & (PTP_ENTRIES - 1))
@@ -94,5 +98,7 @@ typedef struct _page_table {
 
 
 page_table_t *kernel_pgd_base(void);
+int pagetable_map(page_table_t *pagetable, 
+      vaddr_t va, paddr_t pa, size_t size, int flags);
 paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va);
 void DBG_pagetable(page_table_t *pagetable);

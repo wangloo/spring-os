@@ -5,6 +5,7 @@
 
 void mm_init(void)
 {
+  extern int kern_vspace_init(void);
   // 1. 管理好物理内存
   paddr_t kmem_base;
   int kmem_size;
@@ -17,6 +18,9 @@ void mm_init(void)
   // 2. 初始化内核内存分配器 kalloc接口,
   //    slab 做小内存分配
   mem_pool_init();
+
+  // 3. 映射
+  kern_vspace_init();
 
   // 用户内存怎么办?
 
