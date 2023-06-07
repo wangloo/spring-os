@@ -1,6 +1,11 @@
 #pragma once
 #include <utils.h>
 
+/**
+ * TODO: 32bit read and write sysreg must use 64bit
+ *       general registers, but will cause compiler WARNING!!
+ *       NO IDEA NOW!
+ */
 #define read_sysreg32(name) ({                        \
     uint32_t _r;                            \
     asm volatile("mrs  %0, "stringify(name) : "=r" (_r));        \
