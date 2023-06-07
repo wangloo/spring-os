@@ -4,6 +4,7 @@
 #include <utils.h>
 #include <arm64_utils.h>
 #include <types.h>
+#include <assert.h>
 
 
 #define BITMAP_FULL        ((u64)~0)
@@ -178,6 +179,9 @@ static inline int bitmap_is_empty(const bitmap_t *bitmap, u64 size)
 static inline void bitmap_init(bitmap_t *bitmap, u64 size, u64 value)
 {
   u64 wsize = size / sizeof(long);
+
+  assert(value == BITMAP_FULL || value == BITMAP_EMPTY);
+
   for (u64 i = 0; i < wsize; i++) 
     bitmap[i] = value;
 }
