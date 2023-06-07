@@ -103,3 +103,15 @@
 #define TCR_HA            (UL(1) << 39)
 #define TCR_HD            (UL(1) << 40)
 #define TCR_NFD1          (UL(1) << 54)
+
+/*
+ * MPIDR
+ */
+
+#define MPIDR_EL1_U          (1 << 30)
+#define MPIDR_EL1_MT         (1 << 24)
+#define MPIDR_EL1_AFF3_SHIFT 32
+#define MPIDR_EL1_AFF2_SHIFT 16
+#define MPIDR_EL1_AFF1_SHIFT 8
+#define MPIDR_EL1_AFF0_SHIFT 0
+#define MPIDR_EL1_AFF_WIDTH  8

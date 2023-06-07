@@ -2,7 +2,7 @@
 #include <print.h>
 #include <pagetable.h>
 #include <mm.h>
-
+#include <gic_v3.h>
 void kernel_init()
 {
   console_init();
@@ -12,6 +12,8 @@ void kernel_init()
   printf("=============\n");
 
   mm_init();
+
+  gicv3_init();
 
   // debug
   // DBG_pagetable(kernel_pgd_base());
