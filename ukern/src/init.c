@@ -2,6 +2,7 @@
 #include <print.h>
 #include <pagetable.h>
 #include <mm.h>
+#include <panic.h>
 #include <gic_v3.h>
 void kernel_init()
 {
@@ -19,4 +20,8 @@ void kernel_init()
   // DBG_pagetable(kernel_pgd_base());
   // extern int DBG_bitmap(void);
   // DBG_bitmap();
+
+  /* asm ("brk #0"); */
+  
+  panic("[SPRING-OS end, byebye]\n");
 }

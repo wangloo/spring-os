@@ -36,6 +36,7 @@ static void panic(const char *str, ...)
   count = vsnprintf(buf, sizeof(buf), str, ap);
   va_end(ap);
 
+  console_putc('\n');
   while (count > 0) {
     console_putc(*cur);
     ++cur, --count;
