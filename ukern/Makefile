@@ -4,16 +4,22 @@ all:
 ARCH		    ?= aarch64
 CROSS_COMPILE 	?= aarch64-none-linux-gnu-
 
+ROOT_DIR ?= .
 OBJ_DIR ?= ./build
-SRC_DIR ?= .
+SRC_DIR ?= ./src
 INC_DIR ?= . \
 		   ./inc
 BIN_DIR ?= ./build
 
 BINARY = $(BIN_DIR)/$(NAME)
-SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c' -or -name '*.S')
+SRCS := $(shell find $(SRC_DIR) -name '*.cpp' -or -name '*.c' -or -name '*.S')
 OBJS := $(SRCS:$(SRC_DIR)/%=$(OBJ_DIR)/%.o) 
 INCS = $(addprefix -I, $(INC_DIR))
+
+offset_h  := $(ROOT_DIR)/asm/asm_offset.h
+offset_s  := $(OBJ_DIR)/src/asm_offset.S
+offset_c  := $(ROOT_DIR)/tools/asm_offset.c
+
 
 SPRING_LDS = $(OBJ_DIR)/spring.lds
 
@@ -22,13 +28,17 @@ AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
 CC		= $(CROSS_COMPILE)gcc
 
-CFLAGS  +=  -Wall -g -O2   \
+CFLAGS  +=  -Wall -g -O1   \
 			--static -nostdlib -fno-builtin \
-			-Wno-unused-function
+			-Wno-unused-function \
+			-ffixed-x18
 LDFLAGS += -T $(SPRING_LDS)
 
+-include kern_macro.mk
 
-all: $(BINARY)
+
+
+all: $(offset_h) $(BINARY)
 
 $(BINARY): $(OBJS) $(SPRING_LDS)
 	@echo "LD      $@"
@@ -43,8 +53,17 @@ $(OBJ_DIR)/%.S.o: $(SRC_DIR)/%.S
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -D__ASSEMBLY__ $(INCS) -c -o $@ $<
 
-$(SPRING_LDS):$(SRC_DIR)/spring.lds
+$(SPRING_LDS):$(ROOT_DIR)/spring.lds
 	@$(CC) -E -x c -P  $(INCS) -o $@ $<
+
+$(offset_s): $(offset_c)
+	@echo "CC      $(offset_s)"
+	@mkdir -p $(dir $@)
+	@gcc $(INCS) -S $< -o $@
+
+$(offset_h): $(offset_s)
+	@ $(call cmd_offsets)
+
 
 
 
@@ -56,4 +75,4 @@ run: $(BINARY)
 gdb: $(BINARY)
 	bash ./tools/gdb.sh
 clean:
-	-rm -rf $(BINARY) $(OBJ_DIR) 
+	-rm -rf $(BINARY) $(OBJ_DIR) $(offset_h)
