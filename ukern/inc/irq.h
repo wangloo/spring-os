@@ -1,5 +1,6 @@
 #pragma once
-
+#include <arm64_sysreg.h>
+#include <asm/arm64_common.h>
 typedef enum sgi_mode {
   SGI_TO_LIST = 0,
   SGI_TO_OTHERS,
@@ -16,3 +17,7 @@ typedef enum sgi_mode {
 #define pstate_async_disable() asm("msr	daifset, #4" : : : "memory")
 #define pstate_debug_enable()  asm("msr	daifclr, #8" : : : "memory")
 #define pstate_debug_disable() asm("msr	daifset, #8" : : : "memory")
+
+#define irq_is_disable()        arch_irq_is_disable()
+
+#define arch_irq_is_disable()   (read_sysreg(daif) & (1u << DAIF_I_SHIFT))

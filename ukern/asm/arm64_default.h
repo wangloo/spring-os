@@ -2,7 +2,9 @@
 #include <asm/arm64_common.h>
 #include <asm/arm64_mair.h>
 
-#define ARM64_SPSR_VALUE	0x1c5
+#define ARM64_SPSR_VALUE    0x1c5
+#define ARM64_SPSR_KERNEL   AARCH64_SPSR_EL1h
+#define ARM64_SPSR_USER     AARCH64_SPSR_EL0t
 
 #define ARM64_CPACR_VALUE   CPACR_EL1_FPEN
 

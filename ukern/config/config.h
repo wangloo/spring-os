@@ -3,7 +3,7 @@
 // software config
 #define CONFIG_TASK_STACK_SIZE      8192
 #define CONFIG_TASK_STACK_SHIFT     13
-
+#define CONFIG_NR_TASKS             128
 
 
 // hardware config

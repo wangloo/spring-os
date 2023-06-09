@@ -107,7 +107,6 @@
 /*
  * MPIDR
  */
-
 #define MPIDR_EL1_U          (1 << 30)
 #define MPIDR_EL1_MT         (1 << 24)
 #define MPIDR_EL1_AFF3_SHIFT 32
@@ -115,3 +114,33 @@
 #define MPIDR_EL1_AFF1_SHIFT 8
 #define MPIDR_EL1_AFF0_SHIFT 0
 #define MPIDR_EL1_AFF_WIDTH  8
+
+/*
+ * DAIF
+ */
+#define DAIF_F_SHIFT         6
+#define DAIF_I_SHIFT         7
+#define DAIF_A_SHIFT         8
+#define DAIF_D_SHIFT         9
+
+/*
+ * SPSR
+ */
+#define AARCH64_SPSR_EL3h    0b1101 // el3 using sp_el3
+#define AARCH64_SPSR_EL3t    0b1100 // el3 using sp_el0
+#define AARCH64_SPSR_EL2h    0b1001 // el2 using sp_el2
+#define AARCH64_SPSR_EL2t    0b1000 // el2 using sp_el0
+#define AARCH64_SPSR_EL1h    0b0101 // el1 using sp_el1
+#define AARCH64_SPSR_EL1t    0b0100 // el1 using sp_el0
+#define AARCH64_SPSR_EL0t    0b0000 // el0 using sp_el0
+#define AARCH64_SPSR_RW      (1 << 4)
+#define AARCH64_SPSR_F       (1 << 6)
+#define AARCH64_SPSR_I       (1 << 7)
+#define AARCH64_SPSR_A       (1 << 8)
+#define AARCH64_SPSR_D       (1 << 9)
+#define AARCH64_SPSR_IL      (1 << 20)
+#define AARCH64_SPSR_SS      (1 << 21)
+#define AARCH64_SPSR_V       (1 << 28)
+#define AARCH64_SPSR_C       (1 << 29)
+#define AARCH64_SPSR_Z       (1 << 30)
+#define AARCH64_SPSR_N       (1 << 31)

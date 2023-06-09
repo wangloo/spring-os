@@ -9,8 +9,7 @@
 #define _AT(T,X)        ((T)(X))
 #endif
 
-#define stringify_no_expansion(x) #x
-#define stringify(x) stringify_no_expansion(x)
+
 
 #define _UL(x)          (_AC(x, UL))
 #define _ULL(x)         (_AC(x, ULL))
@@ -18,7 +17,14 @@
 #define UL(x)           (_UL(x))
 #define ULL(x)          (_ULL(x))
 
-#define BIT(x)          (1ul << (x))
+#define BIT(x)          (UL(1) << (x))
+
+
+
+
+
+
+#ifndef __ASSEMBLY__
 
 #define max(a, b)	(a) > (b) ? (a) : (b)
 #define min(a, b)	(a) < (b) ? (a) : (b)
@@ -26,3 +32,8 @@
 #define div_round_up(n, d)  (((n) + (d)-1) / (d))
 #define align_up(addr, x)   (((addr) + ((x)-1)) & (~((typeof(addr))(x)-1)))
 #define align_down(addr, x) ((addr) & (~((typeof(addr))(x)-1)))
+
+#define stringify_no_expansion(x) #x
+#define stringify(x) stringify_no_expansion(x)
+
+#endif
