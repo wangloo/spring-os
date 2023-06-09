@@ -204,7 +204,7 @@ int sprintf(char *buf, const char *fmt, ...)
   va_list ap;
 
   va_start(ap, fmt);
-  count = vsnprintf(buf, 1024, fmt, ap);
+  count = vsnprintf(buf, 256, fmt, ap); // BUG?
   va_end(ap);
   return count;
 }
