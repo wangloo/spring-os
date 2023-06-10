@@ -1,9 +1,6 @@
 NAME = spring
 all:
 
-ARCH		    ?= aarch64
-CROSS_COMPILE 	?= aarch64-none-linux-gnu-
-
 ROOT_DIR ?= .
 OBJ_DIR ?= ./build
 SRC_DIR ?= ./src
@@ -12,26 +9,25 @@ INC_DIR ?= . \
 BIN_DIR ?= ./build
 
 BINARY = $(BIN_DIR)/$(NAME)
-SRCS := $(shell find $(SRC_DIR) -name '*.cpp' -or -name '*.c' -or -name '*.S')
+SRCS := $(shell find $(SRC_DIR) -name '*.c' -or -name '*.S')
 OBJS := $(SRCS:$(SRC_DIR)/%=$(OBJ_DIR)/%.o) 
-INCS = $(addprefix -I, $(INC_DIR))
+INCS := $(addprefix -I, $(INC_DIR))
+DEPS := $(OBJS:.o=.d)
 
 offset_h  := $(ROOT_DIR)/asm/asm_offset.h
-offset_s  := $(OBJ_DIR)/src/asm_offset.S
+offset_s  := $(OBJ_DIR)/asm_offset.S
 offset_c  := $(ROOT_DIR)/tools/asm_offset.c
 
 
 SPRING_LDS = $(OBJ_DIR)/spring.lds
 
-# Make variables (CC, etc...)
-AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld
-CC		= $(CROSS_COMPILE)gcc
 
-CFLAGS  +=  -Wall -g -O1   \
-			--static -nostdlib -fno-builtin \
-			-Wno-unused-function \
-			-ffixed-x18
+
+CFLAGS += -Wall -g -O1   \
+			 		-MMD -MP      \
+			 		--static -nostdlib -fno-builtin \
+					-Wno-unused-function \
+					-ffixed-x18
 LDFLAGS += -T $(SPRING_LDS)
 
 -include kern_macro.mk
@@ -57,7 +53,7 @@ $(SPRING_LDS):$(ROOT_DIR)/spring.lds
 	@$(CC) -E -x c -P  $(INCS) -o $@ $<
 
 $(offset_s): $(offset_c)
-	@echo "CC      $(offset_s)"
+	@echo "CC      $<"
 	@mkdir -p $(dir $@)
 	@gcc $(INCS) -S $< -o $@
 
@@ -67,6 +63,10 @@ $(offset_h): $(offset_s)
 
 
 
+# Include the .d makefiles. The - at the front suppresses the errors of missing
+# Makefiles. Initially, all the .d files will be missing, and we don't want those
+# errors to show up.
+-include $(DEPS)
 
 
 .PHONY: clean gdb run
