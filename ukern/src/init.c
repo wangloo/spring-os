@@ -7,6 +7,8 @@
 #include <sched.h>
 #include <task.h>
 #include <pcpu.h>
+#include <cfi.h>
+#include <ramdisk.h>
 void kernel_init()
 {
   console_init();
@@ -23,8 +25,15 @@ void kernel_init()
   sched_local_init();
 
   percpu_init();
+  
+  cfi_init();
+  printf("cfi-pflash OK!\n");
+
+  ramdisk_init();
+  printf("ramdisk OK!\n");
 
   create_idle_task();
+
   
   // debug
   // DBG_pagetable(kernel_pgd_base());

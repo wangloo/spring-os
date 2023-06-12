@@ -1,11 +1,13 @@
 NAME = spring
 all:
 
+
 ROOT_DIR ?= .
 OBJ_DIR ?= ./build
 SRC_DIR ?= ./src
 INC_DIR ?= . \
-		   ./inc
+		   ./inc \
+		   $(UAPI_INC_DIR)
 BIN_DIR ?= ./build
 
 BINARY = $(BIN_DIR)/$(NAME)
@@ -17,6 +19,19 @@ DEPS := $(OBJS:.o=.d)
 offset_h  := $(ROOT_DIR)/asm/asm_offset.h
 offset_s  := $(OBJ_DIR)/asm_offset.S
 offset_c  := $(ROOT_DIR)/tools/asm_offset.c
+
+# 临时的，保留进入ukern编译的合法性
+# 如果以后修改为都在外面编译运行，以下部分代码可以删除
+ARCH		  = aarch64
+PLATFORM	= qemu
+CROSS_COMPILE 	= aarch64-none-linux-gnu-
+
+
+# Make variables (CC, etc...)
+AS		= $(CROSS_COMPILE)as
+LD		= $(CROSS_COMPILE)ld
+CC		= $(CROSS_COMPILE)gcc
+
 
 
 SPRING_LDS = $(OBJ_DIR)/spring.lds
@@ -43,7 +58,7 @@ $(BINARY): $(OBJS) $(SPRING_LDS)
 $(OBJ_DIR)/%.c.o: $(SRC_DIR)/%.c
 	@echo "CC      $<"
 	@mkdir -p $(dir $@)
-	@$(CC) $(CFLAGS) $(INCS) -c -o $@ $<
+	@$(CC) $(CFLAGS) -D__KERNEL__ $(INCS) -c -o $@ $<
 $(OBJ_DIR)/%.S.o: $(SRC_DIR)/%.S
 	@echo "CC      $<"
 	@mkdir -p $(dir $@)
@@ -69,10 +84,7 @@ $(offset_h): $(offset_s)
 -include $(DEPS)
 
 
-.PHONY: clean gdb run
-run: $(BINARY)
-	bash ./tools/run-qemu.sh
-gdb: $(BINARY)
-	bash ./tools/gdb.sh
+.PHONY: clean
+
 clean:
 	-rm -rf $(BINARY) $(OBJ_DIR) $(offset_h)
