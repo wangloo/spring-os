@@ -256,13 +256,17 @@ static int map_pmd_range(page_table_t *pmd,
   pte_t *pmdep;
   void *pt;
   int ret;
+  size_t map_size;
 
   pmdep = &pmd->entry[pmd_index(va)];
   do {
     if (can_map_pmd_huge(*pmdep, va, pa, size, flags)) {
       pagetable_change_pmde(pmdep, (void *)pa, true, flags);
+      map_size = PMD_SIZE;
     }
     else {
+      
+      map_size = size > PMD_SIZE ? PMD_SIZE : size;
       if (pte_is_null(*pmdep)) {
         pt = get_free_page(0);
         if (!pt)
@@ -273,20 +277,15 @@ static int map_pmd_range(page_table_t *pmd,
       else {
         pt = (void *)ptov(pte_table_addr(*pmdep));
       }
-      ret = map_pt_range(pt, va, pa, size, flags);
+      printf("va: 0x%lx, size: 0x%lx, pt: 0x%lx\n",va, size, pt);
+      ret = map_pt_range(pt, va, pa, map_size, flags);
       if (ret)
         return ret;
     }
 
     // after finishing one map, update info
-    if (size >= PMD_SIZE) {
-      va += PMD_SIZE, pa += PMD_SIZE;
-      size -= PMD_SIZE;
-    }
-    else {
-      va += size, pa += size;
-      size = 0;
-    }
+    va += map_size, pa += map_size;
+    size -= map_size;
 
   } while (pmdep++, size > 0);
   return 0;
@@ -298,15 +297,17 @@ static int map_pud_range(page_table_t *pud,
   pte_t *pudep;
   void *pmd;
   int ret;
+  size_t map_size;
 
   pudep = &pud->entry[pud_index(va)];
   do {
     if (can_map_pud_huge(*pudep, va, pa, size, flags)) {
       assert(0); // TODO: unsupport 1G block now, no idea!
       pagetable_change_pude(pudep, (void *)pa, true, flags);
+      map_size = PUD_SIZE;
     }
     else {
-
+      map_size = size >= PUD_SIZE ? PUD_SIZE : size;
       if (pte_is_null(*pudep)) {
         pmd = get_free_page(0);
         if (!pmd)
@@ -317,22 +318,15 @@ static int map_pud_range(page_table_t *pud,
       else {
         pmd = (void *)ptov(pte_table_addr(*pudep));
       }
-      ret = map_pmd_range(pmd, va, pa, size, flags);
+      ret = map_pmd_range(pmd, va, pa, map_size, flags);
       if (ret)
         return ret;
 
     } 
 
     // after finishing one map, update info
-    if (size >= PUD_SIZE) {
-      va += PUD_SIZE, pa += PUD_SIZE;
-      size -= PUD_SIZE;
-    }
-    else {
-      va += size, pa += size;
-      size = 0;
-    }
-
+    va += map_size, pa += map_size;
+    size -= map_size;
   } while (pudep++, size > 0);
 
   return 0;
@@ -345,6 +339,7 @@ static int map_pgd_range(page_table_t *pagetable,
   pte_t *pgdep;
   void *pud;
   int ret;
+  size_t map_size;
 
   pgdep = &pagetable->entry[pgd_index(va)];
   do {
@@ -359,19 +354,14 @@ static int map_pgd_range(page_table_t *pagetable,
       pud = (void *)ptov(pte_table_addr(*pgdep));
     }
 
-    ret = map_pud_range(pud, va, pa, size, flags);
+    map_size = size > PGD_SIZE ? PGD_SIZE : size;
+    ret = map_pud_range(pud, va, pa, map_size, flags);
     if (ret) 
       return ret;
 
     // after finishing one map, update info
-    if (size >= PGD_SIZE) {
-      va += PGD_SIZE, pa += PGD_SIZE;
-      size -= PGD_SIZE;
-    }
-    else {
-      va += size, pa += size;
-      size = 0;
-    }
+    va += map_size, pa += map_size;
+    size -= map_size;
       
   } while (pgdep++, size > 0);
 
