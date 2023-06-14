@@ -1,4 +1,11 @@
 
+ifeq ($(TARGET_APP_CC),)
+  CC = musl-gcc
+else
+  CC = $(TARGET_APP_CC)
+endif
+
+
 ifeq ($(VERBOSE),1)
   QUIET =
 else

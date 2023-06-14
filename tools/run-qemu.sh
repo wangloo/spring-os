@@ -7,7 +7,7 @@ qemu-system-aarch64 \
   -m 2G                      \
   -kernel ukern/build/spring      \
   -serial mon:stdio         \
-  -drive if=pflash,file=ramdisk.bin,unit=1,format=raw \
+  -drive if=pflash,file=out/ramdisk.bin,unit=1,format=raw \
   -gdb tcp::1234              \
   -nographic               \
   -semihosting              \

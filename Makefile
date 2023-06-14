@@ -27,8 +27,25 @@ projtree := $(shell pwd)
 srctree  := .
 export projtree
 
+# Make variables (CC, etc...)
+TARGET_AS	= $(TARGET_CROSS_COMPILE)as
+TARGET_LD	= $(TARGET_CROSS_COMPILE)ld
+TARGET_CC	= $(TARGET_CROSS_COMPILE)gcc
+TARGET_APP_CC	= $(projtree)/out/bin/musl-gcc
+TARGET_CPP	= $(TARGET_CC) -E
+TARGET_AR	= $(TARGET_CROSS_COMPILE)ar
+TARGET_NM	= $(TARGET_CROSS_COMPILE)nm
+TARGET_STRIP	= $(TARGET_CROSS_COMPILE)strip
+TARGET_OBJCOPY	= $(TARGET_CROSS_COMPILE)objcopy
+TARGET_OBJDUMP	= $(TARGET_CROSS_COMPILE)objdump
+TARGET_INSTALL = $(projtree)/tools/install.sh
 
+TARGET_INCLUDE_DIR = $(projtree)/out/include
+TARGET_LIBS_DIR = $(projtree)/out/lib
+TARGET_OUT_DIR = $(projtree)/out
 UAPI_INC_DIR = $(projtree)/generic/include/
+export TARGET_AS TARGET_LD TARGET_CC TARGET_APP_CC TARGET_CPP TARGET_AR TARGET_NM TARGET_STRIP TARGET_INSTALL
+export TARGET_INCLUDE_DIR TARGET_LIBS_DIR TARGET_OUT_DIR
 export UAPI_INC_DIR
 
 OUT_DIR = $(projtree)/out
@@ -52,13 +69,14 @@ objdirs:
 roots: libc
 	$(Q) echo "\n\033[32m ---> Compiling Root Service ... \033[0m \n";	
 	$(Q)$(MAKE) $(MFLAGS) -C roots
+	$(Q)$(MAKE) $(MFLAGS) -C roots install
 
 ramdisk: kernel roots
 	$(Q)$(MAKE) $(MFLAGS) -C tools/mkrmd
 	$(Q) echo "\n\033[32m ---> Packing Ramdisk image ... \033[0m \n"
-	$(Q) qemu-img create -f raw ramdisk.bin 64M
+	$(Q) qemu-img create -f raw out/ramdisk.bin 64M
 	$(Q) chmod +x ./tools/mkrmd/mkrmd
-	$(Q) ./tools/mkrmd/mkrmd -f ramdisk.bin tiny.elf
+	$(Q) ./tools/mkrmd/mkrmd -f out/ramdisk.bin out/ramdisk/roots.elf
 #	$(Q) qemu-img -q resize ramdisk.bin 64M  2> /dev/null
 
 kernel:
@@ -82,11 +100,13 @@ gdb: ramdisk kernel
 	bash ./tools/gdb.sh
 
 .PHONY: clean $(PHONY)
-clean: clean-libc
+clean: clean-libc clean-roots
 	@$(MAKE) $(MFLAGS) -C ukern clean
 	@$(MAKE) $(MFLAGS) -C tools/mkrmd clean
-	rm -f ramdisk.bin
 
+clean-roots:
+	$(Q) echo "\033[32m Clean roots \033[0m"
+	$(Q) $(MAKE) $(MFLAGS) -C roots clean
 clean-libc:
 	$(Q) echo "\033[32m Clean libc \033[0m"
 	$(Q) $(MAKE) $(MFLAGS) -C libc clean

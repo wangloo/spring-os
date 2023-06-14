@@ -4,7 +4,7 @@ APP_CFLAGS 	=
 
 SRC_C	:= $(wildcard src/*.c)
 
-APP_INCLUDE_DIR = ./inc
+
 APP_INSTALL_DIR = ramdisk
 
 TEXT_START := 0x8000000

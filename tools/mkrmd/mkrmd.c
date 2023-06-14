@@ -36,9 +36,9 @@ int __add_file(int fd, char *filename)
   if (imem.free < sizeof(*inode))
     return -1;
   
+  inode = (struct ramdisk_inode *)(imem.mem + imem.used);
   imem.used += sizeof(*inode);
   imem.free -= sizeof(*inode);
-  inode = (struct ramdisk_inode *)(imem.mem + imem.used);
   inode->f_offset = fmem.used;
   strcpy(inode->f_name, filename);
   
@@ -79,6 +79,7 @@ int __add_file(int fd, char *filename)
 
 int add_file(char *filepath)
 {
+  char *filename;
   int fd;
 
   fd = open(filepath, O_RDONLY);
@@ -87,7 +88,22 @@ int add_file(char *filepath)
     return fd;
   }
 
-  if (__add_file(fd, filepath)) {
+  // filepath ==> keep filename only
+  size_t path_len = strlen(filepath);
+  int i;
+
+  for (i = path_len-1; filepath[i] !='/' && i>=0; i--);
+  if (i == path_len-1) {
+    close(fd);
+    return -1;
+  }
+  else if (i != 0) {
+    i++;
+  }
+  filename = filepath + i;
+
+
+  if (__add_file(fd, filename)) {
     close(fd);
     return -1;
   }
