@@ -29,11 +29,14 @@ void kernel_init()
   cfi_init();
   printf("cfi-pflash OK!\n");
 
+  ramdisk_copy_from_flash();
   ramdisk_init();
   printf("ramdisk OK!\n");
 
   create_idle_task();
 
+  extern int load_root_service(void);
+  load_root_service();
   
   // debug
   // DBG_pagetable(kernel_pgd_base());

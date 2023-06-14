@@ -22,9 +22,10 @@
 #include <memattr.h>
 #include <print.h>
 #include <config/config.h>
+#include <cfi.h>
 
-void *ramdisk_start = (void *)CONFIG_PFLASH_BASE;
-void *ramdisk_end = (void *)(CONFIG_PFLASH_BASE + CONFIG_PFLASH_SIZE);
+void *ramdisk_start = (void *)CONFIG_RAMDISK_BASE;
+void *ramdisk_end = (void *)(CONFIG_RAMDISK_BASE + CONFIG_RAMDISK_SIZE);
 
 static struct ramdisk_inode *root;
 static struct ramdisk_sb *sb;
@@ -34,6 +35,20 @@ void set_ramdisk_address(void *start, void *end)
 {
 	ramdisk_start = start;
 	ramdisk_end = end;
+}
+
+// 这是一个临时的函数, 因为目前没有uboot, 没办法将ramdisk.bin
+// 在启动时放入内存, 只能暂时放入pflash中, 这个是qemu启动项支持的.
+// 然而这时就需要做一个从pflash拷贝到ramdisk指定内存位置的拷贝过程
+void ramdisk_copy_from_flash(void)
+{
+	// memcpy((void *)ptov(CONFIG_RAMDISK_BASE),
+	// 		   (void *)ptov(CONFIG_PFLASH_BASE),
+  //        CONFIG_RAMDISK_SIZE);
+  // memset((void *)ptov(CONFIG_RAMDISK_BASE), 0, 64);
+  cfi_readw((void *)ptov(CONFIG_RAMDISK_BASE),
+              0, CONFIG_RAMDISK_SIZE/4);
+
 }
 
 int ramdisk_init(void)

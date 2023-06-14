@@ -19,7 +19,7 @@ enum _kern_const_map_index
   KERN_CONST_MAP_GICD = 0,
   KERN_CONST_MAP_GICR,
   KERN_CONST_MAP_UART,
-  // KERN_CONST_MAP_RAMDISK,
+  KERN_CONST_MAP_RAMDISK,
   KERN_CONST_MAP_PFLASH,
   NR_KERN_CONST_MAP,
 };
@@ -43,11 +43,12 @@ struct map_region kern_const_map[] = {
   .size  = CONFIG_UART_IO_SIZE,
   .flag  = VM_IO | VM_RW ,
  },
-//  [KERN_CONST_MAP_RAMDISK] = {
-//   .pbase = CONFIG_RAMDISK_BASE,
-//   .vbase = ptov(CONFIG_RAMDISK_BASE),
-//   .size  = CONFIG_RAMDISK_SIZE,
-//   .flag  = VM_RO
+ [KERN_CONST_MAP_RAMDISK] = {
+  .pbase = CONFIG_RAMDISK_BASE,
+  .vbase = ptov(CONFIG_RAMDISK_BASE),
+  .size  = CONFIG_RAMDISK_SIZE,
+  .flag  = VM_RW | VM_HUGE,
+ },
   [KERN_CONST_MAP_PFLASH] = {
     .pbase = CONFIG_PFLASH_BASE,
     .vbase = ptov(CONFIG_PFLASH_BASE),
