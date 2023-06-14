@@ -9,10 +9,10 @@
 // depending on size of a word
 /////////////////////////////////////////
 #define WSIZE   4
-#define CFI_GETB(offset)      (*(unsigned char *)(CFI_BASE+offset))
-#define CFI_PUTB(offset, val) (*(unsigned char *)(CFI_BASE+offset) = (val))
-#define CFI_GETW(offset)      (*(unsigned int *) (CFI_BASE+offset))
-#define CFI_PUTW(offset, val) (*(unsigned int *) (CFI_BASE+offset) = (val))
+#define CFI_GETB(offset)      (*((unsigned char *) (CFI_BASE)+offset))
+#define CFI_PUTB(offset, val) (*((unsigned char *) (CFI_BASE+offset)) = (val))
+#define CFI_GETW(offset)      (*((unsigned int *) (CFI_BASE)+offset))
+#define CFI_PUTW(offset, val) (*((unsigned int *) (CFI_BASE+offset)) = (val))
 #define W2B(word)  ((word) << 2)
 #define B2W(byte)  ((byte) >> 2)
 
