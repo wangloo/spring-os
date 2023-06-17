@@ -4,6 +4,7 @@
 #include <print.h>
 #include <smp.h>
 #include <cpu.h>
+#include <cpumask.h>
 #include <assert.h>
 #include <io.h>
 
@@ -258,10 +259,93 @@ void gicv3_irq_disable(u32 irq)
     gicv3_dist_wait_for_rwp();
   }
 }
-    
-void gicv3_send_sgi(u32 sgi)
+
+static inline void __gicv3_send_sgi_list(u32 sgi, cpumask_t *mask)
 {
-    assert(0); // TODO
+	uint64_t val_cluster0 = 0;
+	uint64_t val_cluster1 = 0;
+	int cpu;
+
+	for_each_cpu(cpu, mask) {
+		if (cpu >= CONFIG_NR_CPUS_CLUSTER0)
+			val_cluster1 |= cpuid_to_affinity(cpu);
+		else
+			val_cluster0 |= cpuid_to_affinity(cpu);
+	}
+
+	/*
+	 * TBD: now only support two cluster
+	 */
+	if (val_cluster0) {
+		val_cluster0 |= (sgi << 24);
+		write_sysreg64(val_cluster0, ICC_SGI1R_EL1);
+	}
+
+	if (val_cluster1) {
+		val_cluster1 |= (sgi << 24);
+		write_sysreg64(val_cluster1, ICC_SGI1R_EL1);
+	}
+
+	isb();
+}
+
+static inline void __gicv3_send_sgi_list_shif_mpidr(uint32_t sgi, cpumask_t *mask)
+{
+	int cpu;
+	uint64_t value;
+
+	for_each_cpu(cpu, mask) {
+		value = cpuid_to_affinity(cpu) | (sgi << 24);
+		write_sysreg64(value, ICC_SGI1R_EL1);
+	}
+
+	isb();
+}
+
+static void gicv3_send_sgi_list(u32 sgi, cpumask_t *mask)
+{
+	if (cpu_has_feature(CPU_FEATURE_MPIDR_SHIFT))
+		__gicv3_send_sgi_list_shif_mpidr(sgi, mask);
+	else
+		__gicv3_send_sgi_list(sgi, mask);
+}
+
+void gicv3_send_sgi(u32 sgi, enum sgi_mode mode, cpumask_t *cpu)
+{
+    cpumask_t cpu_self;
+
+    assert(sgi < SGI_MAX);
+
+    
+    switch (mode)
+    {
+    case SGI_TO_LIST:
+        gicv3_send_sgi_list(sgi, cpu);
+        break;
+    case SGI_TO_SELF:
+        cpumask_clearall(&cpu_self);
+        gicv3_send_sgi_list(sgi, &cpu_self);
+        break;
+    case SGI_TO_OTHERS:
+        assert(0); // TODO
+		isb();
+        break;
+    default:
+        assert(0);
+        break;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
     u64 val_cluster0 = 1; // CORE 0
 
     val_cluster0 |= (sgi << 24);

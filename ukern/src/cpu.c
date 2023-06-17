@@ -1,6 +1,6 @@
 #include <asm/arm64_common.h>
 #include <config/config.h>
-#include <cpu_feature.h>
+
 #include <cpu.h>
 
 

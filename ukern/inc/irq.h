@@ -21,3 +21,5 @@ typedef enum sgi_mode {
 #define irq_is_disable()        arch_irq_is_disable()
 
 #define arch_irq_is_disable()   (read_sysreg(daif) & (1u << DAIF_I_SHIFT))
+
+void send_sgi(u32 sgi, int cpuid);

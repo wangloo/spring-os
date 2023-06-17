@@ -176,6 +176,7 @@ static inline int bitmap_is_empty(const bitmap_t *bitmap, u64 size)
   return 1;
 }
 
+// size: bytes         TODO: bits
 static inline void bitmap_init(bitmap_t *bitmap, u64 size, u64 value)
 {
   u64 wsize = size / sizeof(long);

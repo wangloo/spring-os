@@ -1,6 +1,7 @@
 #pragma once
 #include <config/config.h>
 #include <types.h>
+#include <cpumask.h>
 
 
 
@@ -14,6 +15,11 @@
 #define SPECIAL_IRQ_START (1020)
 #define IRQ_SPURIOUS      (1023)
 
+typedef enum sgi_mode {
+	SGI_TO_LIST = 0,
+	SGI_TO_OTHERS,
+	SGI_TO_SELF,
+} sgi_mode_t;
 
 /* Memory map for GIC distributor */
 struct gic_dist_map {
@@ -112,4 +118,4 @@ void gicv3_secondary_init();
 
 void gicv3_irq_enable(u32 irq);
 void gicv3_irq_disable(u32 irq);
-void gicv3_send_sgi(u32 sgi);
+void gicv3_send_sgi(u32 sgi, enum sgi_mode mode, cpumask_t *cpu);
