@@ -94,7 +94,7 @@ bitmap_find_next_0(bitmap_t *bitmap, u64 size, u64 start)
 
 
 static inline int 
-bitmap_find_first_1(bitmap_t *bitmap, u64 size)
+bitmap_find_first_1(const bitmap_t *bitmap, u64 size)
 {
   u64 wsize = size / sizeof(long);
   int pos = 0;
@@ -113,7 +113,7 @@ bitmap_find_first_1(bitmap_t *bitmap, u64 size)
 }
 
 static inline int 
-bitmap_find_next_1(bitmap_t *bitmap, u64 size, u64 start)
+bitmap_find_next_1(const bitmap_t *bitmap, u64 size, u64 start)
 {
   u64 wsize = size / sizeof(long);
   u64 wi, bi, word, i;

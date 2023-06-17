@@ -8,6 +8,7 @@
 
 #define mb()       __dsb(sy)
 #define dsb()      __dsb(sy)
+#define dsbsy()    __dsb(sy)
 #define dmb()      __dmb(sy)
 #define rmb()      __dmb(ld)
 #define wmb()      __dmb(st)

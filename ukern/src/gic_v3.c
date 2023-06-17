@@ -192,7 +192,7 @@ static void  gicr_init(int cpuid) {
     /* Default priority for PPIs and SGIs */
     priority = (PRIORITY_IRQ_DEFAULT << 24 | PRIORITY_IRQ_DEFAULT << 16 
                |PRIORITY_IRQ_DEFAULT << 8  | PRIORITY_IRQ_DEFAULT);
-    for (i = SGI_MIN; i < PPI_MAX; i += 4) {
+    for (i = SGI_MIN; i < PPI_MIN; i += 4) {
         iowrite32(priority, &gicr_sgi_map[cpuid]->ipriorityrn[i / 4]);
     }
 
@@ -267,12 +267,15 @@ static inline void __gicv3_send_sgi_list(u32 sgi, cpumask_t *mask)
 	int cpu;
 
 	for_each_cpu(cpu, mask) {
+        if (cpu >= CONFIG_NR_CPUS_CLUSTER0) {
+            panic("TODO: value of val_cluster is wrong!\n");
+        }
 		if (cpu >= CONFIG_NR_CPUS_CLUSTER0)
-			val_cluster1 |= cpuid_to_affinity(cpu);
+			val_cluster1 |= BIT(cpu);
 		else
-			val_cluster0 |= cpuid_to_affinity(cpu);
+			val_cluster0 |= BIT(cpu);
 	}
-
+    
 	/*
 	 * TBD: now only support two cluster
 	 */
@@ -335,20 +338,19 @@ void gicv3_send_sgi(u32 sgi, enum sgi_mode mode, cpumask_t *cpu)
         break;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-    u64 val_cluster0 = 1; // CORE 0
-
-    val_cluster0 |= (sgi << 24);
-    write_sysreg64(val_cluster0, ICC_SGI1R_EL1);
 }
 
+u32 gicv3_read_irq(void)
+{
+	uint32_t irq;
+
+	irq = read_sysreg32(ICC_IAR1_EL1);
+	dsbsy();
+	return irq;
+}
+
+void gicv3_eoi_irq(u32 irq)
+{
+	write_sysreg32(irq, ICC_EOIR1_EL1);
+	isb();
+}

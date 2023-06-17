@@ -7,13 +7,19 @@
 
 #define SGI_MIN           (   0)
 #define SGI_MAX           (  15)
-#define PPI_MAX           (  16)
-#define PPI_LAST          (  31)
+#define PPI_MIN           (  16)
+#define PPI_MAX          (  31)
 #define SPI_MIN           (  32)
 #define SPI_MAX           (1019)
 /* Special IRQ's */
 #define SPECIAL_IRQ_START (1020)
 #define IRQ_SPURIOUS      (1023)
+
+#define NR_PPIS        16
+#define NR_SGIS        16
+#define NR_SPIS        256  // 设置使得OS支持这么多，GIC实际支持更多 
+#define NR_PERCPU_IRQS		(NR_PPIS + NR_SGIS)
+
 
 typedef enum sgi_mode {
 	SGI_TO_LIST = 0,
@@ -119,3 +125,5 @@ void gicv3_secondary_init();
 void gicv3_irq_enable(u32 irq);
 void gicv3_irq_disable(u32 irq);
 void gicv3_send_sgi(u32 sgi, enum sgi_mode mode, cpumask_t *cpu);
+u32 gicv3_read_irq(void);
+void gicv3_eoi_irq(u32 irq);

@@ -1,11 +1,13 @@
 #include <exception.h>
 #include <esr.h>
 #include <panic.h>
+#include <irq.h>
 
 void irq_from_current_el(exception_ctx *ectx)
 {
   printf("IRQ FROM CURRENT EL\n");
-  panic("SPRING-OS oops!\n");
+  do_irq_handler();
+  // panic("SPRING-OS oops!\n");
 }
 
 
