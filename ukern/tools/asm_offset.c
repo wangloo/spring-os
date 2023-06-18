@@ -16,6 +16,6 @@ int main(void)
   DEFINE(PCPU_CURRENT_TASK, offsetof(struct pcpu, running_task));
   DEFINE(GP_REGS_SIZE, sizeof(gp_regs));
   DEFINE(TASK_USER_REGS_OFFSET, offsetof(struct task, user_regs));
-
+	DEFINE(GP_REGS_SPSR_OFFSER, offsetof(gp_regs, spsr));
   return 0;
 }

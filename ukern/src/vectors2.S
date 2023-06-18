@@ -31,7 +31,7 @@ func exception_return
 	ldr	x1, [x18, #TASK_STACK_OFFSET]	// load the running task's stack
 	mov	sp, x1				// change to the new stack address
 
-	ldr	x1, [sp, #8]			// load spsr
+	ldr	x1, [sp, #GP_REGS_SPSR_OFFSER]			// load spsr
 	and	x1, x1, #0x0f
 	cmp	x1, #ARM64_SPSR_KERNEL		// whether the task will return to user
 	b.eq	__do_exception_return
@@ -73,24 +73,23 @@ endfunc __sync_from_lower_el
 func __irq_from_current_el
   SAVE_GP_REGS
 
-	// Set the irq flags into ti->flags.
-	ldr	x1, [x18, #TASK_INFO_FLAGS_OFFSET]
-	orr	x1, x1, #__TIF_HARDIRQ_MASK
-	str	x1, [x18, #TASK_INFO_FLAGS_OFFSET]
-	dsb	sy
+  // Set the irq flags into ti->flags.
+  ldr	x1, [x18, #TASK_INFO_FLAGS_OFFSET]
+  orr	x1, x1, #__TIF_HARDIRQ_MASK
+  str	x1, [x18, #TASK_INFO_FLAGS_OFFSET]
+  dsb	sy
 
   mov x0, sp
   str     x0, [x18, #TASK_STACK_OFFSET]	// store the stack in case this task will scheded out.
   bl irq_from_current_el
 
-	// clear the irq flags into ti->flags.
-	ldr	x1, [x18, #TASK_INFO_FLAGS_OFFSET]
-	and	x1, x1, #(~__TIF_HARDIRQ_MASK)
-	str	x1, [x18, #TASK_INFO_FLAGS_OFFSET]
-	dsb	sy
-  
-  LOAD_GP_REGS
-  eret
+  // clear the irq flags into ti->flags.
+  ldr	x1, [x18, #TASK_INFO_FLAGS_OFFSET]
+  and	x1, x1, #(~__TIF_HARDIRQ_MASK)
+  str	x1, [x18, #TASK_INFO_FLAGS_OFFSET]
+  dsb	sy
+    
+  b exception_return
 endfunc __irq_from_current_el
 
 
