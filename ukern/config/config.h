@@ -31,3 +31,7 @@
 
 #define CONFIG_PFLASH_BASE       (0x4000000)
 #define CONFIG_PFLASH_SIZE       (0x4000000)
+
+
+// DEBUG OPTION
+#define CONFIG_DEBUG_LIST

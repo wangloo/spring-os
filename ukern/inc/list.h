@@ -7,6 +7,7 @@
 #pragma once
 
 #include <types.h>
+#include <config/config.h>
 
 // import from include/linux/types.h
 struct list_head {
