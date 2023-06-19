@@ -30,7 +30,24 @@ static inline int task_is_running(struct task *task)
   return (task->state == TASK_STATE_RUNNING);
 }
 
+static inline void task_clear_resched(struct task *task)
+{
+	task->ti.flags &= ~TIF_NEED_RESCHED;
+}
+
+static inline int task_need_resched(struct task *task)
+{
+	return (task->ti.flags & TIF_NEED_RESCHED);
+}
+
+static inline void task_set_resched(struct task *task)
+{
+	task->ti.flags |= TIF_NEED_RESCHED;
+}
+
 struct task *task_idle_pcpu(int cpuid);
 void task_suspend(void);
 void task_die(void);
+paddr_t task_ttbr_value(struct task *task);
 int create_idle_task(void);
+void start_system_task(void);

@@ -60,8 +60,7 @@ static void sched_tick_handler(unsigned long data)
 }
 
 
-
-static inline void sched_update_sched_timer(void)
+void sched_update_sched_timer(void)
 {
   struct pcpu *pcpu = get_pcpu(cpu_id());
   struct task *task = current();
@@ -76,49 +75,8 @@ static inline void sched_update_sched_timer(void)
     timer_stop(&pcpu->sched_timer);
 }
 
-static void add_task_to_ready_list(struct pcpu *pcpu, struct task *task,
-                                   int preempt)
-{
-  /*
-   * make sure the new task is insert to front of the current
-   * task.
-   *
-   * if the prio is equal to the current task's prio, insert to
-   * the front of the current task.
-   */
-  assert(task->state_list.next == NULL);
-  pcpu->tasks_in_prio[task->prio]++;
 
-  if (current()->prio == task->prio) {
-    list_add_tail(&current()->state_list, &task->state_list);
-    if (pcpu->tasks_in_prio[task->prio] == 2) sched_update_sched_timer();
-  } else {
-    list_add_tail(&pcpu->ready_list[task->prio], &task->state_list);
-  }
 
-  mb();
-  pcpu->local_rdy_grp |= BIT(task->prio);
-
-  if (preempt || current()->prio > task->prio) set_need_resched();
-}
-
-static void remove_task_from_ready_list(struct pcpu *pcpu, struct task *task)
-{
-  assert(task->state_list.next != NULL);
-
-  list_del(&task->state_list);
-  if (list_empty(&pcpu->ready_list[task->prio]))
-    pcpu->local_rdy_grp &= ~BIT(task->prio);
-  mb();
-
-  pcpu->tasks_in_prio[task->prio]--;
-
-  /*
-   * check whether need to stop the sched timer.
-   */
-  if ((current()->prio == task->prio) && (pcpu->tasks_in_prio[task->prio] == 1))
-    sched_update_sched_timer();
-}
 
 static struct task *pick_next_task(struct pcpu *pcpu)
 {
@@ -137,7 +95,7 @@ static struct task *pick_next_task(struct pcpu *pcpu)
   if (!task_is_running(task)) {
     remove_task_from_ready_list(pcpu, task);
     if (task->state == TASK_STATE_STOP) {
-      list_add_tail(&pcpu->stop_list, &task->state_list);
+      list_add_tail(&task->state_list, &pcpu->stop_list);
       // FIXME
       // flag_set(&pcpu->kworker_flag, KWORKER_TASK_RECYCLE);
     }
@@ -157,12 +115,17 @@ static struct task *pick_next_task(struct pcpu *pcpu)
   assert(!list_empty(head));
   task = list_first_entry(head, struct task, state_list);
   list_del(&task->state_list);
-  list_add_tail(head, &task->state_list);
+  list_add_tail(&task->state_list, head);
 
   return task;
 }
 
 
+int select_task_run_cpu(void)
+{
+  // TODO
+  return NR_CPUS - 1;
+}
 
 static void switch_to_task(struct task *cur, struct task *next)
 {
@@ -237,6 +200,7 @@ static inline int __sched_prepare(void)
   ti->flags &= ~__TIF_NEED_RESCHED;
 
   next = pick_next_task(pcpu);
+  printf("cur task: %s ==> next task: %s\n", task->name, next->name);
   if ((next == task)) goto task_run_again;
 
   switch_to_task(task, next);
@@ -254,7 +218,55 @@ void sched_prepare(void)
 {
   int ret = __sched_prepare();
 
-  if ((ret == 0) || (ret == -EAGAIN)) sched_update_sched_timer();
+  if ((ret == 0) || (ret == -EAGAIN)) 
+    sched_update_sched_timer();
+}
+
+
+static int irqwork_handler(uint32_t irq, void *data)
+{
+	struct pcpu *pcpu = get_pcpu(cpu_id());
+	struct task *task, *n;
+	int preempt = 0, need_preempt;
+
+	/*
+	 * check whether there are new taskes need to
+	 * set to ready state again
+	 */
+	// raw_spin_lock(&pcpu->lock);
+	list_for_each_entry_safe(task, n, &pcpu->new_list, state_list) {
+		/*
+		 * remove it from the new_next.
+		 */
+		list_del(&task->state_list);
+
+		if (task->state == TASK_STATE_RUNNING) {
+			printf("task %s state %d wrong\n",
+				task->name? task->name : "Null", task->state);
+			continue;
+		}
+
+		need_preempt = task_need_resched(task);
+		preempt += need_preempt;
+		task_clear_resched(task);
+
+		add_task_to_ready_list(pcpu, task, need_preempt);
+		task->state = TASK_STATE_READY;
+
+		/*
+		 * if the task has delay timer, cancel it.
+		 */
+		if (task->delay) {
+			timer_stop(&task->delay_timer);
+			task->delay = 0;
+		}
+	}
+	// raw_spin_unlock(&pcpu->lock);
+
+	if (preempt || task_is_idle(current()))
+		set_need_resched();
+
+	return 0;
 }
 
 
@@ -282,6 +294,8 @@ void sched_local_init(void)
   set_current_task(task_idle_pcpu(cpuid));
 
   timer_init(&pcpu->sched_timer, sched_tick_handler, (unsigned long)pcpu);
+	irq_register(CONFIG_KERNEL_IRQWORK_IRQ, irqwork_handler,
+			0, "irqwork handler", NULL);
 }
 
 
@@ -301,7 +315,7 @@ void sched(void)
   /*
    * tell the scheduler that I am ok to sched out.
    */
-  // set_need_resched();
+  set_need_resched();
   // clear_do_not_preempt();
 
   do {

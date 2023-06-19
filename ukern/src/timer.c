@@ -52,7 +52,7 @@ int timer_stop(struct timer *timer)
 
 void timer_init(struct timer *timer, timer_func_t fn, unsigned long data)
 {
-  // arch_timer_init();
+  arch_timer_init();
 
   preempt_disable();
 

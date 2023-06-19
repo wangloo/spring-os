@@ -1,6 +1,7 @@
 #pragma once
 #include <timer.h>
 #include <task_info.h>
+#include <vspace.h>
 #include <ctx.h>
 #include <list.h>
 #include <smp.h>
@@ -58,9 +59,12 @@
 #define TASK_STACK_SIZE (2 * PAGE_SIZE)
 #endif
 
+#define TASK_AFF_ANY		(-1)
 #define TASK_NAME_SIZE    (32)
 
 #define TASK_WAIT_FOREVER (0xfffffffe)
+
+typedef int (*task_func_t)(void *data);
 
 struct task {
   struct task_info ti;
@@ -70,6 +74,7 @@ struct task {
   void *stack_bottom;
 
   gp_regs *user_regs;
+
 
   unsigned long flags;
 
@@ -125,4 +130,6 @@ struct task {
   struct vspace *vs; // the virtual memory space of this task.
 
   void *pdata;       // the private data of this task for vcpu or process.
+
+  struct cpu_context cpu_context;
 };

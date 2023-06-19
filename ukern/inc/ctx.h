@@ -41,3 +41,9 @@ struct arm64_regs {
 }__packed;
 
 typedef struct arm64_regs gp_regs;
+
+struct cpu_context {
+  uint64_t tpidr_el0;
+  uint64_t tpidrro_el0;
+  uint64_t ttbr_el0;
+};

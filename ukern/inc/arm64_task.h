@@ -24,3 +24,6 @@ static inline void arch_sys_sched(void)
 {
   __asm__ volatile("svc #0");
 }
+
+
+void arch_init_task(void *task, void *entry, void *user_sp, void *arg);

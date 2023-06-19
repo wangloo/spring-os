@@ -43,13 +43,40 @@ struct pcpu {
 
 
   struct timer sched_timer;
+  int os_is_running;
 
+	struct task *kworker;
+	// struct flag_grp kworker_flag; // TODO
 
 } __cache_line_align;
 
 
 
 
+
 struct pcpu *get_pcpu(int cpuid);
+void add_task_to_ready_list(struct pcpu *pcpu, struct task *task,
+                                   int preempt);
+void remove_task_from_ready_list(struct pcpu *pcpu, struct task *task);
+void pcpu_task_ready(struct pcpu *pcpu, struct task *task, int preempt);
+void pcpu_smp_task_ready(struct pcpu *pcpu,
+		struct task *task, int preempt);
 void percpu_init(void);
 void pcpu_sched_init(struct pcpu *pcpu);
+void pcpu_irqwork(int pcpu_id);
+
+static inline int os_is_running(void)
+{
+	return get_pcpu(cpu_id())->os_is_running;
+}
+
+static inline void set_os_running(void)
+{
+	/* 
+	 * os running is set before the irq is enable
+	 * so do not need to aquire lock or disable the
+	 * interrupt here
+	 */
+	get_pcpu(cpu_id())->os_is_running = 1;
+	wmb();
+}

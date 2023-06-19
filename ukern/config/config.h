@@ -5,6 +5,8 @@
 #define CONFIG_TASK_STACK_SHIFT     13
 #define CONFIG_NR_TASKS             128
 
+#define CONFIG_KERNEL_IRQWORK_IRQ   5
+
 
 // hardware config
 #define CONFIG_AARCH64

@@ -162,8 +162,9 @@ int do_irq_handler(void)
 			irq_end(irq);
 			continue;
 		}
-
+		printf("start handling irq: %d\n", irq);
 		do_handle_host_irq(cpuid, irq_desc);
+		printf("end handling irq: %d\n", irq);
 	}
 
 	return 0;

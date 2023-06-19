@@ -4,10 +4,29 @@
 #include <print.h>
 #include <string.h>
 #include <pcpu.h>
+#include <tid.h>
+#include <kmem.h>
 #include <event.h>
 #include <mm.h>
 #include <addrspace.h>
 #include <assert.h>
+
+
+/*
+ * set current running task's state do not need to obtain
+ * a lock, when need to wakeup the task, below state the state
+ * can be changed:
+ * 1 - running -> wait_event
+ * 2 - wait_event -> running (waked up by event)
+ * 3 - new -> running
+ * 4 - running -> stopped
+ */
+#define set_current_state(_state, to) 		\
+	do {			 		\
+		current()->state = (_state); 	\
+		current()->delay = (to);		\
+		smp_mb();			\
+	} while (0)
 
 
 struct task *os_task_table[OS_NR_TASKS];
@@ -22,32 +41,33 @@ struct task *task_idle_pcpu(int cpuid)
 }
 
 
+// 将task放入合适的ready list
 int task_ready(struct task *task, int preempt)
 {
-  // FIXME
-  // struct pcpu *pcpu, *tpcpu;
 
-  // preempt_disable();
+  struct pcpu *pcpu, *tpcpu;
 
-  // task->cpu = task->affinity;
-  // if (task->cpu == -1)
-  // 	task->cpu = select_task_run_cpu();
+  preempt_disable();
 
-  // /*
-  //  * if the task is a precpu task and the cpu is not
-  //  * the cpu which this task affinity to then put this
-  //  * cpu to the new_list of the pcpu and send a resched
-  //  * interrupt to the pcpu
-  //  */
-  // pcpu = get_pcpu(cpu_id());
-  // if (pcpu->pcpu_id != task->cpu) {
-  // 	tpcpu = get_pcpu(task->cpu);
-  // 	smp_percpu_task_ready(tpcpu, task, preempt);
-  // } else {
-  // 	percpu_task_ready(pcpu, task, preempt);
-  // }
+  task->cpu = task->affinity;
+  if (task->cpu == -1)
+  	task->cpu = select_task_run_cpu();
 
-  // preempt_enable();
+  /*
+   * if the task is a precpu task and the cpu is not
+   * the cpu which this task affinity to then put this
+   * cpu to the new_list of the pcpu and send a resched
+   * interrupt to the pcpu
+   */
+  pcpu = get_pcpu(cpu_id());
+  if (pcpu->pcpu_id != task->cpu) {
+  	tpcpu = get_pcpu(task->cpu);
+  	pcpu_smp_task_ready(tpcpu, task, preempt);
+  } else {
+  	pcpu_task_ready(pcpu, task, preempt);
+  }
+
+  preempt_enable();
 
   return 0;
 }
@@ -99,6 +119,12 @@ void task_die(void)
   task_stop(TASK_STATE_STOP);
 }
 
+void task_exit(int errno)
+{
+	set_current_state(TASK_STATE_STOP, 0);
+	sched();
+}
+
 void task_return_to_user(gp_regs *regs)
 {
   struct task *task = current();
@@ -129,6 +155,13 @@ static void task_delaytimer_timeout_handler(unsigned long data)
 
   // wake_up_timeout(task);
   // set_need_resched();
+}
+
+paddr_t task_ttbr_value(struct task *task)
+{
+	struct vspace *vs = task->vs;
+
+	return (paddr_t)vtop(vs->pgdp) | ((paddr_t)vs->asid << 48);
 }
 
 static void task_init(struct task *task, char *name, void *stack,
@@ -177,6 +210,117 @@ static void task_create_hook(struct task *task, void *pdata)
   // do_hooks((void *)task, pdata, OS_HOOK_CREATE_TASK);
 }
 
+static struct task *do_create_task(char *name,
+				  task_func_t func,
+				  uint32_t ssize,
+				  int prio,
+				  int tid,
+				  int aff,
+				  unsigned long opt,
+				  void *arg)
+{
+	size_t stk_size = align_page_up(ssize);
+	struct task *task;
+	void *stack = NULL;
+
+	/*
+	 * allocate the task's kernel stack
+	 */
+	task = kalloc(sizeof(struct task));
+	if (!task) {
+		printf("no more memory for task\n");
+		return NULL;
+	}
+
+	stack = get_free_pages(stk_size/PAGE_SIZE, GFP_KERNEL);
+	if (!stack) {
+		printf("no more memory for task stack\n");
+		kfree(task);
+		return NULL;
+	}
+
+	task_init(task, name, stack, stk_size, prio, tid, aff, opt, arg);
+
+	return task;
+}
+
+struct task *__create_task(char *name,
+			task_func_t func,
+			uint32_t stk_size,
+			void *usp,
+			int prio,
+			int aff,
+			unsigned long opt,
+			void *arg)
+{
+	struct task *task;
+	int tid;
+
+	if ((aff >= NR_CPUS) && (aff != TASK_AFF_ANY)) {
+		printf("task %s afinity will set to 0x%x\n",
+				name, TASK_AFF_ANY);
+		aff = TASK_AFF_ANY;
+	}
+
+	if ((prio >= OS_PRIO_IDLE) || (prio < 0)) {
+		printf("wrong task prio %d fallback to %d\n",
+				prio, OS_PRIO_DEFAULT_6);
+		prio = OS_PRIO_DEFAULT_6;
+	}
+
+	tid = alloc_tid();
+	if (tid < 0)
+		return NULL;
+
+	preempt_disable();
+
+	task = do_create_task(name, func, stk_size, prio,
+			tid, aff, opt, arg);
+	if (!task) {
+		release_tid(tid);
+		preempt_enable();
+		return NULL;
+	}
+
+	task_create_hook(task, arg);
+
+	arch_init_task(task, (void *)func, usp, task->pdata);
+
+	/*
+	 * start the task if need auto started.
+	 */
+	if (!(task->flags & TASK_FLAGS_NO_AUTO_START))
+		task_ready(task, 0);
+
+	preempt_enable();
+
+	if (os_is_running())
+		sched();
+
+	return task;
+}
+
+struct task *create_task(char *name,
+		task_func_t func,
+		size_t stk_size,
+		void *usp,
+		int prio,
+		int aff,
+		unsigned long opt,
+		void *arg)
+{
+	if (prio < 0) {
+		if (opt & OS_PRIO_VCPU)
+			prio = OS_PRIO_VCPU;
+		else if (opt & (TASK_FLAGS_SRV | TASK_FLAGS_DRV))
+			prio = OS_PRIO_SRV;
+		else
+			prio = OS_PRIO_DEFAULT;
+	}
+
+	return __create_task(name, func, stk_size, usp,
+			prio, aff, opt, arg);
+}
 
 int create_idle_task(void)
 {
@@ -211,4 +355,26 @@ int create_idle_task(void)
   pcpu->idle_task = task;
 
   return 0;
+}
+
+struct task *create_kthread(char *name, task_func_t func, int prio,
+		int aff, unsigned long opt, void *arg)
+{
+	return create_task(name, func, TASK_STACK_SIZE,
+			NULL, prio, aff, opt | TASK_FLAGS_KERNEL, arg);
+}
+
+void start_system_task(void)
+{
+  extern int kworker_task(void *data);
+	int cpu = cpu_id();
+	struct task *task;
+	char name[32];
+
+	printf("create kworker task...\n");
+	sprintf(name, "kworker/%d", cpu);
+	task = create_kthread(name, kworker_task,
+			OS_PRIO_DEFAULT_1, cpu, 0, NULL);
+	assert(task != NULL);
+
 }

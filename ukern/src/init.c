@@ -9,8 +9,13 @@
 #include <pcpu.h>
 #include <cfi.h>
 #include <ramdisk.h>
+
+extern void idle(void);
+
 void kernel_init()
 {
+  int cpuid = cpu_id();
+
   console_init();
 
   printf("=============\n");
@@ -35,9 +40,17 @@ void kernel_init()
 
   create_idle_task();
 
-  extern int load_root_service(void);
-  load_root_service();
+  start_system_task();
+
+  if (cpuid == 0) {
+    printf("Load Root Service...\n");
+
+    extern int load_root_service(void);
+    load_root_service();
+  }
+
   
+    
   // debug
   // DBG_pagetable(kernel_pgd_base());
   // extern int DBG_bitmap(void);
@@ -45,5 +58,6 @@ void kernel_init()
 
   /* asm ("brk #0"); */
   
+  idle();
   panic("[SPRING-OS end, byebye]\n");
 }

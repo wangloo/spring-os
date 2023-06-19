@@ -16,3 +16,5 @@ unsigned long ramdisk_file_base(struct ramdisk_file *file);
 unsigned long ramdisk_file_size(struct ramdisk_file *file);
 
 const char *ramdisk_file_name(struct ramdisk_file *file);
+
+void ramdisk_copy_from_flash(void);
