@@ -100,10 +100,13 @@ gdb: ramdisk kernel
 	bash ./tools/gdb.sh
 
 .PHONY: clean $(PHONY)
-clean: clean-libc clean-roots
-	@$(MAKE) $(MFLAGS) -C ukern clean
+clean: clean-libc clean-roots clean-ukern
+
 	@$(MAKE) $(MFLAGS) -C tools/mkrmd clean
 
+clean-ukern:
+	$(Q) echo "\033[32m Clean ukern \033[0m"
+	$(Q) $(MAKE) $(MFLAGS) -C ukern clean
 clean-roots:
 	$(Q) echo "\033[32m Clean roots \033[0m"
 	$(Q) $(MAKE) $(MFLAGS) -C roots clean
