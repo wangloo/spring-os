@@ -46,8 +46,8 @@ void ramdisk_copy_from_flash(void)
 	// 		   (void *)ptov(CONFIG_PFLASH_BASE),
   //        CONFIG_RAMDISK_SIZE);
   // memset((void *)ptov(CONFIG_RAMDISK_BASE), 0, 64);
-  cfi_readw((void *)ptov(CONFIG_RAMDISK_BASE),
-              0, CONFIG_RAMDISK_SIZE/4);
+  cfi_read((void *)ptov(CONFIG_RAMDISK_BASE),
+              0, CONFIG_RAMDISK_SIZE);
 
 }
 

@@ -14,6 +14,5 @@
 
 void cfi_test(void);
 int cfi_init(void);
-int cfi_writew(const char *buf, u64 offset, int words);
-int cfi_readw(char *buf, u64 offset, int words);
-int cfi_readb(char *buf, u64 offset, int bytes);
+size_t cfi_read(char *out, u64 offset, size_t size);
+size_t cfi_write(const char *in, u64 offset, size_t size);

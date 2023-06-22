@@ -15,6 +15,7 @@ extern void idle(void);
 void kernel_init()
 {
   int cpuid = cpu_id();
+  int ret;
 
   console_init();
 
@@ -31,8 +32,9 @@ void kernel_init()
 
   percpu_init();
   
-  cfi_init();
-  printf("cfi-pflash OK!\n");
+  ret = cfi_init();
+  if (ret)
+    panic("cfi-pflash FAILED!\n");
 
   ramdisk_copy_from_flash();
   ramdisk_init();
