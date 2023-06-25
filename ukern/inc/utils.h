@@ -37,4 +37,6 @@
 #define stringify_no_expansion(x) #x
 #define stringify(x) stringify_no_expansion(x)
 
+#define nelem(x)            (sizeof(x) / sizeof(x[0]))
+#define wrap(x, len)        ((x) & ~(len))
 #endif

@@ -30,9 +30,12 @@
 #define CONFIG_RAMDISK_BASE         0x44000000
 #define CONFIG_RAMDISK_SIZE         0x02000000 // 32M
 
+#define CONFIG_PFLASH_BASE          (0x04000000)
+#define CONFIG_PFLASH_SIZE          (0x4000000)
 
-#define CONFIG_PFLASH_BASE       (0x4000000)
-#define CONFIG_PFLASH_SIZE       (0x4000000)
+#define CONFIG_VIRTIO_BASE          (0x0a000000)
+#define CONFIG_VIRTIO_SIZE          (0x4000)
+#define CONFIG_VIRTIO_IRQ           (32 + 0x10)
 
 
 // DEBUG OPTION

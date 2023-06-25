@@ -12,3 +12,7 @@ qemu-system-aarch64 \
   -nographic               \
   -semihosting              \
   $1
+
+	# -drive file=mydisk_128M,if=none,format=raw,id=hd \
+  # -device virtio-blk-device,drive=hd \
+	# -global virtio-mmio.force-legacy=false \

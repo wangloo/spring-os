@@ -21,6 +21,7 @@ enum _kern_const_map_index
   KERN_CONST_MAP_UART,
   KERN_CONST_MAP_RAMDISK,
   KERN_CONST_MAP_PFLASH,
+  KERN_CONST_MAP_VIRTIO,
   NR_KERN_CONST_MAP,
 };
 
@@ -54,7 +55,13 @@ struct map_region kern_const_map[] = {
     .vbase = ptov(CONFIG_PFLASH_BASE),
     .size  = CONFIG_PFLASH_SIZE,
     .flag  = VM_IO | VM_RW | VM_HUGE,
-  }
+  },
+  [KERN_CONST_MAP_VIRTIO] = {
+    .pbase = CONFIG_VIRTIO_BASE,
+    .vbase = ptov(CONFIG_VIRTIO_BASE),
+    .size  = CONFIG_VIRTIO_SIZE,
+    .flag  = VM_IO | VM_RW ,
+  },
 };
 
 static struct vspace kvspace;
