@@ -1,8 +1,7 @@
 #include <tid.h>
-#include <bitmap.h>
-#include <task_def.h>
 
-static bitmap_t tid_map[bits_to_long(OS_NR_TASKS)];
+
+bitmap_t tid_map[bits_to_long(OS_NR_TASKS)];
 // static DEFINE_SPIN_LOCK(tid_lock);
 
 int alloc_tid(void)

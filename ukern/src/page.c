@@ -56,8 +56,10 @@ alloc_pages_from_section(struct page_section *ps, int pages, int flag)
 
   pos = bitmap_find_next_0_area(ps->bitmap, 
           BITMAP_SIZE(ps->size>>PAGE_SHIFT), 0, pages);
-  if (pos == -1)
+  if (pos == -1) {
+    panic("no more pages in all section!\n");
     return NULL;
+  }
 
   bitmap_set_bits(ps->bitmap, pos, pages);
   

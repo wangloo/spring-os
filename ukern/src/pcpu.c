@@ -31,6 +31,7 @@ void add_task_to_ready_list(struct pcpu *pcpu, struct task *task,
   assert(task->state_list.next == NULL);
   pcpu->tasks_in_prio[task->prio]++;
 
+  printf("[DEBUG] add task: %s to ready list\n", task->name);
   if (current()->prio == task->prio) {
     list_add_tail(&task->state_list, &current()->state_list);
     if (pcpu->tasks_in_prio[task->prio] == 2) 
@@ -107,6 +108,7 @@ void pcpu_sched_init(struct pcpu *pcpu)
 
 void pcpu_irqwork(int pcpu_id)
 {
+  printf("call pcpu_irqwork()\n");
 	send_sgi(CONFIG_KERNEL_IRQWORK_IRQ, pcpu_id);
 }
 

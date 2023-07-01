@@ -27,3 +27,5 @@ static inline void arch_sys_sched(void)
 
 
 void arch_init_task(void *task, void *entry, void *user_sp, void *arg);
+void arch_set_task_entry_point(void *task, long entry);
+void arch_set_task_user_stack(void *task, unsigned long stack);

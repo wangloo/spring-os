@@ -62,6 +62,10 @@
 #define TASK_AFF_ANY		(-1)
 #define TASK_NAME_SIZE    (32)
 
+#define TASK_STATE_PEND_OK       0u  /* Pending status OK, not pending, or pending complete */
+#define TASK_STATE_PEND_TO       1u  /* Pending timed out */
+#define TASK_STATE_PEND_ABORT    2u  /* Pending aborted */
+
 #define TASK_WAIT_FOREVER (0xfffffffe)
 
 typedef int (*task_func_t)(void *data);
@@ -82,7 +86,7 @@ struct task {
   int tid;
 
   struct list_head list;
-  struct list_head proc_list;
+  struct list_head proc_list;  // task的所有process
   struct list_head task_list;  // link to the task list, if is a thread.
   struct list_head state_list; // link to the sched list used for sched.
 

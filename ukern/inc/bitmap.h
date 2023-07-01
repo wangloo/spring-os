@@ -186,3 +186,14 @@ static inline void bitmap_init(bitmap_t *bitmap, u64 size, u64 value)
   for (u64 i = 0; i < wsize; i++) 
     bitmap[i] = value;
 }
+
+
+#define bitmap_for_each_set_bit(bit, addr, size) \
+	for ((bit) = bitmap_find_first_1((addr), (size));		\
+	     (bit) > 0 && (bit) < (size);					\
+	     (bit) = bitmap_find_next_1((addr), (size), (bit) + 1))
+
+#define bitmap_for_each_clear_bit(bit, addr, size) \
+	for ((bit) = bitmap_find_first_0((addr), (size));	\
+	     (bit) > 0 && (bit) < (size);				\
+	     (bit) = bitmap_find_next_0((addr), (size), (bit) + 1))

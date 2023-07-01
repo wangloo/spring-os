@@ -9,6 +9,7 @@
 #include <pcpu.h>
 #include <cfi.h>
 #include <ramdisk.h>
+#include <procinfo.h>
 
 extern void idle(void);
 
@@ -45,8 +46,8 @@ void kernel_init()
   start_system_task();
 
   if (cpuid == 0) {
+    procinfo_init();
     printf("Load Root Service...\n");
-
     extern int load_root_service(void);
     load_root_service();
   }

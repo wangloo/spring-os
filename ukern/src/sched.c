@@ -1,5 +1,4 @@
 #include <pcpu.h>
-#include <task.h>
 #include <barrier.h>
 #include <assert.h>
 #include <timer.h>
@@ -234,7 +233,9 @@ static int irqwork_handler(uint32_t irq, void *data)
 	 * set to ready state again
 	 */
 	// raw_spin_lock(&pcpu->lock);
+  
 	list_for_each_entry_safe(task, n, &pcpu->new_list, state_list) {
+    printf("=============\n");
 		/*
 		 * remove it from the new_next.
 		 */
@@ -250,6 +251,7 @@ static int irqwork_handler(uint32_t irq, void *data)
 		preempt += need_preempt;
 		task_clear_resched(task);
 
+    printf("handling task: %s\n", task->name);
 		add_task_to_ready_list(pcpu, task, need_preempt);
 		task->state = TASK_STATE_READY;
 
@@ -269,8 +271,126 @@ static int irqwork_handler(uint32_t irq, void *data)
 	return 0;
 }
 
+static int wake_up_interrupted(struct task *task,
+		long pend_state, unsigned long data)
+{
+	// unsigned long flags;
+
+	assert(pend_state != TASK_STATE_PEND_TO);
+	if (task->state != TASK_STATE_WAIT_EVENT)
+		return -EACCES;
+
+	if (!irq_is_disable())
+		panic("unexpected irq happend when wait_event() ?\n");
+
+	/*
+	 * the interrup occurs when task try to wait_event. in
+	 * addition:
+	 * 1 - the interrupt is happended in the same cpu.
+	 * 2 - will not the delay timer, since the delay time
+	 *     has not been set already.
+	 * 3 - the state must TASK_STATE_WAIT_EVENT
+	 * 4 - task has not been in sched routine.
+	 *
+	 * meanwhile, other cpu may already in the wake up function
+	 * try to wake up the task, then need check this suitation
+	 * since other cpu while check cpu == -1, this will lead
+	 * to dead lock if use spin_lock function. So here use
+	 * spin_trylock instead.
+	 */
+  // FIXME
+	// if (!spin_trylock_irqsave(&task->s_lock, flags))
+	// 	return -EBUSY;
+
+	// if (task->state != TASK_STATE_WAIT_EVENT) {
+	// 	spin_unlock_irqrestore(&task->s_lock, flags);
+	// 	return -EINVAL;
+	// }
+
+	task->ti.flags |= __TIF_WAIT_INTERRUPTED;
+	task->ti.flags &= ~__TIF_DONOT_PREEMPT;
+
+	/*
+	 * here this cpu got this task, and can set the new
+	 * state to running and run it again.
+	 */
+	task->pend_state = pend_state;
+	task->state = TASK_STATE_RUNNING;
+	task->delay = 0;
+	task->ipcdata = data;
+	// spin_unlock_irqrestore(&task->s_lock, flags);
+
+	return 0;
+}
+
+static int wake_up_common(struct task *task, long pend_state, unsigned long data)
+{
+	// unsigned long flags;
+	uint32_t timeout;
+
+	preempt_disable();
+	// spin_lock_irqsave(&task->s_lock, flags); // FIXME
+
+	/*
+	 * task already waked up, if the stat is set to
+	 * TASK_STATE_WAIT_EVENT, it means that the task will
+	 * call sched() to sleep or wait something happen.
+	 */
+	if (task->state != TASK_STATE_WAIT_EVENT) {
+		// spin_unlock_irqrestore(&task->s_lock, flags); // FIXME
+		preempt_enable();
+		return -EPERM;
+	}
+
+	/*
+	 * the task may in sched() routine on other cpu
+	 * wait the task really out of running. since the task
+	 * will not preempt in the kernel space now, so the cpu
+	 * of the task will change to -1 at one time.
+	 *
+	 * since the kernel can not be preempted so it can make
+	 * sure that sched() can be finish its work.
+	 */
+	while (task->cpu != -1)
+		cpu_relax();
+
+	/*
+	 * here this cpu got this task, and can set the new
+	 * state to running and run it again.
+	 */
+	task->pend_state = pend_state;
+	task->state = TASK_STATE_WAKING;
+	timeout = task->delay;
+	task->delay = 0;
+	task->ipcdata = data;
+
+	// spin_unlock_irqrestore(&task->s_lock, flags);
+
+	/*
+	 * here it means that this task has not been timeout, so can
+	 * delete the timer for this task.
+	 */
+	if (timeout && (task->pend_state != TASK_STATE_PEND_TO))
+		timer_stop(&task->delay_timer);
+
+	/*
+	 * find a best cpu to run this task.
+	 */
+	task_ready(task, 1);
+	preempt_enable();
 
 
+	return 0;
+}
+
+int __wake_up(struct task *task, long pend_state, unsigned long data)
+{
+
+	if (task == current())
+		return wake_up_interrupted(task, pend_state, data);
+	else
+		return wake_up_common(task, pend_state, data);
+}
 
 
 

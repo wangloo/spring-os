@@ -48,6 +48,16 @@ static inline void task_set_resched(struct task *task)
 struct task *task_idle_pcpu(int cpuid);
 void task_suspend(void);
 void task_die(void);
+int task_ready(struct task *task, int preempt);
 paddr_t task_ttbr_value(struct task *task);
 int create_idle_task(void);
 void start_system_task(void);
+struct task *create_task(char *name,
+		task_func_t func,
+		size_t stk_size,
+		void *usp,
+		int prio,
+		int aff,
+		unsigned long opt,
+		void *arg);
+void do_for_all_task(void (*hdl)(struct task *task));

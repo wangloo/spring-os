@@ -380,6 +380,12 @@ int pagetable_map(page_table_t *pagetable,
   return map_pgd_range(pagetable, va, pa, size, flags);
 }
 
+int pagetable_unmap(page_table_t *pagetable, 
+      vaddr_t start, vaddr_t end, int flags)
+{
+  assert(0);
+}
+
 
 paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
 {

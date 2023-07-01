@@ -160,8 +160,23 @@ static void task_delaytimer_timeout_handler(unsigned long data)
 paddr_t task_ttbr_value(struct task *task)
 {
 	struct vspace *vs = task->vs;
-
+  // printf("%p : 0x%lx\n", vs->pgdp, vs->asid); 
+  printf("vs->asid: %d\n", vs->asid);
 	return (paddr_t)vtop(vs->pgdp) | ((paddr_t)vs->asid << 48);
+}
+
+void do_for_all_task(void (*hdl)(struct task *task))
+{
+  struct task *task;
+	int idx;
+
+	// get the tid_lock ?
+	bitmap_for_each_set_bit(idx, tid_map, BITMAP_SIZE(OS_NR_TASKS)) {
+		task = os_task_table[idx];
+		if (!task)
+			continue;
+		hdl(task);
+	}
 }
 
 static void task_init(struct task *task, char *name, void *stack,
@@ -238,9 +253,8 @@ static struct task *do_create_task(char *name,
 		kfree(task);
 		return NULL;
 	}
-
+  
 	task_init(task, name, stack, stk_size, prio, tid, aff, opt, arg);
-
 	return task;
 }
 
@@ -271,7 +285,7 @@ struct task *__create_task(char *name,
 	tid = alloc_tid();
 	if (tid < 0)
 		return NULL;
-
+  
 	preempt_disable();
 
 	task = do_create_task(name, func, stk_size, prio,
@@ -281,11 +295,14 @@ struct task *__create_task(char *name,
 		preempt_enable();
 		return NULL;
 	}
+    
 
-	task_create_hook(task, arg);
+	// task_create_hook(task, arg);
+  // TODO: `  暂时先做成这样， 后期也是做成hook的形式
+  extern int process_task_create_hook(void *item, void *context);
+  process_task_create_hook(task, arg);
 
 	arch_init_task(task, (void *)func, usp, task->pdata);
-
 	/*
 	 * start the task if need auto started.
 	 */
@@ -317,7 +334,7 @@ struct task *create_task(char *name,
 		else
 			prio = OS_PRIO_DEFAULT;
 	}
-
+  
 	return __create_task(name, func, stk_size, usp,
 			prio, aff, opt, arg);
 }
