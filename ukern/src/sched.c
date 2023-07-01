@@ -123,7 +123,8 @@ static struct task *pick_next_task(struct pcpu *pcpu)
 int select_task_run_cpu(void)
 {
   // TODO
-  return NR_CPUS - 1;
+  return 0;
+  // return NR_CPUS - 1;
 }
 
 static void switch_to_task(struct task *cur, struct task *next)
@@ -173,7 +174,7 @@ static void switch_to_task(struct task *cur, struct task *next)
   smp_wmb();
 
   // do_hooks(next, NULL, OS_HOOK_TASK_SWITCH_TO); // FIXME
-  // arch_task_sched_in(next); // FIXME
+  arch_task_sched_in(next);
 }
 
 

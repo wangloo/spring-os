@@ -1,5 +1,6 @@
 #include <string.h>
 #include <asm/arm64_common.h>
+#include <arm64_sysreg.h>
 #include <task.h>
 
 // 内核栈的顶存储硬件上下文
@@ -18,7 +19,6 @@ void arch_init_task(void *task, void *entry, void *user_sp, void *arg)
   regs->sp_el0 = (uint64_t)user_sp;
   regs->elr = (uint64_t)entry;
   regs->x18 = (uint64_t)task;
-  
 
   if (tsk->flags & TASK_FLAGS_KERNEL) {
     /*
@@ -44,9 +44,25 @@ void arch_init_task(void *task, void *entry, void *user_sp, void *arg)
     tsk->cpu_context.tpidrro_el0 = (uint64_t)tsk->pid << 32 | (tsk->tid);
     tsk->cpu_context.ttbr_el0 = task_ttbr_value(task);
         
+    printf("task: %s's stack_base: 0x%lx\n", tsk->name, tsk->stack_base);
+    printf("addr of regs->spsr: 0x%lx\n", regs->spsr);
 
   }
   
+}
+
+void arch_task_sched_in(void *task)
+{
+  struct task *tsk = (struct task *)task;
+	struct cpu_context *c = &tsk->cpu_context;
+  
+	if (tsk->flags & TASK_FLAGS_KERNEL)
+    return;
+
+	write_sysreg(c->tpidr_el0, TPIDR_EL0);
+	write_sysreg(c->tpidrro_el0, TPIDRRO_EL0);
+
+	write_sysreg(c->ttbr_el0, TTBR0_EL1);
 }
 
 void arch_set_task_user_stack(void *task, unsigned long stack)
@@ -61,4 +77,5 @@ void arch_set_task_entry_point(void *task, long entry)
   struct task *tsk = (struct task *)task;
   gp_regs *regs = stack_to_gp_regs(tsk->stack_top);
   regs->elr = entry;
+  printf("$$ addr of regs->elf: 0x%lx, val: 0x%lx\n", &regs->elr, regs->elr);
 }
