@@ -96,10 +96,11 @@ typedef struct _page_table {
   pte_t entry[PTP_ENTRIES];
 } page_table_t __attribute__((aligned(PAGE_SIZE)));
 
+typedef void *(*pgtable_alloc_func_t)(void);
 
 page_table_t *kernel_pgd_base(void);
 int pagetable_map(page_table_t *pagetable, 
-      vaddr_t va, paddr_t pa, size_t size, int flags);
+      vaddr_t va, paddr_t pa, size_t size, int flags, pgtable_alloc_func_t pgtable_alloc);
 int pagetable_unmap(page_table_t *pagetable, 
       vaddr_t start, vaddr_t end, int flags);
 paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va);

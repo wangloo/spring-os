@@ -102,6 +102,12 @@ void *get_free_page(int flag)
   return get_free_pages(1, flag);
 }
 
+// _q means no paramter
+void *get_free_page_q(void)
+{
+  return get_free_page(0);
+}
+
 
 
 int free_pages(void *addr)

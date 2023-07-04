@@ -37,14 +37,49 @@ pagetable_base	.req	x23		// store the pagetable for page allocation
 #define HOST_TABLE_DES	(S1_DES_TABLE | S1_TABLE_UAP | S1_TABLE_UXN)
 #define HOST_1G_BLK_ATTR  (S1_DES_BLOCK | S1_ATTR_IDX(MT_NORMAL))
 
+.global map_id
+map_id:
+	/* save the lr register */
+	mov	x26, x30
+
+	/* get the base address of free memory */
+	ldr tmp , =CONFIG_KERNEL_ADDR_MASK
+	adr	pagetable_base, kernel_stack_top
+	sub pagetable_base, pagetable_base, tmp
+	ldr	pagetable_base, [pagetable_base]
+
+
+	/* kernel pgd is defined in lds */
+	mov	x1, #0
+	mov	x2, #4096
+	ldr	page_table, = id_pgtable
+	sub page_table, page_table, tmp
+	mov	x0, page_table
+	bl	memset
+
+	// boot memory must at 0 - 4GB space, here will
+	// alloc all the 4GB memory's PUD
+	bl	build_id_page_table
+
+
+__map_boot_code:
+	ldr	vaddr, =__start_boot_code
+	ldr	tmp, =__stop_boot_code
+	sub	size, tmp, vaddr
+	mov	paddr, vaddr
+	ldr	pte_attr, =BOOTMEM_CODE_ATTR
+	bl	build_normal_pte_table
+
+	ret x26
+
 .global	map_boot_mem
 map_boot_mem:
 	/* save the lr register */
 	mov	x26, x30
 
 	/* get the base address of free memory */
-	adr	pagetable_base, kernel_stack_top
-	ldr	pagetable_base, [pagetable_base]
+	// adr	pagetable_base, kernel_stack_top
+	// ldr	pagetable_base, [pagetable_base]
 
 	/* kernel pgd is defined in lds */
 	mov	x1, #0
@@ -222,6 +257,48 @@ exit_loop:
 
 
 
+// 4-level identify pagetable
+
+build_id_page_table:
+	mov	x25, x30
+
+	// identify map 2M is enough
+	// so need 2 pages(1 pud and 1 pmd)
+	mov	x3, #2
+	mov	ttb0_pud, pagetable_base
+	ldr	x2, =(4096 * 2)  // 2 pages
+	add	pagetable_base, pagetable_base, x2
+	mov	x0, ttb0_pud
+	mov	x1, #0
+	bl	memset // clear 2 pages
+
+	// pgd has 1 entry(idx: 0)
+	mov	tmp, ttb0_pud
+	mov	pte_index, 0
+	ldr	x1, =HOST_TABLE_DES
+
+	orr	pte_value, tmp, x1
+	str	pte_value, [page_table, pte_index, lsl #3]
+
+	// pud has 1 entry(idx: 1)
+	add ttb0_pmd, ttb0_pud, #0x1000
+	mov	tmp, ttb0_pmd
+	mov	pte_index, 1
+	ldr	x1, =HOST_TABLE_DES
+
+	orr	pte_value, tmp, x1
+	str	pte_value, [ttb0_pud, pte_index, lsl #3]
+
+	// pmd has 1 entry(idx: 0)
+	add ttb0_pt, ttb0_pmd, #0x1000
+	mov tmp, ttb0_pt
+	mov pte_index, 0
+	ldr x1, =HOST_TABLE_DES
+	orr	pte_value, tmp, x1
+	str	pte_value, [ttb0_pmd, pte_index, lsl #3]
+
+
+	ret x25
 
 
 // 4-level pagetable:

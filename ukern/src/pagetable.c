@@ -32,7 +32,7 @@ static inline void set_pgde(pte_t *pgdep, pte_t new_pgde)
   __dsb(ishst);
 }
 
-static void pagetable_change_pgde(pte_t *pgdep, void *addr, int flags)
+static void pagetable_change_pgde(pte_t *pgdep, void *addr, u64 flags)
 {
   u64 attr = 0;
 
@@ -251,7 +251,7 @@ static int map_pt_range(page_table_t *pt,
 }
 
 static int map_pmd_range(page_table_t *pmd, 
-              vaddr_t va, paddr_t pa, size_t size, int flags)
+              vaddr_t va, paddr_t pa, size_t size, int flags, pgtable_alloc_func_t pgtable_alloc)
 {
   pte_t *pmdep;
   void *pt;
@@ -268,7 +268,7 @@ static int map_pmd_range(page_table_t *pmd,
       
       map_size = size > PMD_SIZE ? PMD_SIZE : size;
       if (pte_is_null(*pmdep)) {
-        pt = get_free_page(0);
+        pt = pgtable_alloc();
         if (!pt)
           return -ENOMEM;
         memset(pt, 0, PAGE_SIZE);
@@ -292,7 +292,7 @@ static int map_pmd_range(page_table_t *pmd,
 }
 
 static int map_pud_range(page_table_t *pud, 
-              vaddr_t va, paddr_t pa, size_t size, int flags)
+              vaddr_t va, paddr_t pa, size_t size, int flags, pgtable_alloc_func_t pgtable_alloc)
 {
   pte_t *pudep;
   void *pmd;
@@ -309,7 +309,7 @@ static int map_pud_range(page_table_t *pud,
     else {
       map_size = size >= PUD_SIZE ? PUD_SIZE : size;
       if (pte_is_null(*pudep)) {
-        pmd = get_free_page(0);
+        pmd = pgtable_alloc();
         if (!pmd)
           return -ENOMEM;
         memset(pmd, 0, PAGE_SIZE);
@@ -318,7 +318,7 @@ static int map_pud_range(page_table_t *pud,
       else {
         pmd = (void *)ptov(pte_table_addr(*pudep));
       }
-      ret = map_pmd_range(pmd, va, pa, map_size, flags);
+      ret = map_pmd_range(pmd, va, pa, map_size, flags, pgtable_alloc);
       if (ret)
         return ret;
 
@@ -333,8 +333,8 @@ static int map_pud_range(page_table_t *pud,
 }
 
 
-static int map_pgd_range(page_table_t *pagetable, 
-        vaddr_t va, paddr_t pa, size_t size, int flags)
+static int map_pgd_range(page_table_t *pagetable, vaddr_t va, paddr_t pa, 
+              size_t size, int flags, pgtable_alloc_func_t pgtable_alloc)
 {
   pte_t *pgdep;
   void *pud;
@@ -344,7 +344,7 @@ static int map_pgd_range(page_table_t *pagetable,
   pgdep = &pagetable->entry[pgd_index(va)];
   do {
     if (pte_is_null(*pgdep)) {
-      pud = get_free_page(0);
+      pud = pgtable_alloc();
       if (!pud)
         return -ENOMEM;
       memset(pud, 0, PAGE_SIZE);
@@ -355,7 +355,7 @@ static int map_pgd_range(page_table_t *pagetable,
     }
 
     map_size = size > PGD_SIZE ? PGD_SIZE : size;
-    ret = map_pud_range(pud, va, pa, map_size, flags);
+    ret = map_pud_range(pud, va, pa, map_size, flags, pgtable_alloc);
     if (ret) 
       return ret;
 
@@ -367,9 +367,8 @@ static int map_pgd_range(page_table_t *pagetable,
 
   return 0;
 }
-
-int pagetable_map(page_table_t *pagetable, 
-      vaddr_t va, paddr_t pa, size_t size, int flags)
+int pagetable_map(page_table_t *pagetable, vaddr_t va, paddr_t pa, 
+      size_t size, int flags, pgtable_alloc_func_t pgtable_alloc)
 {
   // 在这里检查后，所有的内部函数都不再检查合法性
   assert(size > 0);
@@ -377,7 +376,7 @@ int pagetable_map(page_table_t *pagetable,
   assert(pa < PA_MAX);
   assert(IS_PAGE_ALIGN(va) && IS_PAGE_ALIGN(size) && IS_PAGE_ALIGN(pa));
   
-  return map_pgd_range(pagetable, va, pa, size, flags);
+  return map_pgd_range(pagetable, va, pa, size, flags, pgtable_alloc);
 }
 
 int pagetable_unmap(page_table_t *pagetable, 

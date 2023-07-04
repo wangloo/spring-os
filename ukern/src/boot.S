@@ -45,17 +45,10 @@ _on_el1:
   dsb    nsh
   isb
 
-  /* setup exception vector */
-  ldr    x1, =elx_vectors
-  msr    vbar_el1, x1
 
-  /* enable Abort now for early system abort */
-  msr    daifclr, #4
-  dsb    nsh
-  isb
 
   /* invalid the dcache and flush the tlb */
-  bl     inv_dcache_all
+  //bl     inv_dcache_all
   dsb    sy
   isb
 
@@ -82,6 +75,8 @@ _on_el1:
   dsb    nsh
 
   ldr    x0, =__stop_kernel
+  ldr    x4, =CONFIG_KERNEL_ADDR_MASK
+  sub    x0, x0, x4
   adr    x1, kernel_stack_top
   adr    x2, kernel_bootmem_base
   adr    x3, kernel_stack_bottom
@@ -107,24 +102,28 @@ _on_el1:
   sub    x0, x0, x19, lsl #CONFIG_TASK_STACK_SHIFT
   mov    sp, x0
 
-  // clean kernel bss
-  ldr    x0, =__start_bss
-  mov    x1, #0
-  ldr    x2, =__stop_bss
-  sub    x2, x2, x0
-  bl     memset
+
+
+  // early print
+  //bl console_init
 
   // map the boot memory when booting
-  bl     map_boot_mem
+  //bl     map_boot_identify
+  bl     map_id
+  //bl     map_boot_mem
   dsb    ishst
   isb
 
-
-
   /* setup the el1 page table 
    TODO: why ttbr 0? */
+  ldr    x4, =CONFIG_KERNEL_ADDR_MASK
   ldr    x1, = __kernel_page_table
-  msr    ttbr0_el1, x1
+  sub    x1, x1, x4
+  ldr    x2, = id_pgtable
+  sub    x2, x2, x4
+  mov x0, x2
+  //bl DBG_pagetable
+  msr    ttbr0_el1, x2
   msr    ttbr1_el1, x1
   dsb    nsh
   isb
@@ -151,9 +150,22 @@ mmu_on:
   dsb    sy
   isb
 
-  // clear_ttbr0
-  dsb    sy
+  /* setup exception vector */
+  ldr    x1, =elx_vectors
+  msr    vbar_el1, x1
+
+  /* enable Abort now for early system abort */
+  msr    daifclr, #4
+  dsb    nsh
   isb
+
+
+  // clean kernel bss
+  ldr    x0, =__start_bss
+  mov    x1, #0
+  ldr    x2, =__stop_bss
+  sub    x2, x2, x0
+  bl     memset
 
   bl    kernel_init    // never return.
 dead_loop:
@@ -168,6 +180,7 @@ boot_panic:
  * 相当于定义五个变量, 存储一些地址
  */
   .data
+  .section __boot_data, "aw"
   .global kernel_start
   .global kernel_bootmem_base
   .global kernel_stack_top

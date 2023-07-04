@@ -53,5 +53,6 @@ struct page_section {
 void page_section_add_kern(paddr_t base, int pages);
 struct page_meta *alloc_pages(int pages, int flags);
 void *get_free_page(int flag);
+void *get_free_page_q(void);
 void *get_free_pages(int pages, int flag);
 int free_pages(void *addr);

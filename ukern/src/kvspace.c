@@ -76,7 +76,7 @@ int kern_map_create(vaddr_t va, paddr_t pa,
 	  return -EINVAL;
 
   // spin_lock(&host_vspace.lock);
-  ret = pagetable_map(kvspace.pgdp, va, pa, size, flags);
+  ret = pagetable_map(kvspace.pgdp, va, pa, size, flags, get_free_page_q);
   // spin_unlock(&host_vspace.lock);
   return ret;
 }

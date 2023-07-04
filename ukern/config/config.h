@@ -1,6 +1,7 @@
 #pragma once
 
 // software config
+#define CONFIG_KERNEL_ADDR_MASK     0xffffff8000000000
 #define CONFIG_TASK_STACK_SIZE      8192
 #define CONFIG_TASK_STACK_SHIFT     13
 #define CONFIG_NR_TASKS             128

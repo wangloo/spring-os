@@ -108,7 +108,6 @@ void pcpu_sched_init(struct pcpu *pcpu)
 
 void pcpu_irqwork(int pcpu_id)
 {
-  printf("call pcpu_irqwork()\n");
 	send_sgi(CONFIG_KERNEL_IRQWORK_IRQ, pcpu_id);
 }
 

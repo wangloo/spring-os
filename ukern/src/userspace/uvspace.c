@@ -60,7 +60,7 @@ int user_map_create(struct process *proc, unsigned long vaddr,
 		return -EINVAL;
 
 	// spin_lock(&vs->lock); // FIXME
-	ret = pagetable_map(vs->pgdp, vaddr, phy, size, flags);
+	ret = pagetable_map(vs->pgdp, vaddr, phy, size, flags, get_free_page_q);
 	// spin_unlock(&vs->lock);
 
 	return ret;
