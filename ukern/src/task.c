@@ -354,8 +354,9 @@ int create_idle_task(void)
 
   task_init(task, task_name, NULL, 0, OS_PRIO_IDLE, tid, cpuid,
             TASK_FLAGS_IDLE | TASK_FLAGS_KERNEL, NULL);
-  task->stack_top =
-      (void *)ptov(kernel_stack_top) - (cpuid << CONFIG_TASK_STACK_SHIFT);
+  assert(0);
+  // task->stack_top =
+  //     (void *)ptov(kernel_stack_top) - (cpuid << CONFIG_TASK_STACK_SHIFT);
   task->stack_bottom = task->stack_top - TASK_STACK_SIZE;
   task->state = TASK_STATE_RUNNING;
   task->cpu = cpuid;

@@ -10,8 +10,9 @@ void mm_init(void)
   paddr_t kmem_base;
   int kmem_size;
 
-  kmem_base = align_page_up(kernel_end);
-  kmem_size = CONFIG_KERNEL_RAM_SIZE - (kmem_base - kernel_start);
+  assert(0);
+  // kmem_base = align_page_up(kernel_end);
+  // kmem_size = CONFIG_KERNEL_RAM_SIZE - (kmem_base - kernel_start);
   assert(IS_PAGE_ALIGN(kmem_base) && IS_PAGE_ALIGN(kmem_size));
   page_section_add_kern(kmem_base, kmem_size >> PAGE_SHIFT);
 

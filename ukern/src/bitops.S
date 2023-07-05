@@ -26,7 +26,7 @@
 
 #include <asm/asm_macro.S.h>
 
-	.section __asm_code, "ax"
+	.section .text, "ax"
 
 	.global test_bit
 
@@ -82,7 +82,7 @@
 	testop	test_and_clear_bit, bic
 	testop	test_and_set_bit, orr
 
-func test_bit
+kfunc test_bit
 	and	w3, w0, #31		// Get bit offset
 	eor	w0, w0, w3		// Clear low bits
 	add	x1, x1, x0, lsr #3	// Get word offset
@@ -90,4 +90,4 @@ func test_bit
 	lsr	w0, w2, w3		// Save old value of bit
 	and	w0, w0, #1
 	ret
-endfunc test_bit
+endkfunc test_bit

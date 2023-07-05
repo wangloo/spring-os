@@ -43,6 +43,7 @@ CFLAGS += -Wall -g -O1   \
 			 		--static -nostdlib -fno-builtin \
 					-Wno-unused-function \
 					-ffixed-x18
+					
 LDFLAGS += -T $(SPRING_LDS)
 
 -include kern_macro.mk

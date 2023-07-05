@@ -4,8 +4,8 @@ ENTRY(_start)
 SECTIONS
 {
 
-  . = CONFIG_KERNEL_ENTRY_ADDR+CONFIG_KERNEL_ADDR_MASK;
-  bootcode :AT(CONFIG_KERNEL_ENTRY_ADDR)
+  . = CONFIG_KERNEL_ENTRY_ADDR;
+  bootcode :
   {
     __start_boot_code = .;
     KEEP(*(__start_up))
@@ -23,9 +23,10 @@ SECTIONS
     __stop_boot_data = .;
   }
 
-
+  . = ALIGN(0x20000);
+  . = . + CONFIG_KERNEL_ADDR_MASK;
   __start_code = .;
-  .text : 
+  .text : AT(ADDR(.text)-CONFIG_KERNEL_ADDR_MASK)
   {
     *(.text)
   }
