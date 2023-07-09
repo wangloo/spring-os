@@ -1,11 +1,15 @@
-#ifndef __LIBC_PROCESS_INFO_H__
-#define __LIBC_PROCESS_INFO_H__
+#pragma once
 
-#include <inttypes.h>
-#include <minos/procinfo_uapi.h>
+#define PROC_NAME_SIZE 256
 
-int sys_proccnt(void);
-int sys_procinfo_handle(void);
-int sys_taskstat_handle(void);
-
-#endif
+struct task_stat {
+	int tid;
+	int root_tid;
+	int pid;
+	int state;
+	int cpu;
+	int cpu_usage;
+	int prio;
+	unsigned long long start_ns;
+	char cmd[PROC_NAME_SIZE];
+};

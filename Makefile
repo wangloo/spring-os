@@ -92,7 +92,7 @@ libc:
 prepare: objdirs
 	$(Q) cd libc; ./build.sh $(OUT_DIR) $(ARCH) $(CROSS_COMPILE)
 #	$(Q) cd kernel; make $(TARGET_PLATFORM)_defconfig
-	cp -f ukern/inc/uapi/* libc/include/ukern/
+	cp -f generic/include/uapi/* libc/include/minos/
 
 run: ramdisk kernel
 	bash ./tools/run-qemu.sh
