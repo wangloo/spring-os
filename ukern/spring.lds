@@ -19,6 +19,13 @@ SECTIONS
   bootdata : 
   {
     __start_boot_data = .;
+
+    /* kerenl page table */
+    . = ALIGN(4096);
+    __kernel_page_table = .;
+    . = . + 4096;
+    __identity_page_table = .;
+    . = . + 4096;
     KEEP(*(__boot_data))
     __stop_boot_data = .;
   }
@@ -38,11 +45,6 @@ SECTIONS
   __start_data = .;
   .data : 
   {
-    /* kerenl page table */
-    . = ALIGN(4096);
-    __kernel_page_table = .;
-    . = . + 4096;
-
     *(.data)
   }
 

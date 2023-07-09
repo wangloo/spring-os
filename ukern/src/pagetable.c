@@ -421,7 +421,9 @@ paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
 
 page_table_t *kernel_pgd_base(void)
 {
-  extern unsigned char __kernel_page_table;
+  // extern unsigned char __kernel_page_table;
 
-  return (page_table_t *)&__kernel_page_table;
+  // return (page_table_t *)&__kernel_page_table;
+  assert(0);
+  return NULL;
 }

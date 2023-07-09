@@ -1,6 +1,7 @@
 #include <console.h>
 #include <uart_pl011.h>
 #include <config/config.h>
+#include <addrspace.h>
 
 struct console global_console = {
   .name = "pl011",
@@ -13,7 +14,7 @@ struct console *cons = &global_console;
 void console_init()
 {
   if (cons->init)
-    cons->init(CONFIG_UART_BASE);
+    cons->init(ptov(CONFIG_UART_BASE));
 }
 
 void console_putc(char ch)

@@ -48,7 +48,7 @@ _on_el1:
 
 
   /* invalid the dcache and flush the tlb */
-  //bl     inv_dcache_all
+  bl     inv_dcache_all
   dsb    sy
   isb
 
@@ -75,8 +75,6 @@ _on_el1:
   dsb    nsh
 
   ldr    x0, =__stop_kernel
-  ldr    x4, =CONFIG_KERNEL_ADDR_MASK
-  sub    x0, x0, x4
   adr    x1, kernel_stack_top
   adr    x2, kernel_bootmem_base
   adr    x3, kernel_stack_bottom
@@ -110,19 +108,15 @@ _on_el1:
   // map the boot memory when booting
   //bl     map_boot_identify
   bl     map_id
+  bl     map_kern
   //bl     map_boot_mem
   dsb    ishst
   isb
 
   /* setup the el1 page table 
    TODO: why ttbr 0? */
-  ldr    x4, =CONFIG_KERNEL_ADDR_MASK
   ldr    x1, = __kernel_page_table
-  sub    x1, x1, x4
-  ldr    x2, = id_pgtable
-  sub    x2, x2, x4
-  mov x0, x2
-  //bl DBG_pagetable
+  ldr    x2, = __identity_page_table
   msr    ttbr0_el1, x2
   msr    ttbr1_el1, x1
   dsb    nsh

@@ -37,23 +37,108 @@ pagetable_base	.req	x23		// store the pagetable for page allocation
 #define HOST_TABLE_DES	(S1_DES_TABLE | S1_TABLE_UAP | S1_TABLE_UXN)
 #define HOST_1G_BLK_ATTR  (S1_DES_BLOCK | S1_ATTR_IDX(MT_NORMAL))
 
+.global map_kern
+map_kern:
+	/* save the lr register */
+	mov	x26, x30
+
+	/* kernel pgd is defined in lds */
+	mov	x1, #0
+	mov	x2, #4096
+	ldr	page_table, = __kernel_page_table
+	mov	x0, page_table
+	bl	memset
+
+	// boot memory must at 0 - 4GB space, here will
+	// alloc all the 4GB memory's PUD
+	bl	build_page_table
+
+	// map the code section rx
+__map_kcode_section:
+	ldr	vaddr, =__start_code
+	ldr	tmp, =__stop_code
+	sub	size, tmp, vaddr
+	ldr tmp, =CONFIG_KERNEL_ADDR_MASK // tmp reg is free now!
+	sub vaddr, vaddr, tmp
+	mov	paddr, vaddr
+	ldr	pte_attr, =BOOTMEM_CODE_ATTR
+	bl	build_normal_pte_table
+
+	// map the data section
+__map_kdata_section:
+	ldr	vaddr, =__start_data
+	ldr	tmp, =__stop_data
+	sub	size, tmp, vaddr
+	ldr tmp, =CONFIG_KERNEL_ADDR_MASK // tmp reg is free now!
+	sub vaddr, vaddr, tmp
+	mov	paddr, vaddr
+	ldr	pte_attr, =BOOTMEM_DATA_ATTR
+	bl	build_normal_pte_table
+
+	// map the RO data section like symbol and string
+	// RO section is the last section in the dts, so the
+	// the range is from __rodata_start to kernel_bootmem_base
+__map_krodata_section:
+	ldr	vaddr, =__start_rodata
+	adr	tmp, kernel_bootmem_base
+	ldr	tmp, [tmp]
+	sub	size, tmp, vaddr
+	ldr tmp, =CONFIG_KERNEL_ADDR_MASK // tmp reg is free now!
+	sub vaddr, vaddr, tmp
+	mov	paddr, vaddr
+	ldr	pte_attr, =BOOTMEM_DATA_RO_ATTR
+	bl	build_normal_pte_table
+
+	// map the left 4K pages
+	// TODO: 总结包括什么，目前可知stack是包括在内的
+	adr	vaddr, kernel_bootmem_base
+	ldr	vaddr, [vaddr]
+	ldr tmp, =CONFIG_KERNEL_ADDR_MASK // tmp reg is free now!
+	sub vaddr, vaddr, tmp
+	mov	tmp, vaddr
+	ldr	entry_mask, =0x1fffff
+	add	tmp, tmp, entry_mask
+	mvn	entry_align, entry_mask
+	and	tmp, tmp, entry_align
+	mov	paddr, vaddr
+	sub	size, tmp, vaddr
+	ldr	pte_attr, =BOOTMEM_DATA_ATTR
+	bl	build_normal_pte_table
+
+	// map the UART memory for early log rw-device
+	ldr	vaddr, =CONFIG_UART_BASE
+	mov	paddr, vaddr
+	ldr	size, =CONFIG_UART_IO_SIZE
+	ldr	pte_attr, =BOOTMEM_IO_BLK_ATTR
+	bl	build_io_pte_table
+
+	// update the pagetable base
+	adr	x0, kernel_end
+	ldr tmp, =CONFIG_KERNEL_ADDR_MASK // tmp reg is free now!
+	sub pagetable_base, pagetable_base, tmp
+	str	pagetable_base, [x0]
+
+	ret	x26
+
+
+
 .global map_id
 map_id:
 	/* save the lr register */
 	mov	x26, x30
 
 	/* get the base address of free memory */
-	ldr tmp , =CONFIG_KERNEL_ADDR_MASK
+	
 	adr	pagetable_base, kernel_stack_top
-	sub pagetable_base, pagetable_base, tmp
 	ldr	pagetable_base, [pagetable_base]
+	ldr tmp , =CONFIG_KERNEL_ADDR_MASK
+	sub pagetable_base, pagetable_base, tmp
 
 
 	/* kernel pgd is defined in lds */
 	mov	x1, #0
 	mov	x2, #4096
-	ldr	page_table, = id_pgtable
-	sub page_table, page_table, tmp
+	ldr	page_table, = __identity_page_table
 	mov	x0, page_table
 	bl	memset
 
@@ -70,6 +155,14 @@ __map_boot_code:
 	ldr	pte_attr, =BOOTMEM_CODE_ATTR
 	bl	build_normal_pte_table
 
+	// map boot data, including ttbr0, ttbr1 and boot vars
+__map_boot_data:
+	ldr vaddr, = __start_boot_data
+	ldr tmp, =__stop_boot_data
+	sub size, tmp, vaddr
+	mov paddr, vaddr
+	ldr pte_attr, =BOOTMEM_DATA_ATTR
+	bl build_normal_pte_table
 	ret x26
 
 .global	map_boot_mem
@@ -263,14 +356,14 @@ build_id_page_table:
 	mov	x25, x30
 
 	// identify map 2M is enough
-	// so need 2 pages(1 pud and 1 pmd)
-	mov	x3, #2
+	// so need 3 pages(1 pud and 1 pmd and 1pt)
+	mov	x3, #3
 	mov	ttb0_pud, pagetable_base
-	ldr	x2, =(4096 * 2)  // 2 pages
+	ldr	x2, =(4096 * 3)  // 3 pages
 	add	pagetable_base, pagetable_base, x2
 	mov	x0, ttb0_pud
 	mov	x1, #0
-	bl	memset // clear 2 pages
+	bl	memset // clear 3 pages
 
 	// pgd has 1 entry(idx: 0)
 	mov	tmp, ttb0_pud
@@ -344,6 +437,8 @@ loop_fill_pud:
 	// other memory will mapped as 2M block
 	adr	vaddr, kernel_bootmem_base
 	ldr	vaddr, [vaddr]
+	ldr tmp, =CONFIG_KERNEL_ADDR_MASK
+	sub vaddr, vaddr, tmp
 	mov	tmp, vaddr
 	ldr	entry_mask, =0x1fffff  // 2M mask
 	add	tmp, tmp, entry_mask
