@@ -19,19 +19,26 @@ SECTIONS
   bootdata : 
   {
     __start_boot_data = .;
+    KEEP(*(__boot_data))
 
-    /* kerenl page table */
+    /* level-0 pagetable */
     . = ALIGN(4096);
     __kernel_page_table = .;
     . = . + 4096;
     __identity_page_table = .;
     . = . + 4096;
-    KEEP(*(__boot_data))
+
+    /* 因为 __start_kernel 需要对齐要2M，所以不出意外的话，
+       这里会有一片相当大的空洞，可以作为 pagetable pool用 */
+    __pagetable_base = .;
+    /* 为boot和kernel的页表预留20页应该够了 */
+    . = . + 4096 * 20;   
     __stop_boot_data = .;
   }
 
   . = ALIGN(0x20000);
   . = . + CONFIG_KERNEL_ADDR_MASK;
+  __start_kernel = .;
   __start_code = .;
   .text : AT(ADDR(.text)-CONFIG_KERNEL_ADDR_MASK)
   {
