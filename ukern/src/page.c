@@ -66,7 +66,7 @@ alloc_pages_from_section(struct page_section *ps, int pages, int flag)
   page = ps->pages + pos;
   page->count = pages;
   page->pa = (void *)ps->pa_base + pos*PAGE_SIZE;
-  printf("allocate %d pages, base pa: 0x%lx\n", pages, page->pa);
+  printf("page: allocate %d page(s), base pa: 0x%lx\n", pages, page->pa);
   return page;
 }
 
@@ -85,15 +85,21 @@ struct page_meta *alloc_pages(int pages, int flags)
 }
 
 
-// DONE
+/**
+ * @brief Get the free pages object
+ * 
+ * @param [in] pages 
+ * @param [in] flag 
+ * @return     void*  virtual address of page
+ */
 void *get_free_pages(int pages, int flag)
 {
   struct page_meta *page = NULL;
 
   page = alloc_pages(pages, flag);
   if (page)
-    return page->pa;
-    
+    return (void *)ptov((paddr_t)page->pa);
+  
   return NULL;
 }
 

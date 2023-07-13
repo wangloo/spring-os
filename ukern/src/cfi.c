@@ -3,6 +3,7 @@
 #include <string.h>
 #include <utils.h>
 #include <assert.h>
+#include <addrspace.h>
 
 /////////////////////////////////////////
 // depending on size of a word
@@ -32,7 +33,7 @@
 #define CFI_PAGE_SZ               QEMU_EXPECTED_PAGE_SZ
 #define CFI_PAGE_SZ_WORD         (CFI_PAGE_SZ / WSIZE)
 
-volatile u32 *cfi_pflash_base = (volatile u32 *)CONFIG_PFLASH_BASE;
+volatile u32 *cfi_pflash_base = (volatile u32 *)(ptov(CONFIG_PFLASH_BASE));
 static u32 capacity;
 static u32 eregnum;
 static u32 eblksz;
@@ -93,7 +94,7 @@ int cfi_query(void)
     
     // query device size
     capacity = 1u << cfi_query_1b(0x27);
-    printf("device size: 0x%x\n", capacity);
+    printf("cfi: device size: 0x%x\n", capacity);
         
     // query page bit(max number of bytes in buffer write)
     pgsz = 1u << cfi_query_2b(0x2A);
@@ -112,7 +113,7 @@ int cfi_query(void)
     eblksz = cfi_query_2b(0x2f);
     eblksz *= 256;
     assert(eblksz == QEMU_EXPECTED_ERASE_BLOCK_SZ);
-    printf("erase block size: 0x%x\n", eblksz);
+    printf("cfi: erase block size: 0x%x\n", eblksz);
 
     CFI_PUTW(0, 0xff);
     return 0;
@@ -122,6 +123,7 @@ int cfi_init(void)
 {
     if (cfi_query() < 0)
         return -1;
+    printf("cfi: init ok\n");
     return 0;
 }
    

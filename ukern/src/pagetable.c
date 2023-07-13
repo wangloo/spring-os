@@ -6,7 +6,7 @@
 #include <string.h>
 #include <addrspace.h> // 临时起名
 
-#define VA_MAX (1ul << 48)
+#define VA_MAX (~((unsigned long)0))
 #define PA_MAX (1ul << 48)
 #define WRITE_ONCE(x, y) (x) = (y)
 
@@ -277,7 +277,7 @@ static int map_pmd_range(page_table_t *pmd,
       else {
         pt = (void *)ptov(pte_table_addr(*pmdep));
       }
-      printf("va: 0x%lx, size: 0x%lx, pt: 0x%lx\n",va, size, pt);
+      // printf("va: 0x%lx, size: 0x%lx, pt: 0x%lx\n",va, size, pt);
       ret = map_pt_range(pt, va, pa, map_size, flags);
       if (ret)
         return ret;
@@ -353,7 +353,6 @@ static int map_pgd_range(page_table_t *pagetable, vaddr_t va, paddr_t pa,
     else {
       pud = (void *)ptov(pte_table_addr(*pgdep));
     }
-
     map_size = size > PGD_SIZE ? PGD_SIZE : size;
     ret = map_pud_range(pud, va, pa, map_size, flags, pgtable_alloc);
     if (ret) 
@@ -383,6 +382,7 @@ int pagetable_unmap(page_table_t *pagetable,
       vaddr_t start, vaddr_t end, int flags)
 {
   assert(0);
+  return 0;
 }
 
 
@@ -419,11 +419,15 @@ paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
 }
 
 
+/* kernel 的页表是定义在bootdata中的, 在boot_mem中做了映射 */
 page_table_t *kernel_pgd_base(void)
 {
-  // extern unsigned char __kernel_page_table;
+  vaddr_t kernel_pagetable;
 
-  // return (page_table_t *)&__kernel_page_table;
-  assert(0);
-  return NULL;
+  asm volatile (
+  "ldr %0, =__kernel_page_table\n"
+  :"=r"(kernel_pagetable)
+  );
+
+  return (page_table_t *)(ptov(kernel_pagetable));
 }

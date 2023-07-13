@@ -172,7 +172,7 @@ static int slab_refill(struct mem_pool *pool)
     int nr_obj;
     void *freelist_end;
 
-    printf("refill slab in cache: %s\n", pool->name);
+    printf("kmem: mempool <%s> need to refill\n", pool->name);
     // 从系统中索取几页 物理页面
     // page, freelist 成员会被赋值
     new = slab_alloc(pool->gfporder);
@@ -199,7 +199,7 @@ void *_mpalloc(struct mem_pool *pool)
 
     assert(pool);
 
-    printf("get memory from slab: %s\n", pool->name);
+    printf("kmem: alloc from pool: %s\n", pool->name);
 
 realloc:
     // 找到有空闲object的slab,

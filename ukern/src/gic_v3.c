@@ -7,6 +7,7 @@
 #include <cpumask.h>
 #include <assert.h>
 #include <io.h>
+#include <addrspace.h>
 
 #define NR_CPUS                 CONFIG_NR_CPUS
 #define GICD_RWP_BITMASK        BIT(31)
@@ -92,10 +93,10 @@ void gicd_gicr_map()
      * 所以这里仅仅给指针赋值即可.
      */
 
-    gicd_map = (struct gic_dist_map *)CONFIG_GICD_BASE;
+    gicd_map = (struct gic_dist_map *)(ptov(CONFIG_GICD_BASE));
     for (u64 i = 0; i < NR_CPUS; i++) {
       gicr_rd_map[i] = (struct gic_rdist_map *)
-                          (CONFIG_GICR_BASE + i*CONFIG_GICR_IO_SIZE_PERCPU);
+                          (ptov(CONFIG_GICR_BASE) + i*CONFIG_GICR_IO_SIZE_PERCPU);
       gicr_sgi_map[i] = (struct gic_rdist_sgi_ppi_map *)
                           ((void *)gicr_rd_map[i] + CONFIG_GICR_RD_SIZE);
     }
@@ -140,7 +141,7 @@ static void gicd_init(void)
     /* Calculate MAX SPI number */
     typer = ioread32(&gicd_map->typer);
     nr_lines = 32 * ((typer&0x1f) + 1);
-    printf("Max spi number: %d\n", nr_lines);
+    printf("gicv3: max spi number: %d\n", nr_lines);
 
     /* default all SPIs to level, active low */
     for (i = SPI_MIN; i < nr_lines; i += 16) 
@@ -218,7 +219,7 @@ void gicv3_init()
     gicd_init();
     gicr_init(cpu_id());
     gicc_init();
-    printf("Init done\n");
+    printf("gicv3: init ok\n");
 }
 
 
@@ -226,7 +227,7 @@ void gicv3_secondary_init()
 {
     gicr_init(cpu_id());
     gicc_init();
-    printf("Init done\n");
+    // printf("gicv3: init ok\n");
 }
 
 

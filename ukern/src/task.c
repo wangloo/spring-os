@@ -339,6 +339,7 @@ struct task *create_task(char *name,
 			prio, aff, opt, arg);
 }
 
+void *__get_kernel_stack_top(void); // FIXME: 放到合适的位置
 int create_idle_task(void)
 {
   struct task *task;
@@ -354,9 +355,10 @@ int create_idle_task(void)
 
   task_init(task, task_name, NULL, 0, OS_PRIO_IDLE, tid, cpuid,
             TASK_FLAGS_IDLE | TASK_FLAGS_KERNEL, NULL);
-  assert(0);
-  // task->stack_top =
-  //     (void *)ptov(kernel_stack_top) - (cpuid << CONFIG_TASK_STACK_SHIFT);
+  
+  // TODO: 和 kernel 共用一个栈好吗？
+  task->stack_top =
+      __get_kernel_stack_top() - (cpuid << CONFIG_TASK_STACK_SHIFT);
   task->stack_bottom = task->stack_top - TASK_STACK_SIZE;
   task->state = TASK_STATE_RUNNING;
   task->cpu = cpuid;

@@ -401,7 +401,7 @@ int sched_init(void)
 
 
   for (i = 0; i < NR_CPUS; i++) pcpu_sched_init(get_pcpu(i));
-
+  printf("sched: init ok\n");
   return 0;
 }
 
@@ -417,6 +417,7 @@ void sched_local_init(void)
   timer_init(&pcpu->sched_timer, sched_tick_handler, (unsigned long)pcpu);
 	irq_register(CONFIG_KERNEL_IRQWORK_IRQ, irqwork_handler,
 			0, "irqwork handler", NULL);
+  printf("sched: local init ok\n");
 }
 
 

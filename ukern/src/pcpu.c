@@ -124,4 +124,6 @@ void percpu_init(void)
   assert(pcpu->stack);
   pcpu->stack += TASK_STACK_SIZE;
   pcpu->state = PCPU_STATE_RUNNING;
+  
+  printf("pcpu: init ok\n");
 }

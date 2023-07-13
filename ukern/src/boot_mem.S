@@ -53,12 +53,13 @@ prepare_map:
     ret
 
 /**
- * @brief 内核页表的建立
+ * @brief 内核页表映射的建立
  *
  * 建立的映射包括：
  * 1. kernel的代码段、数据段、bss段等
- * 2. 串口
- * 3. bootmem_base 之后的内存会以2M的大块映射，但是bootmem_base
+ * 2. boot data段，因为要访问内核页表和页表池
+ * 3. 串口
+ * 4. bootmem_base 之后的内存会以2M的大块映射，但是bootmem_base
  *    不一定是2M对齐的，于是中间的4K也是在这时被填充上映射
  */
 do_map_kern:
@@ -109,6 +110,14 @@ __map_krodata_section:
     sub    vaddr, vaddr, tmp
     mov    paddr, vaddr
     ldr    pte_attr, =BOOTMEM_DATA_RO_ATTR
+    bl     build_normal_pte_table
+
+    // map the boot data, 主要是为了访问内核的页表和页表池
+    ldr    vaddr, =__start_boot_data
+    ldr    tmp, =__stop_boot_data
+    sub    size, tmp, vaddr
+    mov    paddr, vaddr
+    ldr    pte_attr, =BOOTMEM_DATA_ATTR
     bl     build_normal_pte_table
 
     // map the UART memory for early-print

@@ -93,6 +93,8 @@ int ramdisk_init(void)
 	root = ramdisk_start + sb->inode_offset;
 	ramdisk_data = ramdisk_start + sb->data_offset;
 
+	printf("ramdisk: init ok!\n");
+
 	return 0;
 }
 

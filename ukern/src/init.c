@@ -39,7 +39,6 @@ void kernel_init()
 
   ramdisk_copy_from_flash();
   ramdisk_init();
-  printf("ramdisk OK!\n");
 
   create_idle_task();
 
