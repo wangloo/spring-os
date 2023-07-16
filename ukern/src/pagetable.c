@@ -231,42 +231,57 @@ static bool can_map_pmd_huge(pte_t pmde,
 
 
 static int map_pt_range(page_table_t *pt, 
-              vaddr_t va, paddr_t pa, size_t size, int flags)
+              vaddr_t base, vaddr_t end, paddr_t phy, int flags)
 {
-  pte_t *ptep;
-  vaddr_t end;
-  
-  end = va + size;
-  ptep = &pt->entry[pt_index(va)];
+  pte_t *ptep;  
+
+  assert(pmd_index(end-1) == pmd_index(base));
+
+  ptep = &pt->entry[pt_index(base)];
   do {
     assert(pte_is_null(*ptep));
-    pagetable_change_pte(ptep, (void *)pa, flags);
+    pagetable_change_pte(ptep, (void *)phy, flags);
 
-    va += PAGE_SIZE;
-    pa += PAGE_SIZE;
+    base += PAGE_SIZE;
+    phy += PAGE_SIZE;
     ptep += 1;
-  } while (va != end);
+    // printf("va: 0x%lx, pa: 0x%lx\n",
+      // base, phy);
+    // printf("map end: 0x%lx\n", end);
+    // printf("pt_index(base): %d\n", pt_index(base));
+  } while (base != end);
 
   return 0;
 }
 
 static int map_pmd_range(page_table_t *pmd, 
-              vaddr_t va, paddr_t pa, size_t size, int flags, pgtable_alloc_func_t pgtable_alloc)
+              vaddr_t base, paddr_t pa, size_t size, int flags, pgtable_alloc_func_t pgtable_alloc)
 {
   pte_t *pmdep;
+  vaddr_t aligned_base;
+  size_t map_size;
   void *pt;
   int ret;
-  size_t map_size;
 
-  pmdep = &pmd->entry[pmd_index(va)];
+  pmdep = &pmd->entry[pmd_index(base)];
+  aligned_base = align_up(base, PMD_SIZE);
+
+  /* 映射跨越多个pmd并且起始地址不是pmd_size对齐，此时需要
+     先将非对齐的部分进行映射 。
+
+     TODO: 其实上层的pud映射也存在这个问题， 只不过没有出现
+     映射跨越多个pud的情况，所以没有报错，有时间还是应该改正 */
+  if (aligned_base > base && aligned_base-base < size)
+    map_size = aligned_base - base;
+  else
+    map_size = size > PMD_SIZE ? PMD_SIZE : size;
+
   do {
-    if (can_map_pmd_huge(*pmdep, va, pa, size, flags)) {
+    if (can_map_pmd_huge(*pmdep, base, pa, size, flags)) {
       pagetable_change_pmde(pmdep, (void *)pa, true, flags);
-      map_size = PMD_SIZE;
     }
     else {
-      
-      map_size = size > PMD_SIZE ? PMD_SIZE : size;
+      // printf("size: 0x%lx, map_size: 0x%lx\n",size, map_size);
       if (pte_is_null(*pmdep)) {
         pt = pgtable_alloc();
         if (!pt)
@@ -277,17 +292,17 @@ static int map_pmd_range(page_table_t *pmd,
       else {
         pt = (void *)ptov(pte_table_addr(*pmdep));
       }
-      // printf("va: 0x%lx, size: 0x%lx, pt: 0x%lx\n",va, size, pt);
-      ret = map_pt_range(pt, va, pa, map_size, flags);
+      ret = map_pt_range(pt, base, base+map_size, pa, flags);
       if (ret)
         return ret;
     }
 
     // after finishing one map, update info
-    va += map_size, pa += map_size;
+    base += map_size, pa += map_size;
     size -= map_size;
-
+    map_size = size > PMD_SIZE ? PMD_SIZE : size;
   } while (pmdep++, size > 0);
+  
   return 0;
 }
 
