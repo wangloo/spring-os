@@ -23,9 +23,9 @@ endfunc __bad_mode
 	mov	sp, \tmp0
 .endm
 
-func exception_return
+kfunc exception_return
 	LOAD_PCPU_STACK x1			// load percpu stack, need ensure the irq is off.
-
+  
 	bl	sched_prepare	   // check whether need to resched. x18 will the next task.
 
 	ldr	x1, [x18, #TASK_STACK_OFFSET]	// load the running task's stack
@@ -46,7 +46,7 @@ __do_exception_return:
 endfunc exception_return
 
 
-func __sync_from_current_el
+kfunc __sync_from_current_el
   SAVE_GP_REGS
   SAVE_OTHER_REGS
   mov x0, sp   // function paramter
@@ -58,8 +58,7 @@ endfunc __sync_from_current_el
 
 
 
-
-func __sync_from_lower_el
+kfunc __sync_from_lower_el
   SAVE_GP_REGS
   mov x0, sp   // function paramter
 
@@ -70,7 +69,7 @@ endfunc __sync_from_lower_el
 
 
 
-func __irq_from_current_el
+kfunc __irq_from_current_el
   SAVE_GP_REGS
 
   // Set the irq flags into ti->flags.
@@ -96,7 +95,7 @@ endfunc __irq_from_current_el
 
 
 
-func __irq_from_lower_el
+kfunc __irq_from_lower_el
   SAVE_GP_REGS
   mov x0, sp
 
