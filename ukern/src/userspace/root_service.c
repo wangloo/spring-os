@@ -265,7 +265,7 @@ static int setup_user_memory_region(struct process *proc, struct bootdata *env)
 	env->ramdisk_start = pa2sva(CONFIG_RAMDISK_BASE);
 	env->ramdisk_end = pa2sva(CONFIG_RAMDISK_BASE + CONFIG_RAMDISK_SIZE);
 	ret = user_map_create(proc, env->ramdisk_start, CONFIG_RAMDISK_SIZE, 
-			CONFIG_RAMDISK_BASE, VM_RO);
+			CONFIG_RAMDISK_BASE, VM_RO | VM_HUGE);
 	if (ret)
 		panic("map RAMDISK memory region for root service failed\n");
 
