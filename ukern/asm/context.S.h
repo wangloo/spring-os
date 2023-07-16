@@ -69,6 +69,8 @@
   ldp x21, x22, [sp, #S_PC]
   msr elr_el1, x21
   msr spsr_el1, x22
+  ldp lr, x21, [sp, #S_LR]
+  msr sp_el0, x21
 
   ldp x0, x1, [sp, #16 * 0]
   ldp x2, x3, [sp, #16 * 1]
@@ -85,6 +87,6 @@
   ldp x24, x25, [sp, #16 * 12]
   ldp x26, x27, [sp, #16 * 13]
   ldp x28, x29, [sp, #16 * 14]
-  ldr lr, [sp, #S_LR]
+
   add sp, sp, #S_FRAME_SIZE
 .endm
