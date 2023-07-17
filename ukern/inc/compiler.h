@@ -13,3 +13,6 @@
 #define unlikely(x)         __builtin_expect(!!(x), 0)
 #define barrier()           __asm__ __volatile__("" ::: "memory")
 #define unused(__arg__)     (void)(__arg__)
+
+/* 仅表明这是一个位于用户地址空间的数据 */
+#define __user

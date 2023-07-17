@@ -150,8 +150,8 @@ int elf_load(struct process *proc, struct ramdisk_file *file, struct elf_ctx *ct
 	page = get_free_pages(ctx->memsz >> PAGE_SHIFT, GFP_USER);
 	if (!page)
 		return -ENOMEM;
-		printf("ctx->base_load_vbase: 0x%lx\n", ctx->base_load_vbase);
-		printf("ctx->base_load_vend: 0x%lx\n", ctx->base_load_vend);
+	printf("ctx->base_load_vbase: 0x%lx\n", ctx->base_load_vbase);
+	printf("ctx->base_load_vend: 0x%lx\n", ctx->base_load_vend);
 	rv = user_map_create(proc, ctx->base_load_vbase,
 			ctx->memsz, vtop(page), VM_RWX);
 	if (rv)

@@ -53,6 +53,10 @@ SECTIONS
   .data : 
   {
     *(.data)
+
+    __start_kobject_desc = .;
+    *(.__kobject_desc)
+    __stop_kobject_desc = .;
   }
 
   . = ALIGN(8);
