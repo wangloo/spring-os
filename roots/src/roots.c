@@ -5,7 +5,7 @@ char s[20] = "ROOTSERVICE";
 char *p;
 int main(void)
 {
-    p = strcat(s, "!");
-    printf("\n\nRoots service start...\n\n");
+    // p = strcat(s, "!");
+    puts("\n\nRoots service start...\n\n");
     return 0;
 }

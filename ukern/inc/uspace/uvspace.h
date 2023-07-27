@@ -40,7 +40,8 @@
 #define SYS_PROC_VMAP_BASE	(65UL * 1024 * 1024 * 1024)
 #define SYS_PROC_VMAP_END	(255UL * 1024 * 1024 * 1024)
 
-
+void user_vspace_inc_usage(struct vspace *vs);
+void user_vspace_dec_usage(struct vspace *vs);
 int user_vspace_init(struct process *proc);
 void user_vspace_deinit(struct process *proc);
 

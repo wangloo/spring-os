@@ -50,3 +50,6 @@ typedef struct __syscall_regs {
   unsigned long a6;
   unsigned long a7;
 } syscall_regs;
+
+
+void syscall_handler(syscall_regs *regs);

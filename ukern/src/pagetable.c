@@ -401,6 +401,7 @@ int pagetable_unmap(page_table_t *pagetable,
 }
 
 
+/* TODO: return 0 if error, 现在用的检查太强了 */
 paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
 {
   pte_t pgde, pude, pmde, pte;
@@ -431,7 +432,7 @@ paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
   pte = next_table->entry[pt_index(va)];
   assert(pte_is_vaild(pte));
 
-  
+
   return (paddr_t)pt_page_addr(pte) + page_offset;
 }
 

@@ -67,7 +67,15 @@ int user_map_create(struct process *proc, unsigned long vaddr,
 }
 
 
+void user_vspace_inc_usage(struct vspace *vs)
+{
+	atomic_inc(&(vs->refcount));
+}
 
+void user_vspace_dec_usage(struct vspace *vs)
+{
+	atomic_dec(&(vs->refcount));
+}
 
 int user_vspace_init(struct process *proc)
 {
@@ -83,6 +91,7 @@ int user_vspace_init(struct process *proc)
 
 	vs->asid = asid_alloc();
 	vs->pdata = proc;
+	atomic_set(1, &(vs->refcount));
 	// vs->notifier_ops = &user_mm_notifier_ops;
 
 	return 0;

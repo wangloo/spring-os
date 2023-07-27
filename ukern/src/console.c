@@ -2,6 +2,8 @@
 #include <uart_pl011.h>
 #include <config/config.h>
 #include <addrspace.h>
+#include <spinlock.h>
+
 
 struct console global_console = {
   .name = "pl011",
@@ -10,6 +12,7 @@ struct console global_console = {
   .putc = pl011_putc,
 };
 struct console *cons = &global_console;
+static DEFINE_SPIN_LOCK(cons_lock); // TODO: 集成到console结构体中
 
 void console_init()
 {
@@ -25,4 +28,19 @@ void console_putc(char ch)
 char console_getc(void)
 {
   return cons->getc();
+}
+
+int console_puts(char *buf, size_t size)
+{
+	size_t print = 0;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cons_lock, flags);
+
+	while (print < size)
+		console_putc(buf[print++]);
+
+	spin_unlock_irqrestore(&cons_lock, flags);
+
+	return size;
 }

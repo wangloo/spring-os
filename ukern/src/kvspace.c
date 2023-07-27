@@ -114,6 +114,7 @@ int kern_map_const_regions(void)
 int kern_vspace_init(void)
 {
   kvspace.pgdp = kernel_pgd_base();
+  atomic_set(1, &(kvspace.refcount));
 
   kern_map_const_regions();
   return 0;

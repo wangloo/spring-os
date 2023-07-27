@@ -374,3 +374,13 @@ __CMPXCHG_CASE(w,  ,  mb_4, al, "memory")
 __CMPXCHG_CASE(x,  ,  mb_8, al, "memory")
 
 #endif // CONFIG_ARM_ATOMIC_LSE
+
+static inline void atomic_inc(atomic_t *t)
+{
+	atomic_add(1, t);
+}
+
+static inline void atomic_dec(atomic_t *t)
+{
+	atomic_sub(1, t);
+}

@@ -13,3 +13,4 @@ struct console {
 void console_init();
 void console_putc(char ch);
 char console_getc(void);
+int console_puts(char *buf, size_t size);

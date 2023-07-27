@@ -11,7 +11,6 @@ SECTIONS
     KEEP(*(__start_up))
     KEEP(*(__boot))
     KEEP(*(__asm_code))
-    KEEP(*(__elx_vectors));
     . = ALIGN(4096);
     __stop_boot_code = .;
   }
@@ -43,6 +42,8 @@ SECTIONS
   .text : AT(ADDR(.text)-CONFIG_KERNEL_ADDR_MASK)
   {
     *(.text)
+    . = ALIGN(4096);
+    KEEP(*(__elx_vectors));
   }
   
   . = ALIGN(4096);

@@ -20,4 +20,5 @@ static inline void set_current_task(struct task *task)
 #define current_task_info() current_task_info()
 #define current_pid()       current()->pid
 #define current_tid()       current()->tid
+#define current_name()      current()->name
 #define current_user_regs() current()->user_regs

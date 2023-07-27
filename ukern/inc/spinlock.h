@@ -51,12 +51,33 @@
 
 
 #else
+
+/**
+ * FIXME: 下面的这些没什么意义，趁早还是注释掉吧
+ */
 #define spin_lock(l)
 #define spin_unlock(l)
 #define spin_trylock(l) raw_spin_trylock()
-#define spin_lock_irqsave(l, flags)
+#define spin_lock_irqsave(l, flags)   \
+  do {                 \
+    raw_spin_lock(l);  \
+    flags = 0;         \
+  } while (0) 
+#define spin_trylock_irqsave(l, flags) ({ raw_spin_trylock(l); flags = 0;})
+#define spin_lock_irqrestore(l, flags) ({ raw_spin_lock(l); })
+#define spin_unlock_irqrestore(l, flags)  \
+  do {                                                                         \
+    raw_spin_unlock(l);                                                        \
+    flags++;                                                                   \
+  } while (0)
 
-#define spin_trylock_irqsave(l, flags) ({ raw_spin_trylock(l); })
+// static inline void spin_lock(spinlock_t *lock) {}
+// static inline void spin_unlock(spinlock_t *lock) {}
+// static inline void spin_trylock(spinlock_t *lock) {}
+// static inline void spin_lock_irqsave(spinlock_t *lock, unsigned long flags) {}
+// static inline void spin_trylock_irqsave(spinlock_t *lock, unsigned long flags) {}
+// static inline void spin_lock_irqrestore(spinlock_t *lock, unsigned long flags) {}
+// static inline void spin_unlock_irqrestore(spinlock_t *lock, unsigned long flags) {}
 
-#define spin_lock_irqrestore(l, flags)
+
 #endif

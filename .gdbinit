@@ -5,6 +5,9 @@ info threads
 set scheduler-locking step 
 show scheduler-locking
 
+layout split
+focus cmd
+
 define q
     quit
 end

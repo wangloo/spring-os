@@ -60,7 +60,7 @@ struct process *create_process(int pid, task_func_t func,
 	proc->task_cnt++;
 
     // TODO
-	// ret = init_proc_handles(proc);
+	ret = init_proc_handles(proc);
 	if (ret)
 		goto handle_init_fail;
 

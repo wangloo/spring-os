@@ -89,3 +89,5 @@ int kobject_get(struct kobject *kobj);
 int kobject_put(struct kobject *kobj);
 
 int kobject_close(struct kobject *kobj, right_t right, struct process *proc);
+void kobject_init(struct kobject *kobj, int type, right_t right_mask,
+                  struct kobject_ops *ops, unsigned long data);

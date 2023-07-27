@@ -51,7 +51,9 @@ void kernel_init()
     load_root_service();
   }
 
-  
+  // FIXME: 临时放在这
+  extern int stdio_kobject_init(void);
+  stdio_kobject_init();
     
   // debug
   // DBG_pagetable(kernel_pgd_base());

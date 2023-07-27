@@ -65,7 +65,7 @@ void syscall_handler(syscall_regs *regs)
 	int nr = *(u64 *)(regs + 1); // x8
 
 	// arch_enable_local_irq(); // FIXME
-
+  printf("in syscall handler, nr = %d\n", nr);
 	if (nr >= __NR_syscalls) {
 		regs->a0 = -EINVAL;
 		return;
