@@ -62,6 +62,12 @@
   
   stp x22, x23, [sp, #-16]!
   stp x20, x21, [sp, #-16]!
+  // IF 要加新的寄存器，记得同步修改 LOAD_OTHER_REGS
+.endm
+
+.macro LOAD_OTHER_REGS
+  // 只是与SAVE动作配合保证栈指针正确，这些表示异常信息的寄存器没必要恢复
+  add sp, sp, #32
 .endm
 
 .macro LOAD_GP_REGS

@@ -51,7 +51,8 @@ kfunc __sync_from_current_el
   SAVE_OTHER_REGS
   mov x0, sp   // function paramter
   bl sync_from_current_el
-
+  
+  LOAD_OTHER_REGS
   LOAD_GP_REGS
   eret
 endfunc __sync_from_current_el
@@ -60,8 +61,12 @@ endfunc __sync_from_current_el
 
 kfunc __sync_from_lower_el
   SAVE_GP_REGS
+  SAVE_OTHER_REGS
   mov x0, sp   // function paramter
+  
+  bl sync_from_lower_el
 
+  LOAD_OTHER_REGS
   LOAD_GP_REGS
   eret
 endfunc __sync_from_lower_el
