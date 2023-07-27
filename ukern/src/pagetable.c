@@ -405,13 +405,14 @@ paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
 {
   pte_t pgde, pude, pmde, pte;
   page_table_t *next_table;
+  u64 page_offset = va & (PAGE_SIZE-1);
 
   pgde = pagetable->entry[pgd_index(va)];
   assert(pte_is_vaild(pgde));
   assert(pte_is_table(pgde));
 
   // pud
-  next_table = pte_table_addr(pgde);
+  next_table = (page_table_t *)ptov(pte_table_addr(pgde));
   pude = next_table->entry[pud_index(va)];
   assert(pte_is_vaild(pude));
   if (!pte_is_table(pude)) {
@@ -419,18 +420,19 @@ paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
   }
 
   // pmd
-  next_table = pte_table_addr(pude);
+  next_table = (page_table_t *)ptov(pte_table_addr(pude));
   pmde = next_table->entry[pmd_index(va)];
   assert(pte_is_vaild(pmde));
   if (!pte_is_table(pmde)) {
     return (paddr_t)pmd_block_addr(pmde);
   }
-
   // pt
-  next_table = pte_table_addr(pmde);
+  next_table = (page_table_t *)ptov(pte_table_addr(pmde));
   pte = next_table->entry[pt_index(va)];
   assert(pte_is_vaild(pte));
-  return (paddr_t)pt_page_addr(pte);
+
+  
+  return (paddr_t)pt_page_addr(pte) + page_offset;
 }
 
 
