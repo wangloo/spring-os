@@ -15,13 +15,9 @@
  */
 
 #include <ramdisk.h>
-#include <addrspace.h>
-#include <string.h>
-#include <errno.h>
+#include <kernel.h>
 #include <page.h>
 #include <memattr.h>
-#include <print.h>
-#include <config/config.h>
 #include <cfi.h>
 
 void *ramdisk_start = (void *)CONFIG_RAMDISK_BASE;

@@ -1,9 +1,8 @@
 #include <virtio_blk.h>
 #include <virtio.h>
 #include <barrier.h>
-#include <utils.h>
 #include <kmem.h>
-#include <addrspace.h>
+#include <kernel.h>
 
 static u32 virtio_irq_base = CONFIG_VIRTIO_IRQ;
 static volatile virtio_regs *virtio_regs_base = 

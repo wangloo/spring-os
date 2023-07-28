@@ -1,9 +1,7 @@
 #include <page.h>
 #include <current.h>
 #include <uspace/uvspace.h>
-#include <errno.h>
-#include <addrspace.h>
-#include <string.h>
+#include <kernel.h>
 #include <task.h>
 
 int __copy_from_user(void *dst, struct vspace *vsrc, void __user *src, size_t size)

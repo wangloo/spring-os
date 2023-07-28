@@ -2,7 +2,7 @@
 #include <arm64_timer.h>
 #include <time.h>
 #include <barrier.h>
-#include <assert.h>
+#include <kernel.h>
 
 #define CNT_CTL_ISTATUS (1 << 2)
 #define CNT_CTL_IMASK   (1 << 1)

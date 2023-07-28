@@ -1,6 +1,6 @@
 #include <exception.h>
 #include <esr.h>
-#include <panic.h>
+#include <kernel.h>
 #include <irq.h>
 
 void irq_from_current_el(exception_ctx *ectx)

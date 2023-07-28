@@ -1,8 +1,7 @@
 #include <uspace/kobject.h>
 #include <atomic.h>
-#include <assert.h>
+#include <kernel.h>
 #include <list.h>
-#include <errno.h>
 
 
 static void kobject_release(struct kobject *kobj)

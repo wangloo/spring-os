@@ -1,8 +1,6 @@
 #include <uspace/syscall.h>
-#include <panic.h>
-#include <errno.h>
-#include <types.h>
 #include <compiler.h>
+#include <kernel.h>
 
 
 typedef void (*syscall_handler_t)(syscall_regs *regs);

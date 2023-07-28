@@ -1,8 +1,7 @@
 
 #include <uspace/kobject.h>
 #include <uspace/proc.h>
-#include <errno.h>
-#include <print.h>
+#include <kernel.h>
 
 long __sys_kobject_send(handle_t handle, void __user *data, size_t data_size,
                         void __user *extra, size_t extra_size, uint32_t timeout)

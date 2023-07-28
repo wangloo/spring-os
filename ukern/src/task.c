@@ -1,15 +1,12 @@
 #include <task.h>
 #include <sched.h>
 #include <preempt.h>
-#include <print.h>
-#include <string.h>
 #include <pcpu.h>
 #include <tid.h>
 #include <kmem.h>
 #include <event.h>
 #include <mm.h>
-#include <addrspace.h>
-#include <assert.h>
+#include <kernel.h>
 
 
 /*

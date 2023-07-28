@@ -1,10 +1,7 @@
 #include <vspace.h>
 #include <page.h>
-#include <errno.h>
-#include <assert.h>
 #include <memattr.h>
-#include <config/config.h>
-#include <addrspace.h>  // 临时起名
+#include <kernel.h>  // 临时起名
 
 struct map_region 
 {

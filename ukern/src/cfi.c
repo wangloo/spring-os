@@ -1,9 +1,5 @@
 #include <cfi.h>
-#include <config/config.h>
-#include <string.h>
-#include <utils.h>
-#include <assert.h>
-#include <addrspace.h>
+#include <kernel.h>
 
 /////////////////////////////////////////
 // depending on size of a word

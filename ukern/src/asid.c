@@ -1,7 +1,6 @@
 #include <bitmap.h>
 #include <arm64_asid.h>
-#include <utils.h>
-#include <assert.h>
+#include <kernel.h>
 
 #define ASID_MAX          4096
 #define ASID_FIXED_SHARED 0

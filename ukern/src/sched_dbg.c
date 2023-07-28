@@ -1,8 +1,7 @@
 #include <pcpu.h>
 #include <task.h>
 #include <barrier.h>
-#include <assert.h>
-#include <print.h>
+#include <kernel.h>
 
 void DBG_sched_readylist(struct pcpu *pcpu)
 {

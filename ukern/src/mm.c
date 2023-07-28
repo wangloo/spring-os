@@ -1,8 +1,6 @@
 #include <mm.h>
-#include <config/config.h>
-#include <assert.h>
 #include <kmem.h>
-#include <addrspace.h>
+#include <kernel.h>
 
 void mm_init(void)
 {

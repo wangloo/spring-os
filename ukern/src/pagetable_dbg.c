@@ -1,7 +1,6 @@
 #include <pagetable.h>
-#include <addrspace.h>
-#include <print.h>
-#include <assert.h>
+#include <kernel.h>
+
 
 
 static inline vaddr_t pack_va(int idx0, int idx1, int idx2, int idx3)

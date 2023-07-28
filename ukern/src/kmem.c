@@ -1,5 +1,5 @@
 #include <kmem.h>
-#include <assert.h>
+#include <kernel.h>
 
 void *kalloc(size_t size)
 {

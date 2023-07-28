@@ -1,8 +1,5 @@
 #include <page.h>
-#include <assert.h>
-#include <string.h>
-#include <addrspace.h> // 临时起名
-#include <print.h>
+#include <kernel.h> 
 
 
 // index 0 for kernel

@@ -1,9 +1,7 @@
-#include <print.h>
-#include <assert.h>
 #include <page.h>
 #include <slab.h>
-#include <utils.h>
-#include <string.h>
+#include <kernel.h>
+
 
 #define MAX_MEM_POOLS       32
 #define SLAB_MAGIC			(0xdeadbeef)

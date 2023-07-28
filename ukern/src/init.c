@@ -1,8 +1,7 @@
 #include <console.h>
-#include <print.h>
+#include <kernel.h>
 #include <pagetable.h>
 #include <mm.h>
-#include <panic.h>
 #include <gic_v3.h>
 #include <sched.h>
 #include <task.h>

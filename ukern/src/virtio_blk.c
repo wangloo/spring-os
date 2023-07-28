@@ -1,7 +1,6 @@
 #include <virtio_blk.h>
 #include <barrier.h>
-#include <panic.h>
-#include <utils.h>
+#include <kernel.h>
 #include <kmem.h>
 
 struct virtio_blk_req {

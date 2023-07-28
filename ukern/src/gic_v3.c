@@ -1,13 +1,11 @@
 #include <gic_v3.h>
 #include <gic_v3_reg.h>
 #include <arm64_sysreg.h>
-#include <print.h>
 #include <smp.h>
 #include <cpu.h>
 #include <cpumask.h>
-#include <assert.h>
 #include <io.h>
-#include <addrspace.h>
+#include <kernel.h>
 
 #define NR_CPUS                 CONFIG_NR_CPUS
 #define GICD_RWP_BITMASK        BIT(31)

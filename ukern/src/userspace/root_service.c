@@ -1,14 +1,11 @@
 #include <ramdisk.h>
 #include <task.h>
-#include <panic.h>
-#include <errno.h>
-#include <string.h>
 #include <page.h>
+#include <kernel.h>
 #include <uspace/elf.h>
 #include <uspace/proc.h>
 #include <uspace/uvspace.h>
 #include <uapi/bootdata.h>
-#include <addrspace.h>
 
 
 struct elf_ctx {

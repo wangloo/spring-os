@@ -2,8 +2,7 @@
 #include <procinfo.h>
 #include <task.h>
 #include <page.h>
-#include <assert.h>
-#include <string.h>
+#include <kernel.h>
 
 // struct kobject *task_stat_pma;
 static struct task_stat *task_stat_addr;

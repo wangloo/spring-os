@@ -1,16 +1,14 @@
 #include <pcpu.h>
 #include <barrier.h>
-#include <assert.h>
 #include <timer.h>
 #include <time.h>
 #include <current.h>
 #include <irq.h>
 #include <sched.h>
-#include <panic.h>
 #include <preempt.h>
 #include <current.h>
-#include <errno.h>
 #include <bitops.h>
+#include <kernel.h>
 
 int8_t const ffs_one_table[256] = {
     -1, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, /* 0x00 to 0x0F */

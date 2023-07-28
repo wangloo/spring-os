@@ -1,7 +1,6 @@
 #include <console.h>
 #include <uart_pl011.h>
-#include <config/config.h>
-#include <addrspace.h>
+#include <kernel.h>
 #include <spinlock.h>
 
 

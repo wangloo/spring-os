@@ -1,10 +1,8 @@
 #include <uspace/uvspace.h>
-#include <string.h>
 #include <asid.h>
-#include <assert.h>
 #include <page.h>
-#include <errno.h>
 #include <kmem.h>
+#include <kernel.h>
 
 
 

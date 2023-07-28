@@ -1,6 +1,6 @@
 #include <list.h>
-#include <print.h>
-#include <config/config.h>
+#include <kernel.h>
+
 
 #ifdef CONFIG_DEBUG_LIST
 

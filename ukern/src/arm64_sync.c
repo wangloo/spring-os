@@ -1,6 +1,6 @@
 #include <exception.h>
 #include <esr.h>
-#include <panic.h>
+#include <kernel.h>
 #include <uspace/syscall.h>
 
 

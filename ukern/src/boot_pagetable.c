@@ -1,6 +1,6 @@
 #include <pagetable.h>
 #include <compiler.h>
-#include <assert.h>
+#include <kernel.h>
 
 #define BOOTDATA  __section(__boot_data)
 BOOTDATA page_table_t id_pgtable;

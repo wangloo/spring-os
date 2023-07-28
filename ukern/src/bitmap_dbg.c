@@ -1,6 +1,5 @@
-#include <assert.h>
-#include <print.h>
 #include <bitmap.h>
+#include <kernel.h>
 
 static void DBG_bitmap_print(bitmap_t *bitmap, u64 size)
 {

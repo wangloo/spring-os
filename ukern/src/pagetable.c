@@ -1,10 +1,7 @@
 #include <pagetable.h>
 #include <barrier.h>
-#include <assert.h>
 #include <page.h>
-#include <errno.h>
-#include <string.h>
-#include <addrspace.h> // 临时起名
+#include <kernel.h>
 
 #define VA_MAX (~((unsigned long)0))
 #define PA_MAX (1ul << 48)
