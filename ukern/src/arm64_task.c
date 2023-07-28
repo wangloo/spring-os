@@ -1,8 +1,7 @@
 #include <asm/arm64_common.h>
 #include <arm64_sysreg.h>
 #include <task.h>
-#include <string.h>
-#include <stdio.h>
+#include <kernel.h>
 
 // 内核栈的顶存储硬件上下文
 #define stack_to_gp_regs(base) \
