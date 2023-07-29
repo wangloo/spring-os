@@ -1,4 +1,6 @@
 #include <kmem.h>
+#include <page.h>
+#include <slab.h>
 #include <kernel.h>
 
 void *kalloc(size_t size)
@@ -18,5 +20,5 @@ void *kalloc(size_t size)
 
 void kfree(void *addr)
 {
-  assert(0);
+  TODO();
 }

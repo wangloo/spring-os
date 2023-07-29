@@ -2,6 +2,7 @@
 #include <barrier.h>
 #include <kernel.h>
 #include <kmem.h>
+#include <page.h>
 
 struct virtio_blk_req {
 #define VIRTIO_BLK_T_IN       0

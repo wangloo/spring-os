@@ -1,5 +1,4 @@
 #include <list.h>
-#include <page.h>
 
 // 一个slab中各字段的分布:
 //       | struct slab | freelist | padding | obj1 |

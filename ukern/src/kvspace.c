@@ -1,7 +1,14 @@
+/**
+ * @file  kvspace.c
+ * @brief 内核地址空间的操作，
+ * @level 底层依赖页表的操作，本文件不涉及任何架构相关操作
+ * @date  2023-07-29
+ */
+
 #include <vspace.h>
 #include <page.h>
 #include <memattr.h>
-#include <kernel.h>  // 临时起名
+#include <kernel.h>
 
 struct map_region 
 {
@@ -80,6 +87,7 @@ int kern_map_create(vaddr_t va, paddr_t pa,
 
 int kern_map_destory(vaddr_t va, size_t size)
 {
+  TODO();
   return 0;
 }
 
@@ -108,9 +116,10 @@ int kern_map_const_regions(void)
   }
   return 0; 
 }
-int kern_vspace_init(void)
+
+int kern_vspace_init(vaddr_t pgtable_base)
 {
-  kvspace.pgdp = kernel_pgd_base();
+  kvspace.pgdp = (page_table_t *)pgtable_base;
   atomic_set(1, &(kvspace.refcount));
 
   kern_map_const_regions();

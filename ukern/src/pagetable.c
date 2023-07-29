@@ -1,6 +1,11 @@
+/**
+ * @file  pagetable.c
+ * @brief 仅包含对页表的直接操作
+ * @level 架构相关
+ * @date  2023-07-29
+ */
 #include <pagetable.h>
 #include <barrier.h>
-#include <page.h>
 #include <kernel.h>
 
 #define VA_MAX (~((unsigned long)0))
@@ -198,9 +203,6 @@ static void pagetable_change_pte(pte_t *ptep, void *addr,  int flags)
 
   set_pte(ptep, (pte_t)(vtop(addr) | attr));
 }
-
-
-
 
 static bool can_map_pud_huge(pte_t pude, 
               vaddr_t va, paddr_t pa, size_t size, int flags)
@@ -431,18 +433,4 @@ paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
 
 
   return (paddr_t)pt_page_addr(pte) + page_offset;
-}
-
-
-/* kernel 的页表是定义在bootdata中的, 在boot_mem中做了映射 */
-page_table_t *kernel_pgd_base(void)
-{
-  vaddr_t kernel_pagetable;
-
-  asm volatile (
-  "ldr %0, =__kernel_page_table\n"
-  :"=r"(kernel_pagetable)
-  );
-
-  return (page_table_t *)(ptov(kernel_pagetable));
 }

@@ -1,8 +1,8 @@
 #pragma once
 #include <memattr.h>
-#include <types.h>
-#include <sys_size.h>
 #include <stage1.h>
+#include <page.h>
+
 
 #define PGD_SHIFT            (39)
 #define PUD_SHIFT            (30)
@@ -98,7 +98,6 @@ typedef struct _page_table {
 
 typedef void *(*pgtable_alloc_func_t)(void);
 
-page_table_t *kernel_pgd_base(void);
 int pagetable_map(page_table_t *pagetable, 
       vaddr_t va, paddr_t pa, size_t size, int flags, pgtable_alloc_func_t pgtable_alloc);
 int pagetable_unmap(page_table_t *pagetable, 

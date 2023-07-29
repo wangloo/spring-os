@@ -2,6 +2,7 @@
 #include <sched.h>
 #include <arm64_pcpu.h>
 #include <kmem.h>
+#include <page.h>
 #include <irq.h>
 #include <task.h>
 

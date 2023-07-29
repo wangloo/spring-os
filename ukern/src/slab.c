@@ -1,5 +1,11 @@
-#include <page.h>
+/**
+ * @file  slab.c
+ * @brief 小块内存分配器
+ * @level arch-independent, 向上提供小内存分配的接口
+ * @date  2023-07-29
+ */
 #include <slab.h>
+#include <page.h>
 #include <kernel.h>
 
 

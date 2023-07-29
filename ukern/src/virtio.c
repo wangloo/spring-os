@@ -2,6 +2,7 @@
 #include <virtio.h>
 #include <barrier.h>
 #include <kmem.h>
+#include <page.h>
 #include <kernel.h>
 
 static u32 virtio_irq_base = CONFIG_VIRTIO_IRQ;

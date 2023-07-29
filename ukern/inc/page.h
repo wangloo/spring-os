@@ -2,6 +2,10 @@
 #include <types.h>
 #include <bitmap.h>
 
+#define PAGE_SHIFT (12) // 4K
+#define PAGE_SIZE  (1 << PAGE_SHIFT)
+#define PAGE_MASK  (PAGE_SIZE - 1)
+
 #define __GFP_KERNEL       0x00000001
 #define __GFP_USER         0x00000002
 #define __GFP_GUEST        0x00000004

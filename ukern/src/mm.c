@@ -1,12 +1,34 @@
+/**
+ * @file  mm.c
+ * @brief 管理整个内存系统，包括内核分配器用的、用户用的等所有内存。
+ * @level 向下需要访问架构相关， 负责初始化各个分配器。
+ * @date  2023-07-29
+ */
+
 #include <mm.h>
 #include <kmem.h>
+#include <page.h>
+#include <slab.h>
 #include <kernel.h>
+
+/* kernel 的页表是定义在bootdata中的, 在boot_mem中做了映射 */
+vaddr_t kernel_pgtable_base(void)
+{
+  vaddr_t kernel_pagetable;
+
+  asm volatile (
+  "ldr %0, =__kernel_page_table\n"
+  :"=r"(kernel_pagetable)
+  );
+
+  return ptov(kernel_pagetable);
+}
 
 void mm_init(void)
 {
-  extern int kern_vspace_init(void);
-
+  extern int kern_vspace_init(vaddr_t pgtable_base);
   vaddr_t kmem_base;
+  vaddr_t pgtable_base;
   size_t kmem_size;
 
   /* 直接访问会默认使用adr指令， 因为跨越高低两个地址，
@@ -28,7 +50,8 @@ void mm_init(void)
   mem_pool_init();
 
   // 3. 映射
-  kern_vspace_init();
+  pgtable_base = kernel_pgtable_base();
+  kern_vspace_init(pgtable_base);
 
   // 用户内存怎么办?
 
