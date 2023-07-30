@@ -1,5 +1,7 @@
 #include <task.h>
 #include <sched.h>
+#include <irq.h>
+#include <cpu.h>
 #include <preempt.h>
 #include <pcpu.h>
 #include <tid.h>
@@ -69,8 +71,130 @@ int task_ready(struct task *task, int preempt)
   return 0;
 }
 
+static int __wake_up_interrupted(struct task *task, long pend_state, unsigned long data)
+{
+	// unsigned long flags;
+
+	assert(pend_state != TASK_STATE_PEND_TO);
+	if (task->state != TASK_STATE_WAIT_EVENT)
+		return -EACCES;
+
+	if (!irq_is_disable())
+		panic("unexpected irq happend when wait_event() ?\n");
+
+	/*
+	 * the interrup occurs when task try to wait_event. in
+	 * addition:
+	 * 1 - the interrupt is happended in the same cpu.
+	 * 2 - will not the delay timer, since the delay time
+	 *     has not been set already.
+	 * 3 - the state must TASK_STATE_WAIT_EVENT
+	 * 4 - task has not been in sched routine.
+	 *
+	 * meanwhile, other cpu may already in the wake up function
+	 * try to wake up the task, then need check this suitation
+	 * since other cpu while check cpu == -1, this will lead
+	 * to dead lock if use spin_lock function. So here use
+	 * spin_trylock instead.
+	 */
+  // FIXME
+	// if (!spin_trylock_irqsave(&task->s_lock, flags))
+	// 	return -EBUSY;
+
+	// if (task->state != TASK_STATE_WAIT_EVENT) {
+	// 	spin_unlock_irqrestore(&task->s_lock, flags);
+	// 	return -EINVAL;
+	// }
+
+	task->ti.flags |= __TIF_WAIT_INTERRUPTED;
+	task->ti.flags &= ~__TIF_DONOT_PREEMPT;
+
+	/*
+	 * here this cpu got this task, and can set the new
+	 * state to running and run it again.
+	 */
+	task->pend_state = pend_state;
+	task->state = TASK_STATE_RUNNING;
+	task->delay = 0;
+	task->ipcdata = data;
+	// spin_unlock_irqrestore(&task->s_lock, flags);
+
+	return 0;
+}
+
+static int __wake_up_common(struct task *task, long pend_state, unsigned long data)
+{
+	// unsigned long flags;
+	uint32_t timeout;
+
+	preempt_disable();
+	// spin_lock_irqsave(&task->s_lock, flags); // FIXME
+
+	/*
+	 * task already waked up, if the stat is set to
+	 * TASK_STATE_WAIT_EVENT, it means that the task will
+	 * call sched() to sleep or wait something happen.
+	 */
+	if (task->state != TASK_STATE_WAIT_EVENT) {
+		// spin_unlock_irqrestore(&task->s_lock, flags); // FIXME
+		preempt_enable();
+		return -EPERM;
+	}
+
+	/*
+	 * the task may in sched() routine on other cpu
+	 * wait the task really out of running. since the task
+	 * will not preempt in the kernel space now, so the cpu
+	 * of the task will change to -1 at one time.
+	 *
+	 * since the kernel can not be preempted so it can make
+	 * sure that sched() can be finish its work.
+	 */
+	while (task->cpu != -1)
+		cpu_relax();
+
+	/*
+	 * here this cpu got this task, and can set the new
+	 * state to running and run it again.
+	 */
+	task->pend_state = pend_state;
+	task->state = TASK_STATE_WAKING;
+	timeout = task->delay;
+	task->delay = 0;
+	task->ipcdata = data;
+
+	// spin_unlock_irqrestore(&task->s_lock, flags);
+
+	/*
+	 * here it means that this task has not been timeout, so can
+	 * delete the timer for this task.
+	 */
+	if (timeout && (task->pend_state != TASK_STATE_PEND_TO))
+		timer_stop(&task->delay_timer);
+
+	/*
+	 * find a best cpu to run this task.
+	 */
+	task_ready(task, 1);
+	preempt_enable();
+
+
+	return 0;
+}
+
+
+int task_wakeup(struct task *task, long pend_state, unsigned long data)
+{
+	if (task == current())
+		return __wake_up_interrupted(task, pend_state, data);
+	else
+		return __wake_up_common(task, pend_state, data);
+}
+
+
 void task_sleep(uint32_t delay)
 {
+  TODO();
   // FIXME
   // struct task *task = current();
   // unsigned long flags;
@@ -90,8 +214,9 @@ void task_sleep(uint32_t delay)
   // sched();
 }
 
-static inline void task_stop(int state)
+static inline void __task_stop(int state)
 {
+  TODO();
   // FIXME
   // struct task *task = current();
   // unsigned long flags;
@@ -108,12 +233,12 @@ static inline void task_stop(int state)
 
 void task_suspend(void)
 {
-  task_stop(TASK_STATE_SUSPEND);
+  __task_stop(TASK_STATE_SUSPEND);
 }
 
 void task_die(void)
 {
-  task_stop(TASK_STATE_STOP);
+  __task_stop(TASK_STATE_STOP);
 }
 
 void task_exit(int errno)
@@ -154,13 +279,7 @@ static void task_delaytimer_timeout_handler(unsigned long data)
   // set_need_resched();
 }
 
-paddr_t task_ttbr_value(struct task *task)
-{
-	struct vspace *vs = task->vs;
-  // printf("%p : 0x%lx\n", vs->pgdp, vs->asid); 
-  printf("vs->asid: %d\n", vs->asid);
-	return (paddr_t)vtop(vs->pgdp) | ((paddr_t)vs->asid << 48);
-}
+
 
 void do_for_all_task(void (*hdl)(struct task *task))
 {
@@ -264,6 +383,7 @@ struct task *__create_task(char *name,
 			unsigned long opt,
 			void *arg)
 {
+  paddr_t ttbr0;
 	struct task *task;
 	int tid;
 
@@ -299,7 +419,8 @@ struct task *__create_task(char *name,
   extern int process_task_create_hook(void *item, void *context);
   process_task_create_hook(task, arg);
 
-	arch_init_task(task, (void *)func, usp, task->pdata);
+  ttbr0 = task_ttbr_value(task);
+	arch_init_task(task, (void *)func, usp, (void *)ttbr0, task->pdata);
 	/*
 	 * start the task if need auto started.
 	 */
@@ -375,23 +496,9 @@ int create_idle_task(void)
 }
 
 struct task *create_kthread(char *name, task_func_t func, int prio,
-		int aff, unsigned long opt, void *arg)
+		            int aff, unsigned long opt, void *arg)
 {
 	return create_task(name, func, TASK_STACK_SIZE,
 			NULL, prio, aff, opt | TASK_FLAGS_KERNEL, arg);
 }
 
-void start_system_task(void)
-{
-  extern int kworker_task(void *data);
-	int cpu = cpu_id();
-	struct task *task;
-	char name[32];
-
-	printf("create kworker task...\n");
-	sprintf(name, "kworker/%d", cpu);
-	task = create_kthread(name, kworker_task,
-			OS_PRIO_DEFAULT_1, cpu, 0, NULL);
-	assert(task != NULL);
-
-}

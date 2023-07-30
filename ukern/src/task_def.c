@@ -1,11 +1,6 @@
-/**
- * @file  task_def.h
- * @brief 仅定义任务控制块结构，不定义任何函数
- * @level 依赖任务控制块中成员类型定义, 如果仅想使用struct task的定义，
- *        可以include此文件，否则建议直接include task.h
- * @date 2023-07-30
- */
-#pragma once
+// #include <task.h>
+
+#if 0
 #include <timer.h>
 #include <task_info.h>
 #include <vspace.h>
@@ -84,3 +79,5 @@ struct task {
 
   struct cpu_context cpu_context;
 };
+
+#endif

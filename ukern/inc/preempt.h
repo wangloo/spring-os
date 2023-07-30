@@ -1,5 +1,5 @@
 #pragma once
-#include <task_info.h>
+#include <task.h>
 
 extern void cond_resched(void);
 

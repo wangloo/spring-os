@@ -6,7 +6,7 @@
 #include <irq.h>
 #include <task.h>
 
-struct pcpu pcpus[NR_CPUS];
+static struct pcpu pcpus[NR_CPUS];
 
 struct pcpu *get_pcpu(int cpuid)
 {

@@ -1,6 +1,6 @@
 #pragma once
 #include <task_def.h>
-
+#include <smp.h>
 
 typedef enum {
   PCPU_STATE_OFFLINE = 0x0,
@@ -8,7 +8,7 @@ typedef enum {
   PCPU_STATE_IDLE,
 } pcpu_state_t;
 
-
+/* 抽象一个CPU */
 struct pcpu {
   int pcpu_id; // fixed place, do not change.
   volatile int state;
@@ -36,6 +36,7 @@ struct pcpu {
   struct task *idle_task;    // 该CPU的idle
   uint32_t nr_pcpu_task;
 
+  /* 以下成员为优先级位图 */
   uint8_t local_rdy_grp;
   uint8_t padding[3];
   struct list_head ready_list[OS_PRIO_MAX];
@@ -65,6 +66,9 @@ void percpu_init(void);
 void pcpu_sched_init(struct pcpu *pcpu);
 void pcpu_irqwork(int pcpu_id);
 
+
+// TODO: 这两个函数的作用是什么？ 是否可以删除？或者用
+//       pcpu->state来代替判断？
 static inline int os_is_running(void)
 {
 	return get_pcpu(cpu_id())->os_is_running;

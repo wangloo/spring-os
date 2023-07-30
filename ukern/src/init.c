@@ -11,7 +11,7 @@
 #include <procinfo.h>
 
 extern void idle(void);
-
+extern void start_system_task(int cpuid);
 void kernel_init()
 {
   int cpuid = cpu_id();
@@ -41,7 +41,7 @@ void kernel_init()
 
   create_idle_task();
 
-  //start_system_task();
+  start_system_task(cpuid);
 
   if (cpuid == 0) {
     procinfo_init();

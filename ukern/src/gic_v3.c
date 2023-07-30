@@ -2,7 +2,7 @@
 #include <gic_v3_reg.h>
 #include <arm64_sysreg.h>
 #include <smp.h>
-#include <cpu.h>
+#include <cpu_feature.h>
 #include <cpumask.h>
 #include <io.h>
 #include <kernel.h>

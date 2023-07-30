@@ -1,5 +1,6 @@
 #pragma once
-
+#include <types.h>
+#include <config/config.h>
 
 static inline int cpu_id(void)
 {
@@ -18,3 +19,6 @@ static inline int cpu_id(void)
 #endif
 	return cpu;
 }
+
+int affinity_to_cpuid(u64 affinity);
+u64 cpuid_to_affinity(int cpuid);

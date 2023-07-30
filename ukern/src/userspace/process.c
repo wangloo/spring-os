@@ -101,13 +101,14 @@ struct process *create_root_process(task_func_t func, void *usp,
 
 int wake_up_process(struct process *proc)
 {
-	int ret = 0;
 	struct task *task;
+	int ret = 0;
 
 	if (!proc)
 		return -EINVAL;
+	
 	list_for_each_entry(task, &proc->task_list, proc_list)
-		ret +=  __wake_up(task, TASK_STATE_PEND_OK, 0);
+		ret +=  task_wakeup(task, TASK_STATE_PEND_OK, 0);
 
 	return ret;
 }
