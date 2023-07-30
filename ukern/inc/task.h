@@ -37,6 +37,8 @@ static inline uint8_t task_prio(struct task *task)
 static inline paddr_t task_ttbr_value(struct task *task)
 {
 	struct vspace *vs = task->vs;
+
+  assert(!(task->flags & TASK_FLAGS_KERNEL));
   // printf("%p : 0x%lx\n", vs->pgdp, vs->asid); 
   // printf("vs->asid: %d\n", vs->asid);
 	return (paddr_t)vtop(vs->pgdp) | ((paddr_t)vs->asid << 48);

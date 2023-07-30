@@ -1,6 +1,6 @@
 #include <asm/arm64_common.h>
 #include <arm64_sysreg.h>
-#include <task_def.h>
+#include <task.h>
 #include <kernel.h>
 
 // 内核栈top存储硬件上下文
@@ -8,7 +8,7 @@
 	(gp_regs *)((base) - sizeof(gp_regs))
 
 void arch_init_task(struct task *task, void *entry, 
-                      void *user_sp, void *ttbr0, void *arg)
+                      void *user_sp, void *arg)
 {
   extern void aarch64_task_exit(void);
   struct task *tsk = (struct task *)task;
@@ -38,12 +38,13 @@ void arch_init_task(struct task *task, void *entry,
      */
     regs->lr = (uint64_t)aarch64_task_exit;
     regs->spsr = AARCH64_SPSR_EL1h;
-  } else {
+  } 
+  else {
     
     regs->spsr = AARCH64_SPSR_EL0t;
     tsk->cpu_context.tpidr_el0 = 0;
     tsk->cpu_context.tpidrro_el0 = (uint64_t)tsk->pid << 32 | (tsk->tid);
-    tsk->cpu_context.ttbr_el0 = (uint64_t)ttbr0;
+    tsk->cpu_context.ttbr_el0 = (uint64_t)task_ttbr_value(tsk);
         
     printf("task: %s's stack_base: 0x%lx\n", tsk->name, tsk->stack_base);
     printf("addr of regs->spsr: 0x%lx\n", regs->spsr);

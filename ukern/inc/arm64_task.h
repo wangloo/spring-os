@@ -35,7 +35,7 @@ static inline void arch_sys_sched(void)
 
 
 void arch_init_task(struct task *task, void *entry, 
-                      void *user_sp, void *ttbr0, void *arg);
+                      void *user_sp, void *arg);
 void arch_task_sched_in(struct task *task);
 void arch_set_task_entry_point(struct task *task, long entry);
 void arch_set_task_user_stack(struct task *task, unsigned long stack);
