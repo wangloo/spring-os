@@ -1,11 +1,14 @@
 #include <print.h>
 #include <console.h>
+#include <kernel.h>
 
 
 static const char xdigitmap[] = "0123456789abcdef";
 static const char Xdigitmap[] = "0123456789ABCDEF";
 
-static char *fmt_d(char *buf, const char *bufend, int64_t val, int minw, char is_64)
+static char *fmt_d(char *buf, const char *bufend, 
+                    int64_t val, int minw, int minus,
+                    int zeropad, char is_64)
 {
   char revnum[32] = {0}; // enough for store 64-bit decimal number
   uint64_t uval = val;
@@ -30,16 +33,24 @@ static char *fmt_d(char *buf, const char *bufend, int64_t val, int minw, char is
     revnum[idx++] = '-';
 
   pad = idx < minw ? minw-idx : 0;
-  while (pad-- > 0)
-    revnum[idx++] = ' ';
-
+  if (minus) {
+    memmove(revnum+pad, revnum, idx);
+    memset(revnum, zeropad ? '0' : ' ', pad);
+  }
+  else {
+    memset(revnum+idx, zeropad ? '0' : ' ', pad);
+  }
+  idx += pad;
+  
   while (--idx >= 0 && buf < bufend) {
     *buf++ = revnum[idx];
   }   
   return buf;
 }
 
-static char *fmt_u(char *buf, const char *bufend, uint64_t val, int minw, char is_64)
+static char *fmt_u(char *buf, const char *bufend, 
+                    uint64_t val, int minw, int minus,
+                    int zeropad, char is_64)
 {
   char revnum[32] = {0}; // enough for store 64-bit decimal number
   uint64_t uval = val;
@@ -52,8 +63,14 @@ static char *fmt_u(char *buf, const char *bufend, uint64_t val, int minw, char i
   } while (uval != 0);
 
   pad = idx < minw ? minw-idx : 0;
-  while (pad-- > 0)
-    revnum[idx++] = ' ';
+  if (minus) {
+    memmove(revnum+pad, revnum, idx);
+    memset(revnum, zeropad ? '0' : ' ', pad);
+  }
+  else {
+    memset(revnum+idx, zeropad ? '0' : ' ', pad);
+  }
+  idx += pad;
 
   while (--idx >= 0 && buf < bufend) {
     *buf++ = revnum[idx];
@@ -61,7 +78,9 @@ static char *fmt_u(char *buf, const char *bufend, uint64_t val, int minw, char i
   return buf;
 }
 
-static char* fmt_x(char *buf, char *bufend, unsigned int val, int minw, char is_upper)
+static char* fmt_x(char *buf, char *bufend, 
+                    unsigned int val, int minw, int minus,
+                    int zeropad, char is_upper)
 {
   char revhex[32] = {0}; // enough for store 64-bit hex
   int  idx = 0;
@@ -75,16 +94,25 @@ static char* fmt_x(char *buf, char *bufend, unsigned int val, int minw, char is_
   } while (val != 0);
 
   pad = idx < minw ? minw-idx : 0;
-  while (pad-- > 0)
-    revhex[idx++] = ' ';
 
+  if (minus) {
+    memmove(revhex+pad, revhex, idx);
+    memset(revhex, zeropad ? '0' : ' ', pad);
+  }
+  else {
+    memset(revhex+idx, zeropad ? '0' : ' ', pad);
+  }
+
+  idx += pad;
   while (--idx >= 0 && buf < bufend) {
     *buf++ = revhex[idx];
   }  
   return buf;
 }
 
-static char* fmt_lx(char *buf, char *bufend, unsigned long val, int minw, char is_upper) 
+static char* fmt_lx(char *buf, char *bufend, 
+                      unsigned long val, int minw, int minus, 
+                      int zeropad, char is_upper) 
 {
   char revhex[32] = {0}; // enough for store 64-bit hex
   int  idx = 0;
@@ -98,12 +126,19 @@ static char* fmt_lx(char *buf, char *bufend, unsigned long val, int minw, char i
   } while (val != 0);
 
   pad = idx < minw ? minw-idx : 0;
-  while (pad-- > 0)
-    revhex[idx++] = ' ';
 
+  if (minus) {
+    memmove(revhex+pad, revhex, idx);
+    memset(revhex, zeropad ? '0' : ' ', pad);
+  }
+  else {
+    memset(revhex+idx, zeropad ? '0' : ' ', pad);
+  }
+
+  idx += pad;
   while (--idx >= 0 && buf < bufend) {
     *buf++ = revhex[idx];
-  }  
+  }
   return buf;
 }
 
@@ -130,10 +165,28 @@ static char* fmt_p(char *buf, char *bufend, unsigned long val)
   return buf;  
 } 
 
-static char* fmt_s(char *buf, const char *const bufend, const char* s)
+static char* fmt_s(char *buf, const char *const bufend, 
+                      const char* s, int minw, int minus)
 {
-  while (buf < bufend && *s != '\0')
-    *buf++ = *s++;
+  size_t len = strlen(s);
+  int pad;
+
+  assert(len > 0);
+
+  pad = len < minw ? minw-len : 0;
+
+  if (minus) {
+    while (buf < bufend && *s != '\0')
+      *buf++ = *s++;
+    while (pad-- > 0 && buf < bufend)
+      *buf++ = ' ';
+  }
+  else {
+    while (pad-- > 0 && buf < bufend)
+      *buf++ = ' ';
+    while (buf < bufend && *s != '\0')
+      *buf++ = *s++;   
+  }
   return buf;
 }
 
@@ -150,13 +203,26 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list ap)
 {
   char * const bufstart = buf;
   char * const bufend = buf + size - 1; // reserved for '\0'
-  int minw;
+  int minw, zeropad, minus;
 
   while(buf < bufend && *fmt != '\0') {
     if(*fmt == '%') {
       ++fmt;
       
       minw = 0;
+      zeropad = 0;
+      minus = 0;
+
+      for (;;) {
+        if (*fmt == '0')
+          zeropad = 1;
+        else if (*fmt == '-')
+          minus = 1;
+        else 
+          break;
+        fmt++;
+      }
+
       while (*fmt >= '0' && *fmt <= '9') {
         minw = minw*10 + ((*fmt) - '0');
         ++fmt;
@@ -169,31 +235,31 @@ int vsnprintf(char *buf, size_t size, const char *fmt, va_list ap)
         case 'l':
           ++fmt;
           if('d' == *fmt)
-            buf = fmt_d(buf, bufend, va_arg(ap, int64_t), minw, 1);
+            buf = fmt_d(buf, bufend, va_arg(ap, int64_t), minw, minus, zeropad, 1);
           else if ('x' == *fmt) 
-            buf = fmt_lx(buf, bufend, va_arg(ap, unsigned long), minw, 0);  
+            buf = fmt_lx(buf, bufend, va_arg(ap, unsigned long), minw, minus, zeropad, 0);  
           else if ('X' == *fmt) 
-            buf = fmt_lx(buf, bufend, va_arg(ap, unsigned long), minw, 1);   
+            buf = fmt_lx(buf, bufend, va_arg(ap, unsigned long), minw, minus, zeropad, 1);   
           else if ('u' == *fmt)
-            buf = fmt_u(buf, bufend, va_arg(ap, uint64_t), minw, 1);           
+            buf = fmt_u(buf, bufend, va_arg(ap, uint64_t), minw, minus, zeropad, 1);           
           break;                   
         case 'd':
-          buf = fmt_d(buf, bufend, va_arg(ap, int64_t), minw, 0);           
+          buf = fmt_d(buf, bufend, va_arg(ap, int64_t), minw, minus, zeropad, 0);           
           break;
         case 'u':
-          buf = fmt_u(buf, bufend, va_arg(ap, uint64_t), minw, 0);           
+          buf = fmt_u(buf, bufend, va_arg(ap, uint64_t), minw, minus, zeropad, 0);           
           break;
         case 'x':
-          buf = fmt_x(buf, bufend, va_arg(ap, unsigned int), minw, 0);
+          buf = fmt_x(buf, bufend, va_arg(ap, unsigned int), minw, minus, zeropad, 0);
           break;        
         case 'X':
-          buf = fmt_x(buf, bufend, va_arg(ap, unsigned long), minw, 1);
+          buf = fmt_x(buf, bufend, va_arg(ap, unsigned long), minw, minus, zeropad, 1);
           break;      
         case 'p':
           buf = fmt_p(buf, bufend, va_arg(ap, unsigned long));
           break;       
         case 's':
-          buf = fmt_s(buf, bufend, va_arg(ap, char*));
+          buf = fmt_s(buf, bufend, va_arg(ap, char*), minw, minus);
           break;
         case 'b':
           // buf = fmt_b(buf, bufend, va_arg(ap, int64_t));
