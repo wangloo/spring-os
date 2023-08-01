@@ -126,5 +126,5 @@ void percpu_init(void)
   pcpu->stack += TASK_STACK_SIZE;
   pcpu->state = PCPU_STATE_RUNNING;
   
-  printf("pcpu: init ok\n");
+  LOG_DEBUG("PCPU", "init ok");
 }

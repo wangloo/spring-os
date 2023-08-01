@@ -40,15 +40,10 @@ void arch_init_task(struct task *task, void *entry,
     regs->spsr = AARCH64_SPSR_EL1h;
   } 
   else {
-    
     regs->spsr = AARCH64_SPSR_EL0t;
     tsk->cpu_context.tpidr_el0 = 0;
     tsk->cpu_context.tpidrro_el0 = (uint64_t)tsk->pid << 32 | (tsk->tid);
     tsk->cpu_context.ttbr_el0 = (uint64_t)task_ttbr_value(tsk);
-        
-    printf("task: %s's stack_base: 0x%lx\n", tsk->name, tsk->stack_base);
-    printf("addr of regs->spsr: 0x%lx\n", regs->spsr);
-
   }
   
 }
@@ -76,5 +71,4 @@ void arch_set_task_entry_point(struct task *task, long entry)
 {
   gp_regs *regs = stack_to_gp_regs(task->stack_top);
   regs->elr = entry;
-  printf("$$ addr of regs->elf: 0x%lx, val: 0x%lx\n", &regs->elr, regs->elr);
 }

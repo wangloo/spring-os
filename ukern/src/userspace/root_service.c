@@ -123,13 +123,13 @@ static int elf_load_section(struct ramdisk_file *file, void *vaddr, Elf_Shdr *sh
 	 * bss section ?
 	 */
 	if (shdr->sh_type == SHT_NOBITS) {
-		printf("bzero elf section [0x%x 0x%x 0x%x 0x%x]\n",
+		LOG_INFO("LOAD", "bzero elf section [0x%x 0x%x 0x%x 0x%x]",
 			shdr->sh_offset, shdr->sh_addr, shdr->sh_size, shdr->sh_type);
 		memset(vaddr, 0, shdr->sh_size);
 		return 0;
 	}
 
-	printf("loading elf section [0x%x 0x%x 0x%x]\n",
+	LOG_INFO("LOAD", "loading elf section [0x%x 0x%x 0x%x]",
 			shdr->sh_offset, shdr->sh_addr, shdr->sh_size, shdr->sh_type);
 	ramdisk_read(file, vaddr, shdr->sh_size, shdr->sh_offset);
 
@@ -147,8 +147,6 @@ int elf_load(struct process *proc, struct ramdisk_file *file, struct elf_ctx *ct
 	page = get_free_pages(ctx->memsz >> PAGE_SHIFT, GFP_USER);
 	if (!page)
 		return -ENOMEM;
-	printf("ctx->base_load_vbase: 0x%lx\n", ctx->base_load_vbase);
-	printf("ctx->base_load_vend: 0x%lx\n", ctx->base_load_vend);
 	rv = user_map_create(proc, ctx->base_load_vbase,
 			ctx->memsz, vtop(page), VM_RWX);
 	if (rv)
@@ -472,7 +470,7 @@ int load_root_service(void)
 		goto failed;
 	}
 
-	printf("Root service load successfully prepare to run...\n");
+	LOG_INFO("LOAD", "Root service load successfully prepare to run...");
 
 	return wake_up_process(proc);
 

@@ -45,7 +45,7 @@ void kernel_init()
 
   if (cpuid == 0) {
     procinfo_init();
-    printf("Load Root Service...\n");
+    LOG_INFO("INIT", "Load Root Service...");
     extern int load_root_service(void);
     load_root_service();
   }

@@ -206,7 +206,7 @@ static inline int __sched_prepare(void)
   ti->flags &= ~__TIF_NEED_RESCHED;
 
   next = pick_next_task(pcpu);
-  printf("cur task: %s ==> next task: %s\n", task->name, next->name);
+  LOG_DEBUG("SCHED", "cur task: %s ==> next task: %s", task->name, next->name);
   if ((next == task)) goto task_run_again;
 
   switch_to_task(task, next);
@@ -288,7 +288,7 @@ int sched_init(void)
 
   for (i = 0; i < NR_CPUS; i++) 
     pcpu_sched_init(get_pcpu(i));
-  printf("sched: init ok\n");
+  LOG_DEBUG("SCHED", "init ok");
   return 0;
 }
 
@@ -304,7 +304,7 @@ void sched_local_init(void)
   timer_init(&pcpu->sched_timer, sched_tick_handler, (unsigned long)pcpu);
 	irq_register(CONFIG_KERNEL_IRQWORK_IRQ, irqwork_handler,
 			0, "irqwork handler", NULL);
-  printf("sched: local init ok\n");
+  LOG_DEBUG("SCHED", "local init ok");
 }
 
 

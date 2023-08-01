@@ -47,7 +47,7 @@ page_section_init(struct page_section *ps, paddr_t base, int pages)
 
 void page_section_add_kern(paddr_t base, int pages)
 {
-  printf("kernel page section add %d pages, base :0x%lx\n", pages, base); 
+  LOG_INFO("PAGE", "kernel page section add %d pages, base :0x%lx", pages, base); 
   page_section_init(&page_sections[0], base, pages);
 }
 
@@ -69,7 +69,7 @@ alloc_pages_from_section(struct page_section *ps, int pages, int flag)
   page = ps->pages + pos;
   page->count = pages;
   page->pa = (void *)ps->pa_base + pos*PAGE_SIZE;
-  printf("page: allocate %d page(s), base pa: 0x%lx\n", pages, page->pa);
+  LOG_DEBUG("PAGE", "allocate %d page(s), base pa: 0x%lx", pages, page->pa);
   return page;
 }
 

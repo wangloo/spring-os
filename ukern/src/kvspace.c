@@ -103,16 +103,16 @@ int kern_map_const_regions(void)
   
   for (i = 0; i < NR_KERN_CONST_MAP; i++) {
     region = kern_const_map + i;
-    printf("kvspace: start mapping const region[%d], va: 0x%lx, pa: 0x%lx, size: %lx\n",
+    LOG_INFO("KVSPACE", "start mapping const region[%d], va: 0x%lx, pa: 0x%lx, size: %lx",
             i, region->vbase, region->pbase, region->size);
     ret = kern_map_create(region->vbase, 
                           region->pbase,
                           region->size,  
                           region->flag);
     if (ret) 
-      printf("kvspace: failed\n", i);
+      LOG_ERROR("KVSPCE", "failed when mapping region[%d]", i);
     else 
-      printf("kvspace: ok\n");    
+      LOG_DEBUG("KVSPACE", "ok");    
   }
   return 0; 
 }

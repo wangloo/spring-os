@@ -112,7 +112,7 @@ void send_sgi(u32 sgi, int cpuid)
 
   cpumask_clearall(&cpu);
   cpumask_set_cpu(cpuid, &cpu);
-  printf("send sgi: %d to cpu %d\n", sgi, cpuid);
+  LOG_DEBUG("IRQ", "send sgi: %d to cpu %d", sgi, cpuid);
   gicv3_send_sgi(sgi, SGI_TO_LIST, &cpu);
 }
 

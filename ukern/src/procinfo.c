@@ -90,7 +90,6 @@ int procinfo_init(void)
 	// ret = create_new_pma(&task_stat_pma, &right, &args);
 	// ASSERT(ret == 0);
 	memset(task_stat_addr, 0, memsz);
-	printf("task stat memory size 0x%x\n", memsz);
 
 	// register_hook(procinfo_switch_hook, OS_HOOK_TASK_SWITCH);
 
