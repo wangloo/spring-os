@@ -23,7 +23,7 @@ out:
   
   /* DEBUG */
   if (ret) {
-    printf("[kobj] invaild kobject, ret=%d\n", ret);
+    LOG_ERROR("KOBJ", "invaild kobject, ret=%d", ret);
   }
   return ret;
 }

@@ -11,7 +11,9 @@ extern long __sys_kobject_send(handle_t handle, void __user *data, size_t data_s
 static void aarch64_syscall_unsupport(syscall_regs *regs)
 {
   u64 nr = *(u64 *)(regs + 1); // x8
-  panic("Unsupported syscall:%d\n", nr);
+  
+  LOG_ERROR("SYSCALL", "Unsupported syscall:%d\n", nr);
+  exit();
   regs->a0 = -ENOENT;
 }
 
@@ -63,7 +65,7 @@ void syscall_handler(syscall_regs *regs)
 	int nr = *(u64 *)(regs + 1); // x8
 
 	// arch_enable_local_irq(); // FIXME
-  printf("in syscall handler, nr = %d\n", nr);
+  LOG_INFO("SYSCALL", "in syscall handler, nr = %d", nr);
 	if (nr >= __NR_syscalls) {
 		regs->a0 = -EINVAL;
 		return;

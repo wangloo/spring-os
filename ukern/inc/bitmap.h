@@ -181,7 +181,7 @@ static inline void bitmap_init(bitmap_t *bitmap, u64 size, u64 value)
 {
   u64 wsize = size / sizeof(long);
 
-  assert(value == BITMAP_FULL || value == BITMAP_EMPTY);
+  // assert(value == BITMAP_FULL || value == BITMAP_EMPTY);
 
   for (u64 i = 0; i < wsize; i++) 
     bitmap[i] = value;

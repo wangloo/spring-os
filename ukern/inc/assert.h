@@ -1,5 +1,4 @@
 #pragma once
-#include <panic.h>
 
 #define assert(condition)                                                      \
   do {                                                                         \

@@ -41,7 +41,7 @@ void kernel_init()
 
   create_idle_task();
 
-  start_system_task(cpuid);
+  // start_system_task(cpuid);
 
   if (cpuid == 0) {
     procinfo_init();

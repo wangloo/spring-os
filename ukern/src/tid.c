@@ -1,5 +1,5 @@
 #include <tid.h>
-
+#include <kernel.h>
 
 bitmap_t tid_map[bits_to_long(OS_NR_TASKS)];
 // static DEFINE_SPIN_LOCK(tid_lock);

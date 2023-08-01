@@ -1,8 +1,7 @@
 #pragma once
-#include <print.h>
-#include <console.h>
 
-static inline void exit_qemu()
+
+static inline void qemu_exit()
 {
   asm volatile(
       /* 0x20026 == ADP_Stopped_ApplicationExit */
@@ -23,23 +22,4 @@ static inline void exit_qemu()
 
       /* Do the semihosting call on A64. */
       "hlt 0xf000\n");
-}
-
-static void panic(const char *str, ...)
-{
-  char buf[128];
-  va_list ap;
-  int count;
-  char *cur = buf;
-
-  va_start(ap, str);
-  count = vsnprintf(buf, sizeof(buf), str, ap);
-  va_end(ap);
-
-  console_putc('\n');
-  while (count > 0) {
-    console_putc(*cur);
-    ++cur, --count;
-  }
-  exit_qemu();
 }

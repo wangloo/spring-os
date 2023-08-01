@@ -1,7 +1,6 @@
 #include <irq.h>
 #include <smp.h>
-#include <assert.h>
-#include <errno.h>
+#include <kernel.h>
 
 static int default_irq_handler(uint32_t irq, void *data);
 
