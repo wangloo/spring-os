@@ -31,7 +31,7 @@ DBG_TAG = $(basename $(APP_TAG))
 LINK_LIBS = $(addprefix -l, $(APP_LINK_LIBS))
 __LIBS_DEPS = $(addprefix $(TARGET_LIBS_DIR)/lib, $(APP_LINK_LIBS))
 LIBS_DEPS = $(addsuffix .a, $(__LIBS_DEPS))
-# LIBS_DEPS += $(TARGET_LIBS_DIR)/libc.a
+LIBS_DEPS += $(TARGET_LIBS_DIR)/libc.a
 
 LDFLAGS := --static -L$(TARGET_LIBS_DIR) $(LINK_LIBS)
 LDFLAGS += $(APP_LDFLAGS)
