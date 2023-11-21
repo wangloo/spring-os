@@ -1,5 +1,6 @@
 #include <pcpu.h>
 #include <irq.h>
+#include <cpu.h>
 
 
 // 每个CPU都会执行到此
@@ -8,7 +9,7 @@ void idle(void)
 	struct pcpu *pcpu = get_pcpu(cpu_id());
 
 	set_os_running();
-	pstate_irq_enable();
+	cpu_intr_on();
 
 	extern void DBG_sched_newlist(struct pcpu *pcpu);
 	extern void DBG_sched_readylist(struct pcpu *pcpu);

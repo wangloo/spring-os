@@ -1,7 +1,7 @@
 #ifndef _SPRINGOS_ASM_MACRO_H_
 #define _SPRINGOS_ASM_MACRO_H_
 
-.macro func _name, align=2
+.macro asmfunc _name, align=2
 .cfi_sections .debug_frame
 .section __asm_code, "ax"
 .type \_name, %function
@@ -18,7 +18,7 @@
 .endm
 
 
-.macro kfunc _name, align=2
+.macro func _name, align=2
 .cfi_sections .debug_frame
 .section .text, "ax"
 .type \_name, %function
@@ -28,9 +28,4 @@
 \_name:
 .endm
 
-.macro endkfunc _name
-.endfunc
-.cfi_endproc
-.size \_name, . - \_name
-.endm
 #endif

@@ -45,10 +45,8 @@ _on_el1:
   dsb    nsh
   isb
 
-
-
   /* invalid the dcache and flush the tlb */
-  bl     inv_dcache_all
+  bl     inv_dcache_all_boot
   dsb    sy
   isb
 
@@ -75,41 +73,44 @@ _on_el1:
   dsb    nsh
 
   ldr    x0, =__stop_kernel
+  ldr    x26, =CONFIG_KERNEL_ADDR_MASK
+  sub    x0, x0, x26
   adr    x1, kernel_stack_top
   adr    x2, kernel_bootmem_base
   adr    x3, kernel_stack_bottom
   adr    x4, kernel_end
 
-  // store the bootmem base
-  // [x2] = align_up(x0, 4096)
+  // Set the value at memory address kernel_stack_top
+  // [kernel_stack_top] = align_up(pa(__stop_kernel), 4096)
   add    x0, x0, #4095
   mov    x5, #4095
   mvn    x6, x5
   and    x0, x0, x6
   str    x0, [x2]
 
-  // store the minos stack bottom
+  // [kernel_stack_bottom] = [kernel_stack_top]
   str    x0, [x3]
 
-  // store the minos stack top
+  // Reserve stack space between kernel_stack_bottom and kernel_stack_top
+  // [kernel_stack_top] = [kernel_stack_bottom] + sizeof(stacks)
   mov    x5, #CONFIG_TASK_STACK_SIZE
   mov    x6, #CONFIG_NR_CPUS
   mul    x6, x5, x6
   add    x0, x0, x6
   str    x0, [x1]
 
-  /* kernel_end == stack top, no other data */
+  // [kernel_end] = [kernel_stack_top]
   str    x0, [x4]
 
-  sub    x0, x0, x19, lsl #CONFIG_TASK_STACK_SHIFT
+  // sub    x0, x0, x19, lsl #CONFIG_TASK_STACK_SHIFT
+  ldr    x26, =CONFIG_KERNEL_ADDR_MASK
+  add    x0, x0, x26
   mov    sp, x0
 
   // map boot and kernel memory
-  bl     prepare_map
-  bl     do_map_id
-  bl     do_map_kern
-  dsb    ishst
-  isb
+  bl     boot_memmap
+
+
 
   ldr    x1, = __kernel_page_table
   ldr    x2, = __identity_page_table
@@ -154,7 +155,7 @@ mmu_on:
   mov    x1, #0
   ldr    x2, =__stop_bss
   sub    x2, x2, x0
-  bl     memset
+  bl     memset_asm
 
   bl    kernel_init    // never return.
   
@@ -166,9 +167,43 @@ boot_panic:
   b     boot_panic
 
 
-/*
- * 相当于定义五个变量, 存储一些地址
- */
+  .global deref_kernel_start
+  .global deref_kernel_end
+  .global deref_kernel_bootmem_base
+  .global deref_kernel_stack_top
+  .global deref_kernel_stack_bottom
+  .global deref_boot_pgtbl_base
+  .global deref_boot_pgtbl_ptr
+deref_kernel_start:
+  ldr   x0, =kernel_start
+  ldr   x0, [x0]
+  ret
+deref_kernel_end:
+  ldr   x0, =kernel_end
+  ldr   x0, [x0]
+  ret
+deref_kernel_bootmem_base:
+  ldr   x0, =kernel_bootmem_base
+  ldr   x0, [x0]
+  ret
+deref_kernel_stack_top:
+  ldr   x0, =kernel_stack_top
+  ldr   x0, [x0]
+  ret
+deref_kernel_stack_bottom:
+  ldr   x0, =kernel_stack_bottom
+  ldr   x0, [x0]
+  ret
+deref_boot_pgtbl_base:
+  ldr   x0, =boot_pgtbl_base
+  ldr   x0, [x0]
+  ret
+deref_boot_pgtbl_ptr:
+  ldr   x0, =boot_pgtbl_ptr
+  ldr   x0, [x0]
+  ret
+
+  // 定义一些变量，存储地址
   .data
   .section __boot_data, "aw"
   .global kernel_start
@@ -176,18 +211,26 @@ boot_panic:
   .global kernel_stack_top
   .global kernel_stack_bottom
   .global kernel_end
+  .global boot_pgtbl_base  // Point to base addr for pagetable pool at boot stage
+  .global boot_pgtbl_ptr   // Point to next free space of pagetable
   .balignl 16, 0xdeadbeef
 
+// [kernel_start] to [kernel_end] is all memory will be used in boot stage,
+// including code,data,bss...  also including free used memory
 kernel_start:         .quad  0x0
-kernel_bootmem_base:  .quad  0x0
-kernel_stack_top:     .quad  0x0
-kernel_stack_bottom:  .quad  0x0
-kernel_end:           .quad  0x0
+kernel_end:           .quad  0x0  
+kernel_bootmem_base:  .quad  0x0  // Base of free used memory at boot stage(stack,pagetable..)
+kernel_stack_top:     .quad  0x0  // Top of stacks wiill be allocated at boot stage
+kernel_stack_bottom:  .quad  0x0  // Bottom of stacks will be allocated at boot stage
+boot_pgtbl_base:      .quad  0x0
+boot_pgtbl_ptr:       .quad  0x0
+
+
 
 /*
   是时候对整个系统的内存规划做一个描述了， 不然天天看到这些之前定义的变量头痛。
 
-  (1) 从链接脚本开始说起，__start_kernel是一个分水岭，之前的代码都属于boot阶段，
+  (1) 从链接脚本开始说起， __start_kernel 是一个分水岭，之前的代码都属于boot阶段，
   之后的代码都属于真正的kernel。它们之间的区别是boot阶段的代码的LMA==VMA，也就是
   在disable MMU的情况下能够直接访问（当然只要你编译的代码没有绝对的地址访问，
   即便VMA!=LMA的情况也能正常的执行代码，他会顺序的从LMA开始执行，然后使用相对地址访问
@@ -197,8 +240,8 @@ kernel_end:           .quad  0x0
   相隔千万里。
 
   (2) 再从启动开始说起。启动后，-kernel下，qemu会执行boot段里的代码，这很顺利。
-  直到启用MMU之前（别问我为什么要启用MMU），启用MMU也是在boot阶段做的事情，所以
-  之前必须准备好恒等映射的页表，做好开启MMU时的过渡。
+  直到启用MMU之前，启用MMU也是在boot阶段做的事情，所以 之前必须准备好恒等映射的页表，
+  做好开启MMU时的过渡。
   
   (3) 准备好页表。boot阶段需要准备好两张页表，一张是boot时使用的自己的页表
   (不然开启MMU之后的boot指令都没法访问了），另一张是kernel的页表，因为boot最终是
@@ -207,7 +250,7 @@ kernel_end:           .quad  0x0
   脚本中预留的空间，请看__kernel_page_table和__identity_page_table。
 
   (4) 其他级别的页表池。 四级页表，链接脚本中预留的4K显然不够，而另外页表的申请是从
-  __pagetable_base 地址开始预留的。因为反正__start_kerenl是2M对齐，boot code
+  __pagetable_base 地址开始预留的。因为反正 __start_kerenl 是2M对齐，boot code
   和data又用不了那么多，中间一定存在20页的空洞来放pagetable的池子。之后就开始建立映射
   ，map_id和map_kern分别是建立boot段页表和内核页表，映射的详情可以见这两个函数的注释
   ，在这里就不多介绍了。
@@ -224,14 +267,14 @@ kernel_end:           .quad  0x0
     但是目前我们链接脚本中定义的起始LMA/VMA也都是2M对齐的。
     FIXME: 这个起名错误啊，或者说不应该从__start_code开始！
   * kernel_bootmem_base: 虚拟地址，以__stop_kerenl为基准，向上对齐到4K，
-    到kernel_end为止，里面包含的内容是boot期间设置的kernel内存，目前包括
+    到 kernel_end 为止，里面包含的内容是boot期间设置的kernel内存，目前包括
     kernel stack。另外从这之后开始的内存都属于 normal memory，映射的时候
     可以使用一个属性，所以之后尽量映射为2M block。
   * kernel_stack_bottom: 虚拟地址，kernel stack底，kernel stack是挨着
     kernel_bootmem_base的。
   * kernel_stack_top: 虚拟地址，bottom和top之间的空间就是内核的栈，为每个
     CPU 分配的单独的。
-  * kernel_end: 虚拟地址，这是在建立映射之后赋值的，从kernel_stack_top
+  * kernel_end: 虚拟地址，这是在建立映射之后赋值的，从 kernel_stack_top
     之后先是boot页表和kernel页表的其他级页表用的池子，然后 kernel_end
     就标定了这个池子用到了哪里。 从kernel_end之后的内存就是由内核来管理了，
     完全的自由，内核一共可以掌管 CONFIG_KERNEL_RAM_SIZE 这么多内存。
@@ -244,7 +287,6 @@ kernel_end:           .quad  0x0
 
 
   各个变量在地址上的视角：
-
   ------------------------------- kernel_start / __start_boot_code
         BOOT CODE
   ------------------------------- __stop_boot_code
@@ -274,7 +316,7 @@ kernel_end:           .quad  0x0
 
         KERNEL FREE MEM
 
-  ------------------------------- CONFIG_KERNEL_RAM_SIZE
+  ------------------------------- kernel_end+CONFIG_KERNEL_RAM_SIZE
 
 
  */

@@ -14,141 +14,124 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <ramdisk.h>
 #include <kernel.h>
+#include <memlayout.h>
 #include <page.h>
-#include <memattr.h>
+// #include <memattr.h>
 #include <cfi.h>
+#include <ramdisk.h>
 
-void *ramdisk_start = (void *)CONFIG_RAMDISK_BASE;
-void *ramdisk_end = (void *)(CONFIG_RAMDISK_BASE + CONFIG_RAMDISK_SIZE);
+// Set the virtual address region of RAMDISK
+// Because we are in kernel, so feel free to use va directly
+// The address map are done by kvspace_init(), RAMDISK is one of 
+// the static memory regions.
+static const vaddr_t ramdisk_start = ptov(RAMDISK_BASE);
+static const vaddr_t ramdisk_end = ptov(RAMDISK_BASE+RAMDISK_SIZE);
 
 static struct ramdisk_inode *root;
 static struct ramdisk_sb *sb;
 static void *ramdisk_data;
 
-void set_ramdisk_address(void *start, void *end)
-{
-	ramdisk_start = start;
-	ramdisk_end = end;
-}
 
 // 这是一个临时的函数, 因为目前没有uboot, 没办法将ramdisk.bin
 // 在启动时放入内存, 只能暂时放入pflash中, 这个是qemu启动项支持的.
 // 然而这时就需要做一个从pflash拷贝到ramdisk指定内存位置的拷贝过程
-void ramdisk_copy_from_flash(void)
+static void 
+ramdisk_copy_from_flash(void)
 {
-	// memcpy((void *)ptov(CONFIG_RAMDISK_BASE),
-	// 		   (void *)ptov(CONFIG_PFLASH_BASE),
-  //        CONFIG_RAMDISK_SIZE);
-  // memset((void *)ptov(CONFIG_RAMDISK_BASE), 0, 64);
-  cfi_read((void *)ptov(CONFIG_RAMDISK_BASE),
-              0, CONFIG_RAMDISK_SIZE);
-
+    u64 offset = 0;
+    cfi_read((void *)ptov(RAMDISK_BASE), offset, RAMDISK_SIZE);
 }
 
-int ramdisk_init(void)
-{
-	unsigned long start = ptov(ramdisk_start);
-	// size_t size = ramdisk_end - ramdisk_start;
-
-	/*
-	 * need remap the ramdisk memory space, if it
-	 * is not in the kernel memory space TBD.
-	 */
-	if (!ramdisk_start || !ramdisk_end) {
-		panic("ramdisk address is not set\n");
-		return -EINVAL;
-	}
-
-	if (!IS_PAGE_ALIGN(ramdisk_start)) {
-		panic("ramdisk start address need PAGE align\n");
-		return -EINVAL;
-	}
-
-	// if (create_host_mapping(start, (unsigned long)ramdisk_start, size, VM_RO)) {
-	// 	panic("unable map ramdisk memory\n");
-	// 	return -ENOMEM;
-	// }
-
-	if (strncmp((void *)start, RAMDISK_MAGIC, RAMDISK_MAGIC_SIZE) != 0) {
-		// destroy_host_mapping(start, size);
-		panic("bad ramdisk format\n");
-		return -EBADF;
-	}
-
-	/*
-	 * the ramdisk is read only, init the ramdisk
-	 * information, inclue the superblock and the
-	 * root inode
-	 */
-	ramdisk_start = (void *)ptov(ramdisk_start);
-	ramdisk_end = (void *)ptov(ramdisk_end);
-
-	sb = ramdisk_start + RAMDISK_MAGIC_SIZE;
-	root = ramdisk_start + sb->inode_offset;
-	ramdisk_data = ramdisk_start + sb->data_offset;
-
-    LOG_DEBUG("RAMDISK", "init ok");
-
-	return 0;
-}
 
 const char *ramdisk_file_name(struct ramdisk_file *file)
 {
-	return file->inode->f_name;
+    return file->inode->f_name;
 }
 
 unsigned long ramdisk_file_size(struct ramdisk_file *file)
 {
-	return file->inode->f_size;
+    return file->inode->f_size;
 }
 
 unsigned long ramdisk_file_base(struct ramdisk_file *file)
 {
-	return (unsigned long)ramdisk_data + file->inode->f_offset;
+    return (unsigned long)ramdisk_data + file->inode->f_offset;
 }
 
-static struct ramdisk_inode *get_file_inode(const char *name)
+
+// Read data from file
+// Return bytes actually read
+int 
+ramdisk_read(struct ramdisk_file *file, void *buf, size_t size, unsigned long offset)
 {
-	struct ramdisk_inode *inode;
-
-	for (inode = root; inode < root + sb->file_cnt; inode++) {
-		if (strncmp(inode->f_name, name, RAMDISK_FNAME_SIZE - 1) == 0)
-			return inode;
-	}
-
-	return NULL;
+    if (offset > file->inode->f_size)
+        return 0;
+    if ((offset + size) > file->inode->f_size)
+        return 0;
+    memcpy(buf, ramdisk_data + file->inode->f_offset + offset, size);
+    return size;
 }
 
-int ramdisk_read(struct ramdisk_file *file, void *buf,
-		size_t size, unsigned long offset)
+// Give file name, return the file descriptor
+// Return NULL if not found
+static struct ramdisk_inode *
+__ramdisk_open(const char *name)
 {
-	if (!file)
-		return -EINVAL;
-
-	if ((offset + size) > file->inode->f_size)
-		return -EINVAL;
-
-	memcpy(buf, ramdisk_data + file->inode->f_offset + offset, size);
-	return 0;
+    struct ramdisk_inode *inode;
+    for (inode = root; inode < root + sb->file_cnt; inode++) {
+        if (strncmp(inode->f_name, name, RAMDISK_FNAME_SIZE - 1) == 0)
+            return inode;
+    }
+    return NULL;
 }
 
-int ramdisk_open(char *name, struct ramdisk_file *file)
+// Open a file, fill the file descriptor
+int 
+ramdisk_open(char *name, struct ramdisk_file *fd)
 {
-	struct ramdisk_inode *inode;
+    struct ramdisk_inode *inode;
 
-	if (!sb) {
-		printf("super block not found\n");
-		return -ENOENT;
-	}
+    if (!sb) {
+        LOG_ERROR("RAMDISK", "super block not found, forget to init ramdisk?\n");
+        return -ENOENT;
+    }
 
-	inode = get_file_inode(name);
-	if (!inode)
-		return -ENOENT;
+    inode = __ramdisk_open(name);
+    if (!inode) {
+        LOG_ERROR("RAMDISK", "open %s: file not found!\n", name);
+        return -ENOENT;
+    }
 
-	memset(file, 0, sizeof(struct ramdisk_file));
-	file->inode = inode;
+    memset(fd, 0, sizeof(struct ramdisk_file));
+    fd->inode = inode;
+    return 0;
+}
 
-	return 0;
+// Init kernel component -- RAMDISK
+// Return < 0 if error
+int 
+init_ramdisk(void)
+{
+    // Fill the content of RAMDISK
+    ramdisk_copy_from_flash();
+
+    if (!ramdisk_start || !ramdisk_end) {
+        LOG_ERROR("RAMDISK", "ramdisk address is not set yet\n");
+        return -EINVAL;
+    }
+    if (!page_aligned(ramdisk_start)) {
+        LOG_ERROR("RAMDISK", "ramdisk start address need PAGE align\n");
+        return -EINVAL;
+    }
+    if (strncmp((void *)ramdisk_start, RAMDISK_MAGIC, RAMDISK_MAGIC_SIZE) != 0) {
+        LOG_ERROR("RAMDISK", "bad ramdisk format\n");
+        return -EBADF;
+    }
+
+    sb = (struct ramdisk_sb *)(ramdisk_start+RAMDISK_MAGIC_SIZE);
+    root = (struct ramdisk_inode *)(ramdisk_start + sb->inode_offset);
+    ramdisk_data = (void *)(ramdisk_start+sb->data_offset);
+    LOG_DEBUG("RAMDISK", "init ok\n");
+    return 0;
 }

@@ -23,5 +23,5 @@ void log(int level, const char *domain,
             level_color[level], level_str[level], domain);
   vprintf(fmt, ap);
   va_end(ap);
-  printf("\n");
+//   printf("\n");
 }

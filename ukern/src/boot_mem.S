@@ -15,6 +15,7 @@ ttb0_pud       .req    x21
 ttb0_pmd       .req    x22
 ttb0_pt        .req    x27
  
+// parameters for build_normal_pte_table()
 vaddr          .req    x5
 paddr          .req    x6
 size           .req    x7
@@ -29,7 +30,7 @@ pte_index      .req    x15
 entry_size     .req    x16
 entry_align    .req    x17
 entry_mask     .req    x18
-pagetable_base .req    x23        // store the pagetable for page allocation
+pgtbl_cur      .req    x23        // store the pagetable for page allocation
 
 .section __asm_code, "ax"
 .balign 4
@@ -37,20 +38,15 @@ pagetable_base .req    x23        // store the pagetable for page allocation
 #define HOST_TABLE_DES    (S1_DES_TABLE | S1_TABLE_UAP | S1_TABLE_UXN)
 #define HOST_1G_BLK_ATTR  (S1_DES_BLOCK | S1_ATTR_IDX(MT_NORMAL))
 
-    .global prepare_map
-    .global do_map_kern
-    .global do_map_id
-
 
 /**
  * @brief 建立恒等映射页表和内核页表之前的准备
  *
  */
-prepare_map:
+.macro prepare_map
     /* get the base address of pagetable pool */
-    ldr    pagetable_base, =__pagetable_base
-
-    ret
+    ldr    pgtbl_cur, =__pagetable_base
+.endm
 
 /**
  * @brief 内核页表映射的建立
@@ -62,16 +58,14 @@ prepare_map:
  * 4. bootmem_base 之后的内存会以2M的大块映射，但是bootmem_base
  *    不一定是2M对齐的，于是中间的4K也是在这时被填充上映射
  */
-do_map_kern:
-    /* save the lr register */
-    mov    x26, x30
 
+.macro do_map_kern
     /* kernel pgd is defined in lds */
     mov    x1, #0
     mov    x2, #4096
     ldr    page_table, = __kernel_page_table
     mov    x0, page_table
-    bl     memset
+    bl     memset_asm
 
     // 预留0-4G的页表(只填了2M block), 其他的页表项需要自己填
     bl     build_page_table
@@ -103,11 +97,13 @@ __map_kdata_section:
     // the range is from __rodata_start to kernel_bootmem_base
 __map_krodata_section:
     ldr    vaddr, =__start_rodata
+    ldr    tmp, =CONFIG_KERNEL_ADDR_MASK 
+    sub    vaddr, vaddr, tmp   // vaddr=pa(_start_rodata)
     adr    tmp, kernel_bootmem_base
     ldr    tmp, [tmp]
     sub    size, tmp, vaddr
-    ldr    tmp, =CONFIG_KERNEL_ADDR_MASK // tmp reg is free now!
-    sub    vaddr, vaddr, tmp
+    // ldr    tmp, =CONFIG_KERNEL_ADDR_MASK // tmp reg is free now!
+    // sub    vaddr, vaddr, tmp
     mov    paddr, vaddr
     ldr    pte_attr, =BOOTMEM_DATA_RO_ATTR
     bl     build_normal_pte_table
@@ -130,8 +126,8 @@ __map_krodata_section:
     // map the left 4K pages
     adr    vaddr, kernel_bootmem_base
     ldr    vaddr, [vaddr]
-    ldr    tmp, =CONFIG_KERNEL_ADDR_MASK // tmp reg is free now!
-    sub    vaddr, vaddr, tmp
+    // ldr    tmp, =CONFIG_KERNEL_ADDR_MASK // tmp reg is free now!
+    // sub    vaddr, vaddr, tmp
     mov    tmp, vaddr
     ldr    entry_mask, =0x1fffff
     add    tmp, tmp, entry_mask
@@ -141,8 +137,7 @@ __map_krodata_section:
     sub    size, tmp, vaddr
     ldr    pte_attr, =BOOTMEM_DATA_ATTR
     bl     build_normal_pte_table
-
-    ret    x26
+.endm
 
 
 /**
@@ -150,16 +145,13 @@ __map_krodata_section:
  *
  */
 
-do_map_id:
-    /* save the lr register */
-    mov    x26, x30
-
+.macro do_map_id
     /* identity pgd is defined in lds */
     mov    x1, #0
     mov    x2, #4096
     ldr    page_table, = __identity_page_table
     mov    x0, page_table
-    bl     memset
+    bl     memset_asm
 
     /* 申请恒等映射页表的其他级子页表，并填入子页表的地址到上级,
        仅预留了2M的空间，映射boot内容应该是足够了的 */
@@ -180,7 +172,7 @@ __map_boot_data:
     mov    paddr, vaddr
     ldr    pte_attr, =BOOTMEM_DATA_ATTR
     bl     build_normal_pte_table
-    ret    x26
+.endm
 
 build_normal_pmd_table:
     mov    x25, x30
@@ -236,7 +228,10 @@ loop_io_pte:
     ret    x25
 
 
-
+// vaddr: virtual addr(mask addrspace flag)
+// paddr: physical addr
+// size: mapping size
+// pte_attr: mapping attr
 build_normal_pte_table:
     ldr    entry_size, =0x1000
     ldr    entry_mask, =0xfff
@@ -277,12 +272,12 @@ build_id_page_table:
     // identify map 2M is enough
     // so need 3 pages(1 pud and 1 pmd and 1pt)
     mov    x3, #3
-    mov    ttb0_pud, pagetable_base
+    mov    ttb0_pud, pgtbl_cur
     ldr    x2, =(4096 * 3)  // 3 pages
-    add    pagetable_base, pagetable_base, x2
+    add    pgtbl_cur, pgtbl_cur, x2
     mov    x0, ttb0_pud
     mov    x1, #0
-    bl     memset // clear 3 pages
+    bl     memset_asm // clear 3 pages
 
     // pgd has 1 entry(idx: 0)
     mov    tmp, ttb0_pud
@@ -313,20 +308,21 @@ build_id_page_table:
     ret x25
 
 
-// 4-level pagetable:
-//   pgd => pud => pmd => pte
+// Build 4-level pagetable frame for kernel
+// Only frame, not fill pte
+// pgd => pud => pmd => pte
 build_page_table:
     mov    x25, x30
 
     // map first 4GB for kernel memory, here
     // need 5 pages(1 pud and 4 pmd)
     mov    x3, #5
-    mov    ttb0_pud, pagetable_base
+    mov    ttb0_pud, pgtbl_cur
     ldr    x2, =(4096 * 5)  // 5 pages
-    add    pagetable_base, pagetable_base, x2
+    add    pgtbl_cur, pgtbl_cur, x2
     mov    x0, ttb0_pud
     mov    x1, #0
-    bl     memset // clear 5 pages
+    bl     memset_asm // clear 5 pages
 
     // pgd has 1 entry(idx: 0)
     mov    tmp, ttb0_pud
@@ -352,24 +348,20 @@ loop_fill_pud:
     cbnz   entry_size, loop_fill_pud // fill 4 entries in PUD
 
 
-    // count how many memory is mapped as 4K page
-    // other memory will mapped as 2M block
-    adr    vaddr, kernel_bootmem_base
-    ldr    vaddr, [vaddr]
-    ldr    tmp, =CONFIG_KERNEL_ADDR_MASK
-    sub    vaddr, vaddr, tmp
-    mov    tmp, vaddr
+    // Count how many memory is mapped as 4K page
+    // And other memory will mapped as 2M block
+    // NOTICE: only count size, not map here
+    adr    paddr, kernel_bootmem_base
+    ldr    tmp, [paddr]
     ldr    entry_mask, =0x1fffff  // 2M mask
     add    tmp, tmp, entry_mask
     mvn    entry_align, entry_mask
-    and    tmp, tmp, entry_align  // below: tmp = align_up(vaddr, 2M)
+    and    tmp, tmp, entry_align  // below: tmp = align_up(*kernel_bootmem_base, 2M)
     adr    pte_value, kernel_start
     ldr    pte_value, [pte_value]
 
-    // size record the 4K page size
-    // tmp_const record the 2M block start address
-    mov    tmp_const, tmp
-    sub    size, tmp, pte_value
+    mov    tmp_const, tmp       // tmp_const hold the start addr of 2M blocks
+    sub    size, tmp, pte_value // size hold the sizeof all 4K pages
 
 
 dbg_cal_size:
@@ -377,11 +369,11 @@ dbg_cal_size:
     lsl    x2, x3, #12    // x2: number of pt for this 4k pages
 
     // need x2 pages for pt(level-3 pagetable)
-    mov    ttb0_pt, pagetable_base
-    add    pagetable_base, pagetable_base, x2
+    mov    ttb0_pt, pgtbl_cur
+    add    pgtbl_cur, pgtbl_cur, x2
     mov    x0, ttb0_pt
     mov    x1, #0
-    bl     memset
+    bl     memset_asm
 
     // kernel_start address 2M align kernel_start
     // will set at boot stage correctly
@@ -413,6 +405,28 @@ loop_fill_pmd_blk:
     add    pte_index, pte_index, #1
     add    paddr, paddr, entry_mask
     sub    size, size, #1
-    cbnz    size, loop_fill_pmd_blk
+    cbnz   size, loop_fill_pmd_blk
 
     ret    x25
+
+
+  .global boot_memmap
+boot_memmap:
+  // save the lr
+  mov    x26, x30
+
+  prepare_map
+  do_map_id
+  do_map_kern
+  dsb   ishst
+  isb  
+
+  adr   x9, boot_pgtbl_base
+  ldr   x10, =__pagetable_base
+  str   x10, [x9]
+  
+  adr   x9, boot_pgtbl_ptr
+  str   pgtbl_cur, [x9]
+  ret   x26
+
+

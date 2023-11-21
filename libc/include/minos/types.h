@@ -52,7 +52,7 @@
 #define PAGE_BALIGN(x)	BALIGN((unsigned long)(x), PAGE_SIZE)
 #define PAGE_ALIGN(x)	ALIGN((unsigned long)(x), PAGE_SIZE)
 
-#define IS_PAGE_ALIGN(x)	(!((unsigned long)(x) & (PAGE_SIZE - 1)))
+#define page_aligned(x)	(!((unsigned long)(x) & (PAGE_SIZE - 1)))
 #define IS_BLOCK_ALIGN(x)	(!((unsigned long)(x) & (0x1fffff)))
 
 #define PAGE_NR(size)	(PAGE_BALIGN(size) >> PAGE_SHIFT)

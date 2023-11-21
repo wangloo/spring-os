@@ -1,15 +1,15 @@
-#include <pagetable.h>
-#include <compiler.h>
 #include <kernel.h>
+#include <page.h>
+#include <pagetable.h>
 
 #define BOOTDATA  __section(__boot_data)
-BOOTDATA page_table_t id_pgtable;
+BOOTDATA struct pagetable id_pgtable;
 
 #if 0
 #define EARLY_PGTABLE_MAX 10  // enough?
 #define BOOT   
 
-static BOOT page_table_t early_pgtable_mem[EARLY_PGTABLE_MAX];  
+static BOOT struct pagetable early_pgtable_mem[EARLY_PGTABLE_MAX];  
 static BOOT int early_pgtable_index;
 
 void * early_pgtable_alloc(void)

@@ -4,21 +4,24 @@
 #include <types.h>
 #include <config/config.h>
 
-static inline int atomic_read(atomic_t *t)
+static inline int 
+atomic_read(atomic_t *t)
 {
 	smp_mb();
-	return t->value;
+	return *t;
 }
 
-static inline void atomic_set(int i, atomic_t *t)
+static inline void 
+atomic_set(atomic_t *t, int i)
 {
-	t->value = i;
+	*t = i;
 	smp_mb();
 }
 
 #ifndef CONFIG_ARM_ATOMIC_LSE
 
-static inline void atomic_add(int i, atomic_t *v)
+static inline void 
+atomic_add(atomic_t *v, int i)
 {
 	unsigned long tmp;
 	int ret;
@@ -28,12 +31,13 @@ static inline void atomic_add(int i, atomic_t *v)
 "	add	%w0, %w0, %w3\n"
 "	stxr	%w1, %w0, %2\n"
 "	cbnz	%w1, 1b"
-	: "=&r" (ret), "=&r" (tmp), "+Q" (v->value)
+	: "=&r" (ret), "=&r" (tmp), "+Q" (*v)
 	: "Ir" (i)
 	);
 }
 
-static inline int atomic_add_return(int i, atomic_t *v)
+static inline int 
+atomic_add_return(atomic_t *v, int i)
 {
 	unsigned long tmp;
 	int ret;
@@ -43,7 +47,7 @@ static inline int atomic_add_return(int i, atomic_t *v)
 "	add	%w0, %w0, %w3\n"
 "	stlxr	%w1, %w0, %2\n"
 "	cbnz	%w1, 1b"
-	: "=&r" (ret), "=&r" (tmp), "+Q" (v->value)
+	: "=&r" (ret), "=&r" (tmp), "+Q" (*v)
 	: "Ir" (i)
 	: "memory"
 	);
@@ -52,7 +56,8 @@ static inline int atomic_add_return(int i, atomic_t *v)
 	return ret;
 }
 
-static inline int atomic_add_return_old(int i, atomic_t *v)
+static inline int 
+atomic_add_return_old(atomic_t *v, int i)
 {
 	unsigned long tmp;
 	int ret;
@@ -63,7 +68,7 @@ static inline int atomic_add_return_old(int i, atomic_t *v)
 "	stlxr	%w1, %w0, %2\n"
 "	cbnz	%w1, 1b\n"
 "	sub	%w0, %w0, %w3"
-	: "=&r" (ret), "=&r" (tmp), "+Q" (v->value)
+	: "=&r" (ret), "=&r" (tmp), "+Q" (*v)
 	: "Ir" (i)
 	: "memory"
 	);
@@ -72,7 +77,8 @@ static inline int atomic_add_return_old(int i, atomic_t *v)
 	return ret;
 }
 
-static inline void atomic_sub(int i, atomic_t *v)
+static inline void 
+atomic_sub(atomic_t *v, int i)
 {
 	unsigned long tmp;
 	int ret;
@@ -82,12 +88,13 @@ static inline void atomic_sub(int i, atomic_t *v)
 "	sub	%w0, %w0, %w3\n"
 "	stlxr	%w1, %w0, %2\n"
 "	cbnz	%w1, 1b"
-	: "=&r" (ret), "=&r" (tmp), "+Q" (v->value)
+	: "=&r" (ret), "=&r" (tmp), "+Q" (*v)
 	: "Ir" (i)
 	);
 }
 
-static inline int atomic_sub_return(int i, atomic_t *v)
+static inline int 
+atomic_sub_return(atomic_t *v, int i)
 {
 	unsigned long tmp;
 	int ret;
@@ -97,7 +104,7 @@ static inline int atomic_sub_return(int i, atomic_t *v)
 "	sub	%w0, %w0, %w3\n"
 "	stlxr	%w1, %w0, %2\n"
 "	cbnz	%w1, 1b"
-	: "=&r" (ret), "=&r" (tmp), "+Q" (v->value)
+	: "=&r" (ret), "=&r" (tmp), "+Q" (*v)
 	: "Ir" (i)
 	: "memory"
 	);
@@ -106,7 +113,8 @@ static inline int atomic_sub_return(int i, atomic_t *v)
 	return ret;
 }
 
-static inline int atomic_sub_return_old(int i, atomic_t *v)
+static inline int 
+atomic_sub_return_old(atomic_t *v, int i)
 {
 	unsigned long tmp;
 	int ret;
@@ -117,7 +125,7 @@ static inline int atomic_sub_return_old(int i, atomic_t *v)
 "	stlxr	%w1, %w0, %2\n"
 "	cbnz	%w1, 1b\n"
 "	add	%w0, %w0, %w3"
-	: "=&r" (ret), "=&r" (tmp), "+Q" (v->value)
+	: "=&r" (ret), "=&r" (tmp), "+Q" (*v)
 	: "Ir" (i)
 	: "memory"
 	);
@@ -125,7 +133,8 @@ static inline int atomic_sub_return_old(int i, atomic_t *v)
 	return ret;
 }
 
-static inline int atomic_cmpxchg(atomic_t *t, int old, int new)
+static inline int 
+atomic_cmpxchg(atomic_t *t, int old, int new)
 {
 	unsigned long tmp;
 	int oldval;
@@ -139,7 +148,7 @@ static inline int atomic_cmpxchg(atomic_t *t, int old, int new)
 "	stxr	%w0, %w4, %2\n"
 "	cbnz	%w0, 1b\n"
 "2:			"
-	: "=&r" (tmp), "=&r" (oldval), "+Q" (t->value)
+	: "=&r" (tmp), "=&r" (oldval), "+Q" (*t)
 	: "Ir" (old), "r" (new)
 	: "cc"
 	);
@@ -148,7 +157,8 @@ static inline int atomic_cmpxchg(atomic_t *t, int old, int new)
 	return oldval;
 }
 
-static inline int atomic_inc_if_postive(atomic_t *t)
+static inline int 
+atomic_inc_if_postive(atomic_t *t)
 {
 	unsigned long tmp;
 	int oldval;
@@ -164,7 +174,7 @@ static inline int atomic_inc_if_postive(atomic_t *t)
 "	stxr	%w0, %w3, %2\n"
 "	cbnz	%w0, 1b\n"
 "2:			"
-	: "=&r" (tmp), "=&r" (oldval), "+Q" (t->value), "=&r" (value)
+	: "=&r" (tmp), "=&r" (oldval), "+Q" (*t), "=&r" (value)
 	:
 	: "cc"
 	);
@@ -173,7 +183,8 @@ static inline int atomic_inc_if_postive(atomic_t *t)
 	return oldval;
 }
 
-static inline int atomic_dec_set_negtive_if_zero(atomic_t *t)
+static inline int 
+atomic_dec_set_negtive_if_zero(atomic_t *t)
 {
 	unsigned long tmp;
 	int oldval;
@@ -193,7 +204,7 @@ static inline int atomic_dec_set_negtive_if_zero(atomic_t *t)
 "	stxr	%w0, %w3, %2\n"
 "	cbnz	%w0, 1b\n"
 "2:			"
-	: "=&r" (tmp), "=&r" (oldval), "+Q" (t->value), "=&r" (value)
+	: "=&r" (tmp), "=&r" (oldval), "+Q" (*t), "=&r" (value)
 	:
 	: "cc"
 	);
@@ -202,7 +213,8 @@ static inline int atomic_dec_set_negtive_if_zero(atomic_t *t)
 	return oldval;
 }
 
-static inline int atomic_cmpsub(atomic_t *t, int old, int value)
+static inline int 
+atomic_cmpsub(atomic_t *t, int old, int value)
 {
 	unsigned long tmp;
 	int oldval;
@@ -217,7 +229,7 @@ static inline int atomic_cmpsub(atomic_t *t, int old, int value)
 "	stxr	%w0, %w4, %2\n"
 "	cbnz	%w0, 1b\n"
 "2:			"
-	: "=&r" (tmp), "=&r" (oldval), "+Q" (t->value)
+	: "=&r" (tmp), "=&r" (oldval), "+Q" (*t)
 	: "Ir" (old), "r" (value)
 	: "cc"
 	);
@@ -236,7 +248,7 @@ static inline void atomic_##op(int i, atomic_t *t)	\
 							\
 	asm volatile (					\
 "	" #asm_op "	%w[i], %[v]\n"			\
-	: [i] "+r" (w0), [v] "+Q" (t->value)		\
+	: [i] "+r" (w0), [v] "+Q" (*t)		\
 	: "r" (x1)					\
 	: "x16", "x17", "x30"				\
 	);						\
@@ -256,7 +268,7 @@ static inline int atomic_add_return##name(int i, atomic_t *v)		\
 	asm volatile(							\
 	"	ldadd" #mb "	%w[i], w30, %[v]\n"			\
 	"	add	%w[i], %w[i], w30"				\
-	: [i] "+r" (w0), [v] "+Q" (v->value)				\
+	: [i] "+r" (w0), [v] "+Q" (*v)				\
 	: "r" (x1)							\
 	: "x16", "x17", "x30", ##cl					\
 	);								\
@@ -272,7 +284,7 @@ static inline int atomic_add_return_old(int i, atomic_t *v)
 	asm volatile(
 "	ldaddal %w[i], w30, %[v]\n"
 "	add	%w[i], %w[i], w30"
-	: [i] "+r" (w0), [v] "+Q" (v->value)
+	: [i] "+r" (w0), [v] "+Q" (*v)
 	: "r" (x1)
 	: "x16", "x17", "x30", "memory"
 	);
@@ -293,7 +305,7 @@ static inline void atomic_sub(int i, atomic_t *v)
 	asm volatile(
 	"	neg	%w[i], %w[i]\n"
 	"	stadd	%w[i], %[v]"
-	: [i] "+&r" (w0), [v] "+Q" (v->value)
+	: [i] "+&r" (w0), [v] "+Q" (*v)
 	: "r" (x1)
 	: "x16", "x17", "x30"
 	);
@@ -309,7 +321,7 @@ static inline int atomic_sub_return##name(int i, atomic_t *v)		\
 "	neg	%w[i], %w[i]\n"						\
 "	ldadd" #mb "	%w[i], w30, %[v]\n"				\
 "	add	%w[i], %w[i], w30"					\
-	: [i] "+&r" (w0), [v] "+Q" (v->value)				\
+	: [i] "+&r" (w0), [v] "+Q" (*v)				\
 	: "r" (x1)							\
 	: "x16", "x17", "x30", ##cl);					\
 									\
@@ -329,7 +341,7 @@ static inline int atomic_sub_return_old(int i, atomic_t *v)
 	asm volatile(
 "	neg	%w[i], %w[i]\n"
 "	ldaddal %w[i], w30, %[v]"
-	: [i] "+&r" (w0), [v] "+Q" (v->value)
+	: [i] "+&r" (w0), [v] "+Q" (*v)
 	: "r" (x1)
 	: "x16", "x17", "x30", "memory");
 
@@ -377,10 +389,10 @@ __CMPXCHG_CASE(x,  ,  mb_8, al, "memory")
 
 static inline void atomic_inc(atomic_t *t)
 {
-	atomic_add(1, t);
+	atomic_add(t, 1);
 }
 
 static inline void atomic_dec(atomic_t *t)
 {
-	atomic_sub(1, t);
+	atomic_sub(t, 1);
 }

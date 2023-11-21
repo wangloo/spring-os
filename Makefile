@@ -21,7 +21,9 @@ AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
 CC		= $(CROSS_COMPILE)gcc
 STRIP   = $(CROSS_COMPILE)strip
-export AS LD CC
+OBJDUMP = $(CROSS_COMPILE)objdump
+READELF = $(CROSS_COMPILE)readelf
+export AS LD CC STRIP OBJDUMP READELF
 
 projtree := $(shell pwd)
 srctree  := .
@@ -70,13 +72,14 @@ roots: libc
 	$(Q) echo "\n\033[32m ---> Compiling Root Service ... \033[0m \n";	
 	$(Q)$(MAKE) $(MFLAGS) -C roots
 	$(Q)$(MAKE) $(MFLAGS) -C roots install
-
-ramdisk: kernel roots
-	$(Q)$(MAKE) $(MFLAGS) -C tools/mkrmd
+roots-dump: roots
+	$(Q)$(OBJDUMP) -S out/ramdisk/roots.elf > out/roots.dump
+ramdisk: kernel roots-dump
+	$(Q)$(MAKE) $(MFLAGS) -C tools/mkrmd 
 	$(Q) echo "\n\033[32m ---> Packing Ramdisk image ... \033[0m \n"
-	$(Q) qemu-img create -f raw out/ramdisk.bin 64M
-	$(Q) chmod +x ./tools/mkrmd/mkrmd
-	$(Q) ./tools/mkrmd/mkrmd -f out/ramdisk.bin out/ramdisk/roots.elf
+	$(Q) qemu-img create -f raw out/ramdisk.bin 64M  > /dev/null
+	$(Q) chmod +x ./tools/mkrmd/mkrmd 
+	$(Q) ./tools/mkrmd/mkrmd -f out/ramdisk.bin out/ramdisk/roots.elf > /dev/null
 #	$(Q) qemu-img -q resize ramdisk.bin 64M  2> /dev/null
 
 kernel:
@@ -95,9 +98,11 @@ prepare: objdirs
 	cp -f generic/include/uapi/* libc/include/minos/
 
 run: ramdisk kernel
-	bash ./tools/run-qemu.sh
-gdb: ramdisk kernel
-	bash ./tools/gdb.sh
+	$(Q) bash ./tools/run-qemu.sh
+run-gdb: ramdisk kernel
+	$(Q) bash ./tools/run-qemu.sh -S
+gdb-client: ramdisk kernel
+	$(Q) bash ./tools/gdb.sh
 
 .PHONY: clean $(PHONY)
 clean: clean-libc clean-roots clean-ukern

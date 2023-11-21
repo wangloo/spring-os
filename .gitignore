@@ -3,6 +3,7 @@
 **/.cache
 **/compile_commands.json
 
+.clangd/*
 # 中间文件
 ukern/build
 out/

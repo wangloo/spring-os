@@ -1,12 +1,8 @@
 #pragma once
-#include <config/config.h>
 #include <types.h>
-
-#ifdef CONFIG_AARCH64
 
 #define div64_long(x, y) div64_s64((x), (y))
 #define div64_ul(x, y)   div64_u64((x), (y))
-
 #define mod_64(x, y) ((x) % (y))
 
 /**
@@ -71,4 +67,3 @@ static inline s64 div_s64(s64 dividend, s32 divisor)
 
 uint64_t muldiv64(uint64_t a, uint32_t b, uint32_t c);
 
-#endif

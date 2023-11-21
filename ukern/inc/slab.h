@@ -8,7 +8,7 @@
 //  - struct slab和freelist均放到slab指向的物理页帧中
 //  - object后没有添加padding，即没有越界的检查
 
-struct mem_pool {
+struct slab_pool {
     char *name;
     int size;     // plus padding
     int obj_size; // without padding
@@ -22,7 +22,7 @@ struct slab {
     struct list_head lru;
     void *obj_start;    // addr of first object
     void *page;        
-    struct mem_pool *pool; // 所属的mem pool
+    struct slab_pool *pool; // slab-pool it belongs
     void *freelist; 
     unsigned long magic;
     int active;
@@ -34,18 +34,19 @@ struct pool_info {
     unsigned long size;
 };
 
-
-    
-void *_mpalloc(struct mem_pool *pool);
-void *mpalloc(int size);
-void mpfree(void *ptr);
-void mem_pool_init(void);
-struct mem_pool *mem_pool_create(char *name, size_t obj_size);
-void mem_pool_destory(struct mem_pool *pool);
-int is_slab_addr(void *addr);
-
-
+void 
+slab_init(void);
+void 
+slab_free(void *ptr);
+void *
+slab_alloc(int bytes);
+void *
+slab_alloc_pool(struct slab_pool *pool);
+struct slab_pool *
+slab_pool_alloc(char *name, size_t obj_size);
+void 
+slab_pool_free(struct slab_pool *pool);
 
 // debug
-void DBG_mem_pool(struct mem_pool *pool);
-void DBG_mem_pools();
+// void DBG_mem_pool(struct mem_pool *pool);
+// void DBG_mem_pools();

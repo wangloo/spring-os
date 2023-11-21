@@ -1,6 +1,7 @@
 #include <slab.h>
 #include <kernel.h>
 
+#if 0
 void print_freelist(int depth, struct slab *slab)
 {
   int nr_obj = slab->nr_obj;
@@ -87,3 +88,5 @@ void DBG_mem_pools()
     DBG_mem_pool(pool_ptrs[i]);
   }
 }
+
+#endif

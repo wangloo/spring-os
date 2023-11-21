@@ -1,9 +1,5 @@
 #pragma once
-#include <config/config.h>
-#include <types.h>
 #include <cpumask.h>
-
-
 
 #define SGI_MIN           (   0)
 #define SGI_MAX           (  15)
@@ -18,14 +14,14 @@
 #define NR_PPIS        16
 #define NR_SGIS        16
 #define NR_SPIS        256  // 设置使得OS支持这么多，GIC实际支持更多 
-#define NR_PERCPU_IRQS		(NR_PPIS + NR_SGIS)
+#define NR_PCPU_IRQS		(NR_PPIS + NR_SGIS)
 
 
 typedef enum sgi_mode {
 	SGI_TO_LIST = 0,
 	SGI_TO_OTHERS,
 	SGI_TO_SELF,
-} sgi_mode_t;
+} E_SGI_MODE;
 
 /* Memory map for GIC distributor */
 struct gic_dist_map {
@@ -119,11 +115,12 @@ struct gic_rdist_sgi_ppi_map { /* Starting */
 };
 
 
-void gicv3_init();
+void 
+init_gicv3(void);
 void gicv3_secondary_init();
 
-void gicv3_irq_enable(u32 irq);
-void gicv3_irq_disable(u32 irq);
-void gicv3_send_sgi(u32 sgi, enum sgi_mode mode, cpumask_t *cpu);
+void gicv3_irq_enable(u32 intid);
+void gicv3_irq_disable(u32 intid);
+void gicv3_send_sgi(u32 intid, E_SGI_MODE mode, cpumask_t *cpu);
 u32 gicv3_read_irq(void);
-void gicv3_eoi_irq(u32 irq);
+void gicv3_eoi_irq(u32 intid);

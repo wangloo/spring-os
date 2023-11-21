@@ -1,7 +1,5 @@
 #pragma once
 #include <bitmap.h>
-#include <types.h>
-#include <config/config.h>
 
 typedef struct cpumask {
 	 bitmap_t bits[bits_to_long(CONFIG_NR_CPUS)];

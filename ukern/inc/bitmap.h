@@ -1,11 +1,9 @@
 /* 64-bit bitmap */
 #pragma once
-#include <sys_size.h>
 #include <utils.h>
-#include <arm64_utils.h>
+#include <utils_arm64.h>
+#include <size.h>
 #include <types.h>
-#include <assert.h>
-
 
 #define BITMAP_FULL        ((u64)~0)
 #define BITMAP_EMPTY       ((u64)0)

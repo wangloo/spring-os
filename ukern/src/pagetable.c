@@ -4,9 +4,10 @@
  * @level 架构相关
  * @date  2023-07-29
  */
+#include <kernel.h>
+#include <page.h>
 #include <pagetable.h>
 #include <barrier.h>
-#include <kernel.h>
 
 #define VA_MAX (~((unsigned long)0))
 #define PA_MAX (1ul << 48)
@@ -229,7 +230,7 @@ static bool can_map_pmd_huge(pte_t pmde,
 }
 
 
-static int map_pt_range(page_table_t *pt, 
+static int map_pt_range(struct pagetable *pt, 
               vaddr_t base, vaddr_t end, paddr_t phy, int flags)
 {
   pte_t *ptep;  
@@ -253,8 +254,8 @@ static int map_pt_range(page_table_t *pt,
   return 0;
 }
 
-static int map_pmd_range(page_table_t *pmd, 
-              vaddr_t base, paddr_t pa, size_t size, int flags, pgtable_alloc_func_t pgtable_alloc)
+static int 
+map_pmd_range(struct pagetable *pmd, u64 base, u64 pa, size_t size, int flags)
 {
   pte_t *pmdep;
   vaddr_t aligned_base;
@@ -282,7 +283,7 @@ static int map_pmd_range(page_table_t *pmd,
     else {
       // printf("size: 0x%lx, map_size: 0x%lx\n",size, map_size);
       if (pte_is_null(*pmdep)) {
-        pt = pgtable_alloc();
+        pt = page_alloc();
         if (!pt)
           return -ENOMEM;
         memset(pt, 0, PAGE_SIZE);
@@ -305,12 +306,12 @@ static int map_pmd_range(page_table_t *pmd,
   return 0;
 }
 
-static int map_pud_range(page_table_t *pud, 
-              vaddr_t va, paddr_t pa, size_t size, int flags, pgtable_alloc_func_t pgtable_alloc)
+static int 
+map_pud_range(struct pagetable *pud, u64 va, u64 pa, size_t size, int flags)
 {
   pte_t *pudep;
   void *pmd;
-  int ret;
+  int ret = 0;
   size_t map_size;
 
   pudep = &pud->entry[pud_index(va)];
@@ -323,7 +324,7 @@ static int map_pud_range(page_table_t *pud,
     else {
       map_size = size >= PUD_SIZE ? PUD_SIZE : size;
       if (pte_is_null(*pudep)) {
-        pmd = pgtable_alloc();
+        pmd = page_alloc();
         if (!pmd)
           return -ENOMEM;
         memset(pmd, 0, PAGE_SIZE);
@@ -332,7 +333,7 @@ static int map_pud_range(page_table_t *pud,
       else {
         pmd = (void *)ptov(pte_table_addr(*pudep));
       }
-      ret = map_pmd_range(pmd, va, pa, map_size, flags, pgtable_alloc);
+      ret = map_pmd_range(pmd, va, pa, map_size, flags);
       if (ret)
         return ret;
 
@@ -343,12 +344,12 @@ static int map_pud_range(page_table_t *pud,
     size -= map_size;
   } while (pudep++, size > 0);
 
-  return 0;
+  return ret;
 }
 
 
-static int map_pgd_range(page_table_t *pagetable, vaddr_t va, paddr_t pa, 
-              size_t size, int flags, pgtable_alloc_func_t pgtable_alloc)
+static int 
+map_pgd_range(struct pagetable *pagetable, u64 va, u64 pa, size_t size, int flags)
 {
   pte_t *pgdep;
   void *pud;
@@ -358,7 +359,7 @@ static int map_pgd_range(page_table_t *pagetable, vaddr_t va, paddr_t pa,
   pgdep = &pagetable->entry[pgd_index(va)];
   do {
     if (pte_is_null(*pgdep)) {
-      pud = pgtable_alloc();
+      pud = page_alloc();
       if (!pud)
         return -ENOMEM;
       memset(pud, 0, PAGE_SIZE);
@@ -368,7 +369,7 @@ static int map_pgd_range(page_table_t *pagetable, vaddr_t va, paddr_t pa,
       pud = (void *)ptov(pte_table_addr(*pgdep));
     }
     map_size = size > PGD_SIZE ? PGD_SIZE : size;
-    ret = map_pud_range(pud, va, pa, map_size, flags, pgtable_alloc);
+    ret = map_pud_range(pud, va, pa, map_size, flags);
     if (ret) 
       return ret;
 
@@ -380,19 +381,25 @@ static int map_pgd_range(page_table_t *pagetable, vaddr_t va, paddr_t pa,
 
   return 0;
 }
-int pagetable_map(page_table_t *pagetable, vaddr_t va, paddr_t pa, 
-      size_t size, int flags, pgtable_alloc_func_t pgtable_alloc)
+int 
+pagetable_map(struct pagetable *pagetable, u64 va, u64 pa, size_t size, int flag)
 {
+
   // 在这里检查后，所有的内部函数都不再检查合法性
   assert(size > 0);
   assert(va < VA_MAX && va+size < VA_MAX);
   assert(pa < PA_MAX);
-  assert(IS_PAGE_ALIGN(va) && IS_PAGE_ALIGN(size) && IS_PAGE_ALIGN(pa));
+  assert(page_aligned(va) && page_aligned(size) && page_aligned(pa));
   
-  return map_pgd_range(pagetable, va, pa, size, flags, pgtable_alloc);
+  if (map_pgd_range(pagetable, va, pa, size, flag) != SPR_OK) {
+    LOG_ERROR("MAP", "Map region[0x%lx, 0x%lx] Error\n", va, va+size);
+    return -SPR_ERR;
+  }
+  LOG_INFO("MAP", "Map region 0x%lx ==> 0x%lx, size: 0x%lx\n", va, pa, size);
+  return 0;
 }
 
-int pagetable_unmap(page_table_t *pagetable, 
+int pagetable_unmap(struct pagetable *pagetable, 
       vaddr_t start, vaddr_t end, int flags)
 {
   assert(0);
@@ -401,36 +408,59 @@ int pagetable_unmap(page_table_t *pagetable,
 
 
 /* TODO: return 0 if error, 现在用的检查太强了 */
-paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va)
+paddr_t 
+pgtbl_walk(struct pagetable *pagetable, vaddr_t va)
 {
   pte_t pgde, pude, pmde, pte;
-  page_table_t *next_table;
+  struct pagetable *next_table;
   u64 page_offset = va & (PAGE_SIZE-1);
 
   pgde = pagetable->entry[pgd_index(va)];
   assert(pte_is_vaild(pgde));
   assert(pte_is_table(pgde));
 
+  LOG_DEBUG("MAP","pgde: 0x%lx\n", pgde.pte);
   // pud
-  next_table = (page_table_t *)ptov(pte_table_addr(pgde));
+  next_table = (struct pagetable *)ptov(pte_table_addr(pgde));
   pude = next_table->entry[pud_index(va)];
   assert(pte_is_vaild(pude));
   if (!pte_is_table(pude)) {
     return (paddr_t)pud_block_addr(pude);
   }
+  LOG_DEBUG("MAP","pude: 0x%lx\n", pude.pte);
 
   // pmd
-  next_table = (page_table_t *)ptov(pte_table_addr(pude));
+  next_table = (struct pagetable *)ptov(pte_table_addr(pude));
   pmde = next_table->entry[pmd_index(va)];
   assert(pte_is_vaild(pmde));
   if (!pte_is_table(pmde)) {
     return (paddr_t)pmd_block_addr(pmde);
   }
+  LOG_DEBUG("MAP","pmde: 0x%lx\n", pmde.pte);
+
   // pt
-  next_table = (page_table_t *)ptov(pte_table_addr(pmde));
+  next_table = (struct pagetable *)ptov(pte_table_addr(pmde));
   pte = next_table->entry[pt_index(va)];
+  LOG_DEBUG("MAP", "pt_index(va): 0x%lx\n", pt_index(va));
+  LOG_DEBUG("MAP","pte: 0x%lx\n", pte.pte);
   assert(pte_is_vaild(pte));
 
 
-  return (paddr_t)pt_page_addr(pte) + page_offset;
+  return (paddr_t)pt_page_addr(pte) | page_offset;
+}
+
+// Free a pagetable and all sub-level pagetables in its entries
+void
+pagetable_free(struct pagetable *pagetable)
+{
+    TODO();
+}
+
+// new_pgtbl should be allocated by caller
+// Return 0 is ok, <0 is ERROR
+int
+pagetable_clone(struct pagetable *new_pgtbl, struct pagetable *old_pgtbl)
+{
+    TODO();
+    return 0;
 }

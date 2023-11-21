@@ -227,7 +227,6 @@ install-tools: $(ALL_TOOLS:obj/%=$(DESTDIR)$(bindir)/%)
 install: install-libs install-headers install-tools
 
 install:
-	echo $(prefix)
 
 musl-git-%.tar.gz: .git
 	 git --git-dir=$(srcdir)/.git archive --format=tar.gz --prefix=$(patsubst %.tar.gz,%,$@)/ -o $@ $(patsubst musl-git-%.tar.gz,%,$@)

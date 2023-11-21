@@ -82,7 +82,7 @@
 	testop	test_and_clear_bit, bic
 	testop	test_and_set_bit, orr
 
-kfunc test_bit
+func test_bit
 	and	w3, w0, #31		// Get bit offset
 	eor	w0, w0, w3		// Clear low bits
 	add	x1, x1, x0, lsr #3	// Get word offset
@@ -90,4 +90,4 @@ kfunc test_bit
 	lsr	w0, w2, w3		// Save old value of bit
 	and	w0, w0, #1
 	ret
-endkfunc test_bit
+endfunc test_bit

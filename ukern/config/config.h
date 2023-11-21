@@ -8,6 +8,10 @@
 
 #define CONFIG_KERNEL_IRQWORK_IRQ   5
 
+#define NCPU          8  // maximum number of CPUs
+#define PROC_PRIO_MAX 8  // maximun priority of user process
+#define MAXARG       32  // max exec arguments
+
 
 // hardware config
 #define CONFIG_AARCH64

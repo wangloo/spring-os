@@ -2,6 +2,9 @@
 #include <types.h>
 
 /* #include <list.h> */
+#define SECONDS(s)     		((uint64_t)((s)  * 1000000000ULL))
+#define MILLISECS(ms)  		((uint64_t)((ms) * 1000000ULL))
+#define MICROSECS(us)  		((uint64_t)((us) * 1000ULL))
 
 typedef void (*timer_func_t)(unsigned long);
 
@@ -17,8 +20,11 @@ struct timer {
 };
 
 
-void timer_setup_and_start(struct timer *timer, u64 ns);
-void timer_setup(struct timer *timer, u64 ns);
-void timer_start(struct timer *timer);
-int timer_stop(struct timer *timer);
-void timer_init(struct timer *timer, timer_func_t fn, unsigned long data);
+void
+timer_setup(u64 ns);
+void 
+timer_start(void);
+void 
+timer_stop(void);
+void 
+init_timer(void);

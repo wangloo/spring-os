@@ -4,9 +4,6 @@
 #include <barrier.h>
 #include <kernel.h>
 
-#define CNT_CTL_ISTATUS (1 << 2)
-#define CNT_CTL_IMASK   (1 << 1)
-#define CNT_CTL_ENABLE  (1 << 0)
 
 u32 cpu_khz;
 

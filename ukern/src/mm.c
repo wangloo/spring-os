@@ -5,56 +5,112 @@
  * @date  2023-07-29
  */
 
-#include <mm.h>
-#include <kmem.h>
+#include <kernel.h>
 #include <page.h>
 #include <slab.h>
-#include <kernel.h>
+#include <kvspace.h>
+#include <mm.h>
 
-/* kernel 的页表是定义在bootdata中的, 在boot_mem中做了映射 */
-vaddr_t kernel_pgtable_base(void)
+
+
+
+// Print variables in image linkscript
+void
+print_imageinfo(void)
 {
-  vaddr_t kernel_pagetable;
-
-  asm volatile (
-  "ldr %0, =__kernel_page_table\n"
-  :"=r"(kernel_pagetable)
-  );
-
-  return ptov(kernel_pagetable);
+  extern unsigned long __get__start_boot_code();
+  extern unsigned long __get__stop_boot_code();
+  extern unsigned long __get__start_boot_data();
+  extern unsigned long __get__kernel_page_table();
+  extern unsigned long __get__identity_page_table();
+  extern unsigned long __get__pagetable_base();
+  extern unsigned long __get__stop_boot_data();
+  extern unsigned long __get__start_kernel();
+  extern unsigned long __get__start_code();
+  extern unsigned long __get__stop_code();
+  extern unsigned long __get__start_kobject_desc();
+  extern unsigned long __get__stop_kobject_desc();
+  extern unsigned long __get__start_data();
+  extern unsigned long __get__start_bss();
+  extern unsigned long __get__stop_bss();
+  extern unsigned long __get__start_rodata();
+  extern unsigned long __get__stop_kernel();
+  LOG_INFO("MEM", "[__start_boot_code    ]: 0x%lx\n", __get__start_boot_code());
+  LOG_INFO("MEM", "[__stop_boot_code     ]: 0x%lx\n", __get__stop_boot_code());
+  LOG_INFO("MEM", "[__start_boot_data    ]: 0x%lx\n", __get__start_boot_data());
+  LOG_INFO("MEM", "[__kernel_page_table  ]: 0x%lx\n", __get__kernel_page_table());
+  LOG_INFO("MEM", "[__identity_page_table]: 0x%lx\n", __get__identity_page_table());
+  LOG_INFO("MEM", "[__pagetable_base     ]: 0x%lx\n", __get__pagetable_base());
+  LOG_INFO("MEM", "[__stop_boot_data     ]: 0x%lx\n", __get__stop_boot_data());
+  LOG_INFO("MEM", "[__start_kernel       ]: 0x%lx\n", __get__start_kernel());
+  LOG_INFO("MEM", "[__start_code         ]: 0x%lx\n", __get__start_code());
+  LOG_INFO("MEM", "[__stop_code          ]: 0x%lx\n", __get__stop_code());
+  LOG_INFO("MEM", "[__start_kobject_desc ]: 0x%lx\n", __get__start_kobject_desc());
+  LOG_INFO("MEM", "[__stop_kobject_desc  ]: 0x%lx\n", __get__stop_kobject_desc());
+  LOG_INFO("MEM", "[__start_data         ]: 0x%lx\n", __get__start_data());
+  LOG_INFO("MEM", "[__start_bss          ]: 0x%lx\n", __get__start_bss());
+  LOG_INFO("MEM", "[__stop_bss           ]: 0x%lx\n", __get__stop_bss());
+  LOG_INFO("MEM", "[__start_rodata       ]: 0x%lx\n", __get__start_rodata());
+  LOG_INFO("MEM", "[__stop_kernel        ]: 0x%lx\n", __get__stop_kernel());
 }
 
-void mm_init(void)
+// Print memory partition done at boot stage
+// And also print usage
+void
+print_meminfo(void)
 {
-  extern int kern_vspace_init(vaddr_t pgtable_base);
-  vaddr_t kmem_base;
-  vaddr_t pgtable_base;
+  extern uint64_t deref_kernel_start();
+  extern uint64_t deref_kernel_end();
+  extern uint64_t deref_kernel_bootmem_base();
+  extern uint64_t deref_kernel_stack_bottom();
+  extern uint64_t deref_kernel_stack_top();
+  extern uint64_t deref_kernel_stack_top();
+  extern uint64_t deref_boot_pgtbl_base();
+  extern uint64_t deref_boot_pgtbl_ptr();
+  LOG_INFO("MEM", "[kernel_start       ]: 0x%lx\n", deref_kernel_start()); 
+  LOG_INFO("MEM", "[kernel_end         ]: 0x%lx\n", deref_kernel_end()); 
+  LOG_INFO("MEM", "[kernel_bootmem_base]: 0x%lx\n", deref_kernel_bootmem_base()); 
+  LOG_INFO("MEM", "[kernel_stack_bottom]: 0x%lx\n", deref_kernel_stack_bottom()); 
+  LOG_INFO("MEM", "[kernel_stack_top   ]: 0x%lx\n", deref_kernel_stack_top()); 
+  LOG_INFO("MEM", "[boot_pgtbl_base    ]: 0x%lx\n", deref_boot_pgtbl_base()); 
+  LOG_INFO("MEM", "[boot_pgtbl_ptr     ]: 0x%lx\n", deref_boot_pgtbl_ptr()); 
+}
+
+void 
+init_mm(void)
+{
+  paddr_t kmem_base;
   size_t kmem_size;
 
-  /* 直接访问会默认使用adr指令， 因为跨越高低两个地址，
-     所以adr指令访问不到，这时要借用ldr伪指令来实现 */
+  print_imageinfo();
+  print_meminfo();
+
+  
+
+  // `kernel_end` is a symbol defined in asm
+  // Use inline asm because C will use `adr` to load variable
+  // But adr can't load var in lower-addrspace from higher-addrspace
+  // So we use pseudo instruction `ldr` here
   asm volatile(
-  "ldr %0, =kernel_end\n"
-  "ldr %0, [%0]\n"
-  : "=&r"(kmem_base)
-  :);
+    "ldr %0, =kernel_end\n"
+    "ldr %0, [%0]\n"
+    : "=&r"(kmem_base)
+    :);
 
   kmem_base = align_page_up(kmem_base);
   kmem_size = CONFIG_KERNEL_RAM_SIZE;
+  assert(page_aligned(kmem_base) && page_aligned(kmem_size));
 
-  assert(IS_PAGE_ALIGN(kmem_base) && IS_PAGE_ALIGN(kmem_size));
-  page_section_add_kern(vtop(kmem_base), kmem_size >> PAGE_SHIFT);
+  // System memory allocator init
+  // After do this, kalloc() can work
+  page_init(kmem_base, kmem_size>>PAGE_SHIFT);
+  slab_init();
+  
 
-  // 2. 初始化内核内存分配器 kalloc接口,
-  //    slab 做小内存分配
-  mem_pool_init();
-
-  // 3. 映射
-  pgtable_base = kernel_pgtable_base();
-  kern_vspace_init(pgtable_base);
+  kvspace_init();
 
   // 用户内存怎么办?
 
-
+  // Kmem_test();
   // DBG_mem_pools();
 }

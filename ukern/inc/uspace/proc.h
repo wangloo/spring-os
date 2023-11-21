@@ -5,6 +5,7 @@
 #include <vspace.h>
 #include <current.h>
 #include <list.h>
+#include <spinlock.h>
 
 #define PROC_FLAGS_VMCTL (1 << 0)
 #define PROC_FLAGS_HWCTL (1 << 1)
@@ -31,7 +32,7 @@ struct process {
   struct handle_desc *handle_desc_table;
   struct task *root_task;
   struct list_head task_list;
-  spinlock_t lock;
+  struct spinlock lock;
 
   struct kobject kobj;
   // struct iqueue iqueue;

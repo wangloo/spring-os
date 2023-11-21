@@ -13,6 +13,6 @@
 #define CFI_QUERY_BLOCK_SIZE       0x2F
 
 void cfi_test(void);
-int cfi_init(void);
 size_t cfi_read(char *out, u64 offset, size_t size);
 size_t cfi_write(const char *in, u64 offset, size_t size);
+int init_cfi(void);

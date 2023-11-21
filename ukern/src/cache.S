@@ -1,10 +1,10 @@
 #include <asm/asm_macro.S.h>
 
-.global inv_dcache_all
-.global flush_dcache_all
-.global flush_cache_all
+.global inv_dcache_all_boot
+.global flush_dcache_all_boot
+.global flush_cache_all_boot
 
-func inv_dcache_all
+asmfunc inv_dcache_all_boot
   // From the ARM ARMv8-A Architecture Reference Manual
   dmb ish                   // ensure all prior inner-shareable accesses have been observed
   mrs x0, CLIDR_EL1
@@ -48,9 +48,9 @@ next_level:
   isb
 finished:
   ret
-endfunc inv_dcache_all
+endfunc inv_dcache_all_boot
 
-func flush_dcache_all
+asmfunc flush_dcache_all_boot
   dmb sy        // ensure ordering with previous memory accesses
   mrs x0, clidr_el1     // read clidr
   and x3, x0, #0x7000000    // extract loc from clidr
@@ -98,7 +98,7 @@ finish:
   dsb sy
   isb
   ret
-endfunc flush_dcache_all
+endfunc flush_dcache_all_boot
 
 /*
  *  flush_cache_all()
@@ -109,11 +109,11 @@ endfunc flush_dcache_all
  *  instruction cache can still be invalidated back to the point of
  *  unification in a single instruction.
  */
-func flush_cache_all
+asmfunc flush_cache_all_boot
   mov x12, x30
-  bl  flush_dcache_all
+  bl  flush_dcache_all_boot
   mov x0, #0
   ic  ialluis       // I+BTB cache invalidate
   ret x12
-endfunc flush_cache_all
+endfunc flush_cache_all_boot
 

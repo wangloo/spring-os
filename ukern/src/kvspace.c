@@ -4,11 +4,14 @@
  * @level 底层依赖页表的操作，本文件不涉及任何架构相关操作
  * @date  2023-07-29
  */
-
-#include <vspace.h>
+#include <kernel.h>
+#include <atomic.h>
+#include <spinlock.h>
 #include <page.h>
 #include <memattr.h>
-#include <kernel.h>
+#include <pagetable.h>
+#include <vspace.h>
+#include <kvspace.h>
 
 struct map_region 
 {
@@ -70,58 +73,81 @@ struct map_region kern_const_map[] = {
 
 static struct vspace kvspace;
 
-int kern_map_create(vaddr_t va, paddr_t pa,
-      size_t size, int flags)
+static int 
+kern_map(vaddr_t va, paddr_t pa, size_t size, int flags)
 {
   int ret;
 
-	if (!IS_PAGE_ALIGN(va) || !IS_PAGE_ALIGN(pa) ||
-			!IS_PAGE_ALIGN(size))
+  if (!page_aligned(va) || !page_aligned(pa) || !page_aligned(size)) {
 	  return -EINVAL;
+  }
 
   // spin_lock(&host_vspace.lock);
-  ret = pagetable_map(kvspace.pgdp, va, pa, size, flags, get_free_page_q);
+  ret = pagetable_map(kvspace.pgdp, va, pa, size, flags);
   // spin_unlock(&host_vspace.lock);
   return ret;
 }
 
-int kern_map_destory(vaddr_t va, size_t size)
+static int 
+kern_unmap(vaddr_t va, size_t size)
 {
   TODO();
   return 0;
 }
 
-
-/* int kern_map_remap(...); */
-
-int kern_map_const_regions(void)
+static int
+kern_remap(vaddr_t old, vaddr_t new, size_t size)
 {
-  int i;
-  int ret;
-  struct map_region *region;
-
-  
-  for (i = 0; i < NR_KERN_CONST_MAP; i++) {
-    region = kern_const_map + i;
-    LOG_INFO("KVSPACE", "start mapping const region[%d], va: 0x%lx, pa: 0x%lx, size: %lx",
-            i, region->vbase, region->pbase, region->size);
-    ret = kern_map_create(region->vbase, 
-                          region->pbase,
-                          region->size,  
-                          region->flag);
-    if (ret) 
-      LOG_ERROR("KVSPCE", "failed when mapping region[%d]", i);
-    else 
-      LOG_DEBUG("KVSPACE", "ok");    
-  }
-  return 0; 
+  TODO();
+  return 0;
 }
 
-int kern_vspace_init(vaddr_t pgtable_base)
+static void 
+kern_map_const_regions(void)
 {
-  kvspace.pgdp = (page_table_t *)pgtable_base;
-  atomic_set(1, &(kvspace.refcount));
+  struct map_region *r;
+  int ret;
+
+  for (int i = 0; i < NR_KERN_CONST_MAP; i++) {
+    r = kern_const_map + i;
+    LOG_INFO("KVSPACE", "start mapping const region[%d], va: 0x%lx, pa: 0x%lx, size: %lx\n",
+            i, r->vbase, r->pbase, r->size);
+
+    ret = kern_map(r->vbase, r->pbase, r->size,  r->flag);
+    if (ret) {
+      LOG_ERROR("KVSPCE", "failed when mapping region[%d]", i);
+    } else {
+      LOG_DEBUG("KVSPACE", "ok\n");    
+    }
+  }
+}
+
+
+// Return the virtual addr of kernel pagetable
+// kerenl pgd is defined in bootdata, mapped in boot stage
+pagetable_t 
+kern_pagetbl_base(void)
+{
+  pagetable_t base;
+
+  asm volatile (
+  "ldr %0, =__kernel_page_table\n"
+  :"=r"(base)
+  );
+
+  return ptov(base);
+}
+
+// Initialize kernel vspace mapping
+// Some address mappings are done in boot stage
+// For now, only const regions need to be mapped here
+void 
+kvspace_init(void)
+{
+  kvspace.pgdp = (struct pagetable *)kern_pagetbl_base();
+  atomic_set(&kvspace.refcount, 1);
 
   kern_map_const_regions();
-  return 0;
+
+//   DBG_pagetable(kvspace.pgdp);
 }

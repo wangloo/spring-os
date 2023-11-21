@@ -1,16 +1,20 @@
 #pragma once
 #include <types.h>
+#include <spinlock.h>
 
 // 未来可以扩展多个 console
-struct console {
+struct dev_console {
   char *name;
-  int (*init)(vaddr_t base_addr);
+  struct spinlock lock;
+
+  int (*init)();
   void (*putc)(char ch);
   char (*getc)(void);
 };
 
 
-void console_init();
+void 
+init_console();
 void console_putc(char ch);
 char console_getc(void);
 int console_puts(char *buf, size_t size);

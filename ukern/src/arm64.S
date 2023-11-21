@@ -2,9 +2,9 @@
 
   .global aarch64_task_exit
 
-kfunc aarch64_task_exit
+func aarch64_task_exit
 	mov	x0, x0
-	bl	task_exit
+	// bl	task_exit
 1:
 	b	1b
-endkfunc aarch64_task_exit
+endfunc aarch64_task_exit

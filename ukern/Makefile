@@ -38,10 +38,11 @@ SPRING_LDS = $(OBJ_DIR)/spring.lds
 
 
 
-CFLAGS += -Wall -g -O1   \
+CFLAGS += -Wall -g3 -O0   \
 			 		-MMD -MP      \
 			 		--static -nostdlib -fno-builtin \
 					-Wno-unused-function \
+					-fno-asynchronous-unwind-tables \
 					-ffixed-x18
 					
 LDFLAGS += -T $(SPRING_LDS)

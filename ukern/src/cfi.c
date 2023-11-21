@@ -1,5 +1,5 @@
-#include <cfi.h>
 #include <kernel.h>
+#include <cfi.h>
 
 /////////////////////////////////////////
 // depending on size of a word
@@ -7,9 +7,6 @@
 #define WSIZE   4
 #define W2B(word)  ((word) << 2)
 #define B2W(byte)  ((byte) >> 2)
-
-
-
 
 /////////////////////////////////////////
 // QEMU pflash expected value
@@ -90,7 +87,7 @@ int cfi_query(void)
     
     // query device size
     capacity = 1u << cfi_query_1b(0x27);
-    LOG_INFO("CFI", "device size: 0x%x", capacity);
+    LOG_INFO("CFI", "device size: 0x%x\n", capacity);
         
     // query page bit(max number of bytes in buffer write)
     pgsz = 1u << cfi_query_2b(0x2A);
@@ -109,19 +106,13 @@ int cfi_query(void)
     eblksz = cfi_query_2b(0x2f);
     eblksz *= 256;
     assert(eblksz == QEMU_EXPECTED_ERASE_BLOCK_SZ);
-    LOG_INFO("CFI", "erase block size: 0x%x", eblksz);
+    LOG_INFO("CFI", "erase block size: 0x%x\n", eblksz);
 
     CFI_PUTW(0, 0xff);
     return 0;
 }
 
-int cfi_init(void)
-{
-    if (cfi_query() < 0)
-        return -1;
-    LOG_DEBUG("CFI", "init ok");
-    return 0;
-}
+
    
 
 
@@ -299,4 +290,13 @@ void cfi_test(void)
 #endif
 
     printf("CFI test PASSED!!\n");
+}
+
+int 
+init_cfi(void)
+{
+    if (cfi_query() < 0)
+        return -1;
+    LOG_DEBUG("CFI", "init ok\n");
+    return 0;
 }

@@ -1,8 +1,7 @@
 #pragma once
 #include <types.h>
 
-#define DEFAULT_CLOCK (24000000) // clock frequency: 24M
-#define BAUDRATE      (115200)
+
 
 #define FR_BUSY       (1u << 3)
 #define FR_RXFE       (1u << 4)
@@ -19,7 +18,7 @@
 #define ICR_RXIC      (1u << 4)
 
 
-struct pl011_regs {
+struct uart_pl011_regs {
   u32 DR;      /* 0x000 */
   u32 RSR;     /* 0x004 */
   u32 res1[4]; /* 0x008-0x014 */
@@ -38,15 +37,18 @@ struct pl011_regs {
   u32 DMACR;   /* 0x048 */
 };
 
-struct pl011 {
+struct uart_pl011 {
   u64 base_clock;
   u32 baudrate;
-  u32 data_bits;
-  u32 stop_bits;
-  volatile struct pl011_regs *regs;
+  u16 data_bits;
+  u16 stop_bits;
+  volatile struct uart_pl011_regs *regs;
 };
 
 
-int pl011_init(vaddr_t base_addr);
-char pl011_getc(void);
-void pl011_putc(char c);
+int uart_init();
+char uart_getc(void);
+void uart_putc(char c);
+
+void
+uart_irq_handler(void);

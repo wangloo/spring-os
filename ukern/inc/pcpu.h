@@ -2,6 +2,8 @@
 #include <task_def.h>
 #include <smp.h>
 
+
+
 typedef enum {
   PCPU_STATE_OFFLINE = 0x0,
   PCPU_STATE_RUNNING,
@@ -54,7 +56,7 @@ struct pcpu {
 
 
 
-
+struct pcpu *mycpu(void);
 struct pcpu *get_pcpu(int cpuid);
 void add_task_to_ready_list(struct pcpu *pcpu, struct task *task,
                                    int preempt);

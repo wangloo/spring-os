@@ -1,5 +1,14 @@
 #pragma once
 
+typedef unsigned int   uint;
+typedef unsigned short ushort;
+typedef unsigned char  uchar;
+
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef unsigned int  uint32;
+typedef unsigned long uint64;
+
 typedef unsigned long   u64;
 typedef unsigned int    u32;
 typedef unsigned short  u16;
@@ -24,7 +33,7 @@ typedef unsigned long size_t;
 
 typedef unsigned long paddr_t;
 typedef unsigned long vaddr_t;
-
+typedef unsigned long pagetable_t;
 
 typedef int16_t tid_t;
 typedef int16_t pid_t;
@@ -41,19 +50,8 @@ enum {
 
 #define NULL ((void *)0)
 
-typedef struct {
-	int value;
-} atomic_t;
+typedef int atomic_t;
 
-/*
- * [0  - 15] - current number
- * [16 - 31] - next number
- */
-typedef struct spinlock {
-#ifdef CONFIG_SMP
-    int current_ticket;
-    int next_ticket;
-#endif
-} spinlock_t;
+
 
 typedef int16_t handle_t;

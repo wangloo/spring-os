@@ -1,7 +1,6 @@
 #pragma once
 #include <memattr.h>
 #include <stage1.h>
-#include <page.h>
 
 
 #define PGD_SHIFT            (39)
@@ -34,7 +33,7 @@
 #define pte_is_table(entry)  ((entry).table.is_table)
 
 #define pte_table_addr(pte)                                                    \
-  (page_table_t *)((paddr_t)((pte).table.next_table_addr) << PAGE_SHIFT)
+  (struct pagetable *)((paddr_t)((pte).table.next_table_addr) << PAGE_SHIFT)
 
 
 /* table format */
@@ -92,15 +91,20 @@ typedef union {
   u64 pte;                               // 页表项
 } pte_t;
 
-typedef struct _page_table {
+struct pagetable {
   pte_t entry[PTP_ENTRIES];
-} page_table_t __attribute__((aligned(PAGE_SIZE)));
+} __attribute__((aligned(PAGE_SIZE)));
 
 typedef void *(*pgtable_alloc_func_t)(void);
 
-int pagetable_map(page_table_t *pagetable, 
-      vaddr_t va, paddr_t pa, size_t size, int flags, pgtable_alloc_func_t pgtable_alloc);
-int pagetable_unmap(page_table_t *pagetable, 
+int pagetable_unmap(struct pagetable *pagetable, 
       vaddr_t start, vaddr_t end, int flags);
-paddr_t pagetable_va_to_pa(page_table_t *pagetable, vaddr_t va);
-void DBG_pagetable(page_table_t *pagetable);
+paddr_t pgtbl_walk(struct pagetable *pagetable, vaddr_t va);
+int 
+pagetable_map(struct pagetable *pagetable, u64 va, u64 pa, size_t size, int flag);
+int
+pagetable_clone(struct pagetable *new_pgtbl, struct pagetable *old_pgtbl);
+void
+pagetable_free(struct pagetable *pagetable);
+
+void DBG_pagetable(struct pagetable *pagetable);

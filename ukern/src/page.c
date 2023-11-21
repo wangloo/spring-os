@@ -4,123 +4,130 @@
  * @level arch-independent, 向上提供申请page的接口
  * @date  2023-07-29
  */
+#include <kernel.h>
 #include <page.h>
-#include <kernel.h> 
 
-
-// index 0 for kernel
+// 将page section分割开将来可能有利于按照flag从不同的
+// section来分配page, 目前暂时没有使用
 static struct page_section page_sections[6];
-static int nr_sections = 1;
-
 
 static void 
 page_section_init(struct page_section *ps, paddr_t base, int pages)
 {
-  struct page_meta *page;
-  paddr_t end;
+  struct page *page;
 
-  assert(IS_PAGE_ALIGN(base));
+  assert(page_aligned(base));
   assert(pages > 0);
-
-  end = base + (pages << PAGE_SHIFT);
-  memset(ps, 0, sizeof(*ps));
 
   // space reserve 1: bitmap
   ps->bitmap = (bitmap_t *)ptov(base);
-  base += BITMAP_SIZE(pages);
   bitmap_init(ps->bitmap, BITMAP_SIZE(pages), BITMAP_EMPTY);
+  base += BITMAP_SIZE(pages);
 
   // space reserve 2: page metadata
-  page = (struct page_meta *)ptov(base);
+  page = (struct page *)ptov(base);
   ps->pages = page;
   base += pages * sizeof(*page);
-  memset(page, 0, pages*sizeof(*page));
   
   // other space is free
   // 所以实际管理的页面的数量一定是小于bitmap可以管理的数量的,
   // 这样其实也没关系, 剩下的结构不用就是了
   base = align_page_up(base);
-  ps->size = end-base;
+  ps->size = pages << PAGE_SHIFT;
   ps->pa_base = base;
   ps->va_base = ptov(base);
 }
 
-void page_section_add_kern(paddr_t base, int pages)
+// Initialize page allocator
+// base is physical address
+void 
+page_init(paddr_t base, int pages)
 {
-  LOG_INFO("PAGE", "kernel page section add %d pages, base :0x%lx", pages, base); 
+  LOG_INFO("PAGE", "kernel page section add %d pages, base :0x%lx\n", pages, base); 
   page_section_init(&page_sections[0], base, pages);
 }
 
-static struct page_meta *
-alloc_pages_from_section(struct page_section *ps, int pages, int flag)
+static struct page *
+__page_allocn_sect(struct page_section *ps, int count)
 {
-  struct page_meta *page;
   int pos;
 
-  pos = bitmap_find_next_0_area(ps->bitmap, 
-          BITMAP_SIZE(ps->size>>PAGE_SHIFT), 0, pages);
-  if (pos == -1) {
-    panic("no more pages in all section!\n");
+  if (-1 == (pos = bitmap_find_next_0_area(ps->bitmap, 
+                                           BITMAP_SIZE(ps->size>>PAGE_SHIFT), 
+                                           0, count))) {
     return NULL;
   }
-
-  bitmap_set_bits(ps->bitmap, pos, pages);
+  bitmap_set_bits(ps->bitmap, pos, count);
   
-  page = ps->pages + pos;
-  page->count = pages;
+  struct page *page = ps->pages + pos;
+  page->count = count;
   page->pa = (void *)ps->pa_base + pos*PAGE_SIZE;
-  LOG_DEBUG("PAGE", "allocate %d page(s), base pa: 0x%lx", pages, page->pa);
+
+  LOG_DEBUG("PAGE", "allocate %d page(s), base pa: 0x%lx\n", count, page->pa);
   return page;
 }
 
-struct page_meta *alloc_pages(int pages, int flags)
+// Also global function
+// Sometimes caller needs page description 
+// of allocated pages
+struct page *
+__page_allocn(int pages)
 {
-  struct page_meta *page = NULL;
-  int i = 0;
+  struct page *page = NULL;
 
-  for (i = 0; i < nr_sections; i++) {
-    page = alloc_pages_from_section(page_sections+i, pages, flags);
-
-    if (page)
-      return page;
+  for (int i = 0; i < nelem(page_sections); i++) {
+    if ((page = __page_allocn_sect(page_sections+i, pages))) {
+        return page;
+    }
   }
+
+  panic("no more pages in all section!\n");
   return NULL;
 }
 
 
-/**
- * @brief Get the free pages object
- * 
- * @param [in] pages 
- * @param [in] flag 
- * @return     void*  virtual address of page
- */
-void *get_free_pages(int pages, int flag)
+// Like page_alloc(), but can alloc n pages
+// The pages are continuous physically
+void *
+page_allocn(int count)
 {
-  struct page_meta *page = NULL;
+  struct page *page = __page_allocn(count);
 
-  page = alloc_pages(pages, flag);
   if (page)
     return (void *)ptov((paddr_t)page->pa);
   
   return NULL;
 }
 
-void *get_free_page(int flag)
+void *
+page_allocnz(int count)
 {
-  return get_free_pages(1, flag);
+    void *page = page_allocn(count);
+
+    if (page)
+        memset(page, 0, PAGE_SIZE * count);
+    return page;
+};
+
+// Allocate one 4096-byte page of physical memory.
+// Returns a pointer to page's virtual addr that the kernel can use.
+// Returns 0 if the memory cannot be allocated.
+void *
+page_alloc(void)
+{
+  return page_allocn(1);
 }
 
-// _q means no paramter
-void *get_free_page_q(void)
+// Allocate one 4096-byte page and zero it
+void *
+page_allocz(void)
 {
-  return get_free_page(0);
+    return page_allocnz(1);
 }
 
 
-
-int free_pages(void *addr)
+void 
+page_free(void *ptr)
 {
   TODO();
-  return 0;
 }

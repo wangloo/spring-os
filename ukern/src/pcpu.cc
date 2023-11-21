@@ -8,6 +8,8 @@
 
 static struct pcpu pcpus[NR_CPUS];
 
+
+
 struct pcpu *get_pcpu(int cpuid)
 {
   assert(cpuid < NR_CPUS);

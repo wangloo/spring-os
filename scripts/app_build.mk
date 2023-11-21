@@ -62,7 +62,7 @@ OBJS_D	= $(OBJS:%.o=%.d)
 
 $(TARGET) : $(OBJS) $(LIBS_DEPS)
 	$(PROGRESS)
-	 $(CC) $^ -o $@ $(LDFLAGS) $(CFLAGS)
+	$(CC) $^ -o $@ $(LDFLAGS) $(CFLAGS)
 	$(QUIET) echo "Build $(TARGET) Done ..."
 
 %.o : %.c
@@ -77,7 +77,7 @@ $(TARGET) : $(OBJS) $(LIBS_DEPS)
 
 $(TARGET_OUT_DIR)/$(APP_INSTALL_DIR)/%: %
 	$(TARGET_INSTALL) -D -m 755 $< $@
-	$(STRIP) -s $@
+#	$(STRIP) -s $@
 
 install: $(TARGET_OUT_DIR)/$(APP_INSTALL_DIR)/$(TARGET)
 

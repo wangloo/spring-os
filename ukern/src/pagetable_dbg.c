@@ -1,18 +1,20 @@
-#include <pagetable.h>
 #include <kernel.h>
+#include <page.h>
+#include <pagetable.h>
 
 
 
-static inline vaddr_t pack_va(int idx0, int idx1, int idx2, int idx3)
+static inline vaddr_t 
+pack_va(int idx0, int idx1, int idx2, int idx3)
 {
-  return  ((vaddr_t)idx0 << PGD_SHIFT) |
-          ((vaddr_t)idx1 << PUD_SHIFT) |
-          ((vaddr_t)idx2 << PMD_SHIFT) |
-          ((vaddr_t)idx3 << PAGE_SHIFT);
+  return  ptov(((vaddr_t)idx0 << PGD_SHIFT) |
+                ((vaddr_t)idx1 << PUD_SHIFT) |
+                ((vaddr_t)idx2 << PMD_SHIFT) |
+                ((vaddr_t)idx3 << PAGE_SHIFT));
 }
 
 
-static void _DBG_pagetable_level3(page_table_t *table, int idxL0, int idxL1, int idxL2)
+static void _DBG_pagetable_level3(struct pagetable *table, int idxL0, int idxL1, int idxL2)
 {
   pte_t entry;
   int idx;
@@ -28,9 +30,10 @@ static void _DBG_pagetable_level3(page_table_t *table, int idxL0, int idxL1, int
     }
 }
 
-static void _DBG_pagetable_level2(page_table_t *table, int idxL0, int idxL1)
+static void 
+DBG_pagetable_level2(struct pagetable *table, int idxL0, int idxL1)
 {
-  page_table_t *next_tab;
+  struct pagetable *next_tab;
   pte_t entry;
   int idx;
 
@@ -43,7 +46,7 @@ static void _DBG_pagetable_level2(page_table_t *table, int idxL0, int idxL1)
       next_tab = pte_table_addr(entry);
       print_space(2*3);
       printf("- L3 table, table addr: %p\n", next_tab);
-      _DBG_pagetable_level3((page_table_t *)(ptov(next_tab)), idxL0, idxL1, idx);
+      _DBG_pagetable_level3((struct pagetable *)(ptov(next_tab)), idxL0, idxL1, idx);
     }
     else {
       print_space(2*2);
@@ -53,9 +56,10 @@ static void _DBG_pagetable_level2(page_table_t *table, int idxL0, int idxL1)
   }
 }
 
-static void _DBG_pagetable_level1(page_table_t *table, int idxL0)
+static void 
+DBG_pagetable_level1(struct pagetable *table, int idxL0)
 {
-  page_table_t *next_tab;
+  struct pagetable *next_tab;
   pte_t entry;
   int idx;
 
@@ -68,7 +72,7 @@ static void _DBG_pagetable_level1(page_table_t *table, int idxL0)
       next_tab = pte_table_addr(entry);
       print_space(2*2);
       printf("- L2 table, table addr: %p\n", next_tab);
-      _DBG_pagetable_level2((page_table_t *)(ptov(next_tab)), idxL0, idx);
+      DBG_pagetable_level2((struct pagetable *)(ptov(next_tab)), idxL0, idx);
     }
     else {
       print_space(2*1);
@@ -78,9 +82,10 @@ static void _DBG_pagetable_level1(page_table_t *table, int idxL0)
   }
 }
 
-static void _DBG_pagetable_level0(page_table_t *table)
+static void 
+DBG_pagetable_level0(struct pagetable *table)
 {
-  page_table_t *next_tab;
+  struct pagetable *next_tab;
   pte_t entry;
   int idx;
 
@@ -93,16 +98,14 @@ static void _DBG_pagetable_level0(page_table_t *table)
     next_tab = pte_table_addr(entry);
     print_space(2*1);
     printf("- L1 table, table addr: %p\n", next_tab);
-    _DBG_pagetable_level1((page_table_t *)(ptov(next_tab)), idx);
+    DBG_pagetable_level1((struct pagetable *)(ptov(next_tab)), idx);
   }
 }
 
 
-/**
- * pagetable: virtual address of pagetable
- */
-void DBG_pagetable(page_table_t *pagetable)
+// pagetable: virtual address of pagetable
+void DBG_pagetable(struct pagetable *pagetable)
 {
   printf("L0 table addr: %p\n", (vaddr_t)pagetable);
-  _DBG_pagetable_level0(pagetable);
+  DBG_pagetable_level0(pagetable);
 }

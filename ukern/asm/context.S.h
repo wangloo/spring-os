@@ -1,4 +1,4 @@
-#define S_FRAME_SIZE 272 /* sizeof(struct pt_regs)	// */
+
 #define S_X0 0 /* offsetof(struct pt_regs, regs[0])	// */
 #define S_X1 8 /* offsetof(struct pt_regs, regs[1])	// */
 #define S_X2 16 /* offsetof(struct pt_regs, regs[2])	// */
@@ -20,13 +20,19 @@
 #define S_X28 224 /* offsetof(struct pt_regs, regs[28])	// */
 #define S_FP 232 /* offsetof(struct pt_regs, regs[29])	// */
 #define S_LR 240 /* offsetof(struct pt_regs, regs[30])	// */
-#define S_SP 248 /* offsetof(struct pt_regs, sp)	// */
-#define S_PC 256 /* offsetof(struct pt_regs, pc)	// */
-#define S_PSTATE 264 /* offsetof(struct pt_regs, pstate)	// */
+#define S_FRAME_SIZE 248 /* sizeof(struct pt_regs)	// */
 
+// Before
+// [h]------------- < sp
+// [l]-------------
+//
+// After
+// [h]----x30------ 
+//        ...     
+// [l]----x0------- < sp
 .macro SAVE_GP_REGS
    sub sp, sp, #S_FRAME_SIZE
-   /* Save general registers(x0~29) */
+
    stp x0, x1, [sp, #16 * 0]
    stp x2, x3, [sp, #16 * 1]
    stp x4, x5, [sp, #16 * 2]
@@ -42,42 +48,10 @@
    stp x24, x25, [sp, #16 * 12]
    stp x26, x27, [sp, #16 * 13]
    stp x28, x29, [sp, #16 * 14]
-
-   /* tcb->context has member `sp_el0` */
-   mrs x21, sp_el0
-   mrs x22, elr_el1
-   mrs x23, spsr_el1
-   /* lr is an alias of x30 */
-   stp lr, x21, [sp, #S_LR]
-   stp x22, x23, [sp, #S_PC]
-.endm
-
-.macro SAVE_OTHER_REGS
-// x20: sp_elx    x21: sctlr_elx
-// x22: far_elx   x23: esr_elx
-  add x20, sp, #S_FRAME_SIZE
-  mrs x21, sctlr_el1
-  mrs x22, far_el1
-  mrs x23, esr_el1
-  
-  stp x22, x23, [sp, #-16]!
-  stp x20, x21, [sp, #-16]!
-  // IF 要加新的寄存器，记得同步修改 LOAD_OTHER_REGS
-.endm
-
-.macro LOAD_OTHER_REGS
-  // 只是与SAVE动作配合保证栈指针正确，这些表示异常信息的寄存器没必要恢复
-  add sp, sp, #32
+   str lr, [sp, #S_LR]
 .endm
 
 .macro LOAD_GP_REGS
-
-  ldp x21, x22, [sp, #S_PC]
-  msr elr_el1, x21
-  msr spsr_el1, x22
-  ldp lr, x21, [sp, #S_LR]
-  msr sp_el0, x21
-
   ldp x0, x1, [sp, #16 * 0]
   ldp x2, x3, [sp, #16 * 1]
   ldp x4, x5, [sp, #16 * 2]
@@ -93,6 +67,68 @@
   ldp x24, x25, [sp, #16 * 12]
   ldp x26, x27, [sp, #16 * 13]
   ldp x28, x29, [sp, #16 * 14]
+  ldr lr, [sp, #S_LR]
 
   add sp, sp, #S_FRAME_SIZE
 .endm
+
+// Before
+// [h]------------- < sp
+// [l]-------------
+//
+// After
+// [h]----x30------ 
+//        ...
+//        x0
+//        spsr_el1
+//        elr_el1  
+// [l]----sp_el0--- < sp
+.macro SAVE_CTX
+    SAVE_GP_REGS
+    mrs x21, spsr_el1
+    mrs x22, elr_el1
+    mrs x23, sp_el0
+    str x21, [sp, #-8]!
+    str x22, [sp, #-8]!
+    str x23, [sp, #-8]!
+.endm
+
+.macro LOAD_CTX
+    ldr x23, [sp], 8   // sp_el0
+    ldr x22, [sp], 8   // elr_el1
+    ldr x21, [sp], 8   // spsr_el1
+    msr spsr_el1, x21
+    msr elr_el1, x22
+    msr sp_el0, x23
+    LOAD_GP_REGS
+.endm
+
+// Save contex including exception info registers
+// Before
+// [h]------------- < sp
+// [l]-------------
+//
+// After
+// [h]----x30------ 
+//        ...
+//        x0
+//        spsr_el1
+//        elr_el1  
+//        sp_el0
+//        esr_el1
+// [l]----far_el1--- < sp
+.macro SAVE_ECTX
+    SAVE_CTX
+
+  mrs x22, esr_el1
+  mrs x23, far_el1
+  stp x22, x23, [sp, #-16]!
+.endm
+
+.macro LOAD_ECTX
+  // 只是与SAVE动作配合保证栈指针正确，这些表示异常信息的寄存器没必要恢复
+  add sp, sp, #16
+  LOAD_CTX
+.endm
+
+

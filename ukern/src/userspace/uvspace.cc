@@ -19,7 +19,7 @@ int user_map_destory(struct process *proc, vaddr_t va, size_t size)
 	 * the process exit.
 	 */
 	assert(proc != NULL);
-	if (!IS_PAGE_ALIGN(va) || !IS_PAGE_ALIGN(size))
+	if (!page_aligned(va) || !page_aligned(size))
 		return -EINVAL;
 
 	/*
@@ -53,8 +53,8 @@ int user_map_create(struct process *proc, unsigned long vaddr,
 	struct vspace *vs = &proc->vspace;
 	int ret;
 
-	if (!IS_PAGE_ALIGN(vaddr) || !IS_PAGE_ALIGN(phy) ||
-			!IS_PAGE_ALIGN(size))
+	if (!page_aligned(vaddr) || !page_aligned(phy) ||
+			!page_aligned(size))
 		return -EINVAL;
 
 	// spin_lock(&vs->lock); // FIXME
@@ -89,7 +89,7 @@ int user_vspace_init(struct process *proc)
 
 	vs->asid = asid_alloc();
 	vs->pdata = proc;
-	atomic_set(1, &(vs->refcount));
+	atomic_set(&vs->refcount, 1);
 	// vs->notifier_ops = &user_mm_notifier_ops;
 
 	return 0;

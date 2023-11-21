@@ -18,7 +18,7 @@
 #define ULL(x)          (_ULL(x))
 
 #define BIT(x)          (UL(1) << (x))
-
+#define bit(x)          (UL(1) << (x))
 
 
 

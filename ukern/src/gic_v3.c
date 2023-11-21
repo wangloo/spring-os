@@ -1,11 +1,12 @@
+#include <kernel.h>
+#include <bitmap.h>
+#include <cpu_feature.h>
+#include <arm64_sysreg.h>
+#include <io.h>
+#include <smp.h>
+#include <cpu.h>
 #include <gic_v3.h>
 #include <gic_v3_reg.h>
-#include <arm64_sysreg.h>
-#include <smp.h>
-#include <cpu_feature.h>
-#include <cpumask.h>
-#include <io.h>
-#include <kernel.h>
 
 #define NR_CPUS                 CONFIG_NR_CPUS
 #define GICD_RWP_BITMASK        BIT(31)
@@ -18,17 +19,19 @@
 #define PRIORITY_IRQ_DEFAULT    (0xa0)
 #define PRIORITY_IRQ_HIGHEST    (0x80) /* Higher for Secure-World */
 
-static struct gic_dist_map          *gicd_map;
-static struct gic_rdist_map         *gicr_rd_map[NR_CPUS];
-static struct gic_rdist_sgi_ppi_map *gicr_sgi_map[NR_CPUS];
+static struct gic_dist_map          *gicd_map = 0;
+static struct gic_rdist_map         *gicr_rd_map[NR_CPUS] = {0};
+static struct gic_rdist_sgi_ppi_map *gicr_sgi_map[NR_CPUS] = {0};
 
-static inline bool gicd_map_ok(struct gic_dist_map *gicd)
+static inline bool
+gicd_map_ok(struct gic_dist_map *gicd)
 {
     /* See gicv3-architecture-specification for more details */
     return ((ioread32(&gicd->iidr) & 0xff) == 0x3b) ? true : false;
 }
 
-static inline bool gicr_map_ok(int coreid)
+static inline bool 
+gicr_map_ok(int coreid)
 {
     // uint64_t typer = ioread32(&gicr_rd_map[coreid]->typer);
     // uint32_t affinity = read_sysreg32(MPIDR_EL1) & (BIT(31)-1);
@@ -39,7 +42,8 @@ static inline bool gicr_map_ok(int coreid)
 }
 
 /* Wait for completion of a distributor change */
-static uint32_t gicv3_do_wait_for_rwp(volatile uint32_t *ctlr_addr, uint32_t rwp_bitmask)
+static uint32_t 
+gicv3_do_wait_for_rwp(volatile uint32_t *ctlr_addr, uint32_t rwp_bitmask)
 {
     uint32_t ret;
     uint64_t ddl_cnt, cnt;
@@ -64,18 +68,22 @@ static uint32_t gicv3_do_wait_for_rwp(volatile uint32_t *ctlr_addr, uint32_t rwp
     return ret;
 }
 
-static void gicv3_dist_wait_for_rwp(void)
+static void 
+gicv3_dist_wait_for_rwp(void)
 {
     gicv3_do_wait_for_rwp(&gicd_map->ctlr, GICD_RWP_BITMASK);
 }
-static void gicv3_redist_wait_for_rwp(int coreid)
+
+static void 
+gicv3_redist_wait_for_rwp(int coreid)
 {
     gicv3_do_wait_for_rwp(&gicr_rd_map[coreid]->ctlr, GICR_RWP_BITMASK);
 }
 
 
 /* 使能系统寄存器访问接口，可以通过系统寄存器形式访问 */
-static inline void gicv3_enable_sre(void)
+static inline void 
+gicv3_enable_sre(void)
 {
     uint32_t val = read_sysreg32(ICC_SRE_EL1);
 
@@ -84,13 +92,9 @@ static inline void gicv3_enable_sre(void)
     isb();
 }
 
-void gicd_gicr_map()
+void 
+gicd_gicr_map()
 {
-    /**
-     * do pagetable map in kern_map_const_region(),
-     * 所以这里仅仅给指针赋值即可.
-     */
-
     gicd_map = (struct gic_dist_map *)(ptov(CONFIG_GICD_BASE));
     for (u64 i = 0; i < NR_CPUS; i++) {
       gicr_rd_map[i] = (struct gic_rdist_map *)
@@ -123,7 +127,8 @@ static void gicc_init(void)
     isb();
 }
 
-static void gicd_init(void)
+static void 
+gicd_init(void)
 {
     uint32_t priority, nr_lines;
     uint32_t typer, i;
@@ -139,7 +144,7 @@ static void gicd_init(void)
     /* Calculate MAX SPI number */
     typer = ioread32(&gicd_map->typer);
     nr_lines = 32 * ((typer&0x1f) + 1);
-    LOG_DEBUG("GICV3", "max spi number: %d", nr_lines);
+    LOG_DEBUG("GICV3", "max spi number: %d\n", nr_lines);
 
     /* default all SPIs to level, active low */
     for (i = SPI_MIN; i < nr_lines; i += 16) 
@@ -178,7 +183,9 @@ static void gicd_init(void)
 }
 
 /* Distributor manages SGIs and PPIs  */
-static void  gicr_init(int cpuid) {
+static void  
+gicr_init(int cpuid) 
+{
     uint32_t priority;
     int i;
 
@@ -209,18 +216,6 @@ static void  gicr_init(int cpuid) {
     gicv3_redist_wait_for_rwp(cpuid);
 }
 
-
-void gicv3_init() 
-{
-    gicd_gicr_map();
-
-    gicd_init();
-    gicr_init(cpu_id());
-    gicc_init();
-    LOG_DEBUG("GICV3", "init ok");
-}
-
-
 void gicv3_secondary_init() 
 {
     gicr_init(cpu_id());
@@ -229,37 +224,42 @@ void gicv3_secondary_init()
 }
 
 
-void gicv3_irq_enable(u32 irq)
+void 
+gicv3_irq_enable(u32 intid)
 {
+  int cpuid = cur_cpuid();
   u32 n, x;
-  if (irq < SPI_MIN) {
-    iowrite32(BIT(irq), &gicr_sgi_map[cpu_id()]->isenabler0);
-    gicv3_redist_wait_for_rwp(cpu_id());
-  }
-  else {
-    n = irq / 32;
-    x = irq % 32;
-    iowrite32(BIT(x), &gicd_map->isenablern[n]);
+  
+  if (intid < SPI_MIN) {
+    iowrite32(bit(intid), &gicr_sgi_map[cpuid]->isenabler0);
+    gicv3_redist_wait_for_rwp(cpuid);
+  } else {
+    n = intid / 32;
+    x = intid % 32;
+    iowrite32(bit(x), &gicd_map->isenablern[n]);
     gicv3_dist_wait_for_rwp();
   }
 }
 
-void gicv3_irq_disable(u32 irq)
+void 
+gicv3_irq_disable(u32 intid)
 {
   u32 n, x;
-  if (irq < SPI_MIN) {
-    iowrite32(BIT(irq), &gicr_sgi_map[cpu_id()]->icenabler0);
-    gicv3_redist_wait_for_rwp(cpu_id());
+  int cpuid = cur_cpuid();
+
+  if (intid < SPI_MIN) {
+    iowrite32(bit(intid), &gicr_sgi_map[cpuid]->icenabler0);
+    gicv3_redist_wait_for_rwp(cpuid);
   }
   else {
-    n = irq / 32;
-    x = irq % 32;
-    iowrite32(BIT(x), &gicd_map->icenablern[n]);
+    n = intid / 32;
+    x = intid % 32;
+    iowrite32(bit(x), &gicd_map->icenablern[n]);
     gicv3_dist_wait_for_rwp();
   }
 }
 
-static inline void __gicv3_send_sgi_list(u32 sgi, cpumask_t *mask)
+static inline void __gicv3_send_sgi_list(u32 intid, cpumask_t *mask)
 {
 	uint64_t val_cluster0 = 0;
 	uint64_t val_cluster1 = 0;
@@ -275,58 +275,55 @@ static inline void __gicv3_send_sgi_list(u32 sgi, cpumask_t *mask)
 			val_cluster0 |= BIT(cpu);
 	}
     
-	/*
-	 * TBD: now only support two cluster
-	 */
+	// TBD: now only support two cluster
 	if (val_cluster0) {
-		val_cluster0 |= (sgi << 24);
+		val_cluster0 |= (intid << 24);
 		write_sysreg64(val_cluster0, ICC_SGI1R_EL1);
 	}
 
 	if (val_cluster1) {
-		val_cluster1 |= (sgi << 24);
+		val_cluster1 |= (intid << 24);
 		write_sysreg64(val_cluster1, ICC_SGI1R_EL1);
 	}
 
 	isb();
 }
 
-static inline void __gicv3_send_sgi_list_shif_mpidr(uint32_t sgi, cpumask_t *mask)
+static inline void __gicv3_send_sgi_list_shif_mpidr(uint32_t intid, cpumask_t *mask)
 {
 	int cpu;
 	uint64_t value;
 
 	for_each_cpu(cpu, mask) {
-		value = cpuid_to_affinity(cpu) | (sgi << 24);
+		value = cpuid_to_affinity(cpu) | (intid << 24);
 		write_sysreg64(value, ICC_SGI1R_EL1);
 	}
 
 	isb();
 }
 
-static void gicv3_send_sgi_list(u32 sgi, cpumask_t *mask)
+static void 
+gicv3_send_sgi_list(u32 intid, cpumask_t *mask)
 {
 	if (cpu_has_feature(CPU_FEATURE_MPIDR_SHIFT))
-		__gicv3_send_sgi_list_shif_mpidr(sgi, mask);
+		__gicv3_send_sgi_list_shif_mpidr(intid, mask);
 	else
-		__gicv3_send_sgi_list(sgi, mask);
+		__gicv3_send_sgi_list(intid, mask);
 }
 
-void gicv3_send_sgi(u32 sgi, enum sgi_mode mode, cpumask_t *cpu)
+void 
+gicv3_send_sgi(u32 intid, E_SGI_MODE mode, cpumask_t *cpu)
 {
     cpumask_t cpu_self;
-
-    assert(sgi < SGI_MAX);
-
+    assert(intid < SGI_MAX);
     
-    switch (mode)
-    {
+    switch (mode) {
     case SGI_TO_LIST:
-        gicv3_send_sgi_list(sgi, cpu);
+        gicv3_send_sgi_list(intid, cpu);
         break;
     case SGI_TO_SELF:
         cpumask_clearall(&cpu_self);
-        gicv3_send_sgi_list(sgi, &cpu_self);
+        gicv3_send_sgi_list(intid, &cpu_self);
         break;
     case SGI_TO_OTHERS:
         assert(0); // TODO
@@ -336,20 +333,31 @@ void gicv3_send_sgi(u32 sgi, enum sgi_mode mode, cpumask_t *cpu)
         assert(0);
         break;
     }
-
 }
 
-u32 gicv3_read_irq(void)
+u32 
+gicv3_read_irq(void)
 {
-	uint32_t irq;
-
-	irq = read_sysreg32(ICC_IAR1_EL1);
+	uint32_t intid = read_sysreg32(ICC_IAR1_EL1);
 	dsbsy();
-	return irq;
+	return intid;
 }
 
-void gicv3_eoi_irq(u32 irq)
+void 
+gicv3_eoi_irq(u32 intid)
 {
-	write_sysreg32(irq, ICC_EOIR1_EL1);
+	write_sysreg32(intid, ICC_EOIR1_EL1);
 	isb();
+}
+
+
+void 
+init_gicv3(void) 
+{
+    gicd_gicr_map();
+
+    gicd_init();
+    gicr_init(cpu_id());
+    gicc_init();
+    LOG_DEBUG("GICV3", "init ok\n");
 }
