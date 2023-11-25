@@ -24,10 +24,10 @@
 #include <compiler.h>
 #include <utils_arm64.h>
 
-#define ptov(addr)	((unsigned long)addr + CONFIG_KERNEL_ADDR_MASK)
-#define vtop(addr)	((unsigned long)addr - CONFIG_KERNEL_ADDR_MASK)
+#define ptov(addr)	((unsigned long)(addr) + CONFIG_KERNEL_ADDR_MASK)
+#define vtop(addr)	((unsigned long)(addr) - CONFIG_KERNEL_ADDR_MASK)
 #define __va(va)	((unsigned long)(va))
-#define is_kva(va)	((unsigned long)va >= CONFIG_KERNEL_ADDR_MASK)
+#define is_kva(va)	((unsigned long)(va) >= CONFIG_KERNEL_ADDR_MASK)
 
 
 #define SPR_OK   0

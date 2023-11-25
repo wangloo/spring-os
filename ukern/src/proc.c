@@ -4,8 +4,10 @@
 #include <page.h>
 #include <pagetable.h>
 #include <kmem.h>
-#include <proc.h>
 #include <cpu.h>
+
+#include <uspace/handle.h>
+#include <proc.h>
 
 
 int 
@@ -54,6 +56,13 @@ proc_alloc(void)
   
   p->pid = pid_alloc();
   p->state = UNUSED;
+
+
+  // Build process's handle table
+  init_proc_handles(p);
+
+  
+
 
   // Allocate two pages for the process's stack,
   // low page for kernel stack, high page for user stack.
@@ -109,7 +118,7 @@ proc_free(struct proc *p)
 int
 fork(void)
 {
-  int i, pid;
+  int pid;
   struct proc *np;
   struct proc *p = cur_proc();
 

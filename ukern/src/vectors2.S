@@ -17,14 +17,14 @@ func __bad_mode
 endfunc __bad_mode
 
 
-// Set sp to interrupt stack base
+// Set sp to interrupt stack top(low)
 .macro SWITCHTO_INTR_STACK, tmp0
 	mrs	\tmp0, TPIDR_EL1
 	ldr	\tmp0, [\tmp0, #PCPU_STACK_OFFSET]
 	mov	sp, \tmp0
 .endm
 
-// Set sp to process stack top
+// Set sp to process stack base(high)
 .macro SWITCHTO_PROC_STACK, tmp0
 	ldr	\tmp0, [x18, #PROC_STACK_OFFSET]
 	add	sp, \tmp0, 0x2000
@@ -44,8 +44,18 @@ endfunc __sync_from_current_el
 
 
 func __sync_from_lower_el
-  SWITCHTO_PROC_STACK x19
+  // Change: Save context to whatever kernel stack
+  // And copy them to current proc's context later
+
+  // SWITCHTO_PROC_STACK x19
   SAVE_ECTX
+  
+  ldr x0, [x18, #PROC_STACK_OFFSET]
+  add x0, x0, 0x2000
+  sub x0, x0, #ECTX_SIZE
+  mov x1, sp
+  mov x2, #ECTX_SIZE
+  bl memcpy
   
   SWITCHTO_INTR_STACK x1
   add sp, sp, #0x2000

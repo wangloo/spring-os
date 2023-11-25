@@ -18,6 +18,38 @@
 #include <proc.h>
 #include <exec.h>
 #include <irq.h>
+#include <init.h>
+
+
+
+static void 
+call_init_func(unsigned long fn_start, unsigned long fn_end)
+{
+	init_call *fn;
+	int size, i;
+
+	size = (fn_end - fn_start) / sizeof(init_call);
+	LOG_DEBUG("INIT", "call init func : 0x%x 0x%x %d\n", fn_start, fn_end, size);
+
+	if (size <= 0)
+		return;
+
+	fn = (init_call *)fn_start;
+	for (i = 0; i < size; i++) {
+		(*fn)();
+		fn++;
+	}
+}
+
+void
+init_uspace(void)
+{
+  call_init_func((unsigned long)&__init_func_5_start,
+                  (unsigned long)&__init_func_6_start);
+}
+
+
+
 
 /*
  * root service will create the first user space
@@ -83,6 +115,7 @@ kernel_init(void)
     init_gicv3();
     init_cpus();
     init_timer();
+    init_uspace();
     
     
     if (init_cfi() < 0) {

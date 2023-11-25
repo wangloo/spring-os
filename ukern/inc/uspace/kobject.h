@@ -1,15 +1,12 @@
-#pragma once
-#include <types.h>
 #include <list.h>
-#include <compiler.h>
+#include <spinlock.h>
 #include <uapi/kobject_uapi.h>
 
-typedef uint32_t right_t;
-
-struct kobject_ops;
-struct process;
 #define KOBJ_FLAGS_NON_SHARED (1 << 0)
 
+
+struct kobject_ops;
+struct proc;
 /*
  * Kernel object is a object than can provide some ability
  * to user space thread.
@@ -28,7 +25,7 @@ struct kobject {
   right_t right_mask;
   atomic_t ref;
 
-  // spinlock_t lock;
+  struct spinlock lock;
   // struct poll_struct *poll_struct;
 
   struct kobject_ops *ops;
@@ -52,10 +49,10 @@ struct kobject_ops {
   int (*poll)(struct kobject *ksrc, struct kobject *kdst, int event,
               bool enable);
 
-  int (*close)(struct kobject *kobj, right_t right, struct process *proc);
+  int (*close)(struct kobject *kobj, right_t right, struct proc *proc);
 
-  int (*reply)(struct kobject *kobj, right_t right, long token, long err_code,
-               handle_t fd, right_t fd_right);
+  int (*reply)(struct kobject *kobj, right_t right, unsigned long token,
+               long err_code, handle_t fd, right_t fd_right);
 
   int (*mmap)(struct kobject *kobj, right_t right, void **addr,
               unsigned long *msize);
@@ -82,12 +79,15 @@ struct kobject_desc {
       .ops = kops,                                                             \
   }
 
+
 long kobject_send(struct kobject *kobj, void __user *data, size_t data_size,
                   void __user *extra, size_t extra_size, uint32_t timeout);
 
 int kobject_get(struct kobject *kobj);
 int kobject_put(struct kobject *kobj);
 
-int kobject_close(struct kobject *kobj, right_t right, struct process *proc);
+int kobject_close(struct kobject *kobj, right_t right, struct proc *proc);
 void kobject_init(struct kobject *kobj, int type, right_t right_mask,
                   struct kobject_ops *ops, unsigned long data);
+
+

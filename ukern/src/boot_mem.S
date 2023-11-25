@@ -80,6 +80,18 @@ __map_kcode_section:
     mov    paddr, vaddr
     ldr    pte_attr, =BOOTMEM_CODE_ATTR
     bl     build_normal_pte_table
+  
+  // Map the initcall section rwx
+__map_initcall_sec:
+  ldr    vaddr, =__start_initcall
+  ldr    tmp, =__stop_initcall
+  sub    size, tmp, vaddr
+  ldr    tmp, =CONFIG_KERNEL_ADDR_MASK
+  sub    vaddr, vaddr, tmp
+  mov    paddr, vaddr
+  ldr    pte_attr, =BOOTMEM_INIT_ATTR
+  bl     build_normal_pte_table
+  
 
     // map the data section
 __map_kdata_section:

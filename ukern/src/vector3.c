@@ -6,6 +6,7 @@
 #include <cpu.h>
 #include <esr.h>
 #include <irq.h>
+#include <syscall.h>
 
 void 
 sync_from_current_el(void)
@@ -38,18 +39,18 @@ sync_from_lower_el(void)
   ectx = proc_ectx(cur_cpu()->proc);
   ec = ectx->esr.ec;
 
-  // if (ec == ESR_ELx_EC_SVC64) {
-  //   syscall_handler((syscall_regs *)&(ectx->gregs));
-  //   return;
-  // }
+  if (ec == ESR_ELx_EC_SVC64) {
+    syscall_handler(&ectx->ctx.gp_regs);
+    return;
+  }
 
   printf("SYNC FROM LOWER EL\n");
   printf("ESR: 0x%lx\n", ectx->esr);
   printf("- EC: 0x%lx\n", ec);
   printf("      \"%s\"\n", get_ec_string(ec));
   printf("ELR: 0x%lx\n", ectx->ctx.elr);
-  panic("SPRING-OS oops!\n");
 
+  panic("SPRING-OS oops!\n");
 }
 
 

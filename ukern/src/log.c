@@ -9,18 +9,17 @@ static const char *level_color[] = {
 };
 
 
-void log(int level, const char *domain, 
-          const char *file, int line, const char *fmt, ...)
+void log(int level, const char *file, int line, const char *fmt, ...)
 {
   va_list ap;
 
   va_start(ap, fmt);
-#if 0
+#if 1
   printf("%s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
             level_color[level], level_str[level], file, line);
 #endif
-  printf("%s%-5s\x1b[0m \x1b[90m(%s)\x1b[0m ",
-            level_color[level], level_str[level], domain);
+  // printf("%s%-5s\x1b[0m \x1b[90m(%s)\x1b[0m ",
+  //           level_color[level], level_str[level], domain);
   vprintf(fmt, ap);
   va_end(ap);
 //   printf("\n");

@@ -43,6 +43,27 @@ asmfunc memset_asm
 endfunc memset_asm
 
 
+// memcpy()
+// Parameter: 
+// x0 - char *dst
+// x1 - char *src
+// x2 - int size
+  .global memcpy_asm
+asmfunc memcpy_asm
+  add     x3, x1, x2
+  cmp     x1, x3
+  bcs     .L1
+  mov     x3, 0
+.L3:
+  ldrb    w4, [x1, x3]
+  strb    w4, [x0, x3]
+  add     x3, x3, 1
+  cmp     x3, x2
+  bne     .L3
+.L1:
+  ret
+endfunc memcpy_asm
+
 
 .global current_core
 

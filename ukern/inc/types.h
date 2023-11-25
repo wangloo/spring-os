@@ -54,4 +54,5 @@ typedef int atomic_t;
 
 
 
+typedef uint32_t right_t;
 typedef int16_t handle_t;

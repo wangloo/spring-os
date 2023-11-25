@@ -419,7 +419,6 @@ pgtbl_walk(struct pagetable *pagetable, vaddr_t va)
   assert(pte_is_vaild(pgde));
   assert(pte_is_table(pgde));
 
-  LOG_DEBUG("MAP","pgde: 0x%lx\n", pgde.pte);
   // pud
   next_table = (struct pagetable *)ptov(pte_table_addr(pgde));
   pude = next_table->entry[pud_index(va)];
@@ -427,7 +426,6 @@ pgtbl_walk(struct pagetable *pagetable, vaddr_t va)
   if (!pte_is_table(pude)) {
     return (paddr_t)pud_block_addr(pude);
   }
-  LOG_DEBUG("MAP","pude: 0x%lx\n", pude.pte);
 
   // pmd
   next_table = (struct pagetable *)ptov(pte_table_addr(pude));
@@ -436,15 +434,11 @@ pgtbl_walk(struct pagetable *pagetable, vaddr_t va)
   if (!pte_is_table(pmde)) {
     return (paddr_t)pmd_block_addr(pmde);
   }
-  LOG_DEBUG("MAP","pmde: 0x%lx\n", pmde.pte);
 
   // pt
   next_table = (struct pagetable *)ptov(pte_table_addr(pmde));
   pte = next_table->entry[pt_index(va)];
-  LOG_DEBUG("MAP", "pt_index(va): 0x%lx\n", pt_index(va));
-  LOG_DEBUG("MAP","pte: 0x%lx\n", pte.pte);
   assert(pte_is_vaild(pte));
-
 
   return (paddr_t)pt_page_addr(pte) | page_offset;
 }

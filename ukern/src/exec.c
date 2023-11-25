@@ -175,10 +175,15 @@ exec(char *path, char **argv)
     }    
     argvp[argc] = 0;
 
+    va = (void *)align_down((u64)va, 8);
     va = setup_auxv(va);
     va = setup_envp(va);
     va = setup_argv(va, argc, argvp);
     proc_set_context(p, (void *)elf.entry, sp - (origin-va));
+    for (unsigned long i=0, *ptr=(u64 *)va; i < 30; i++) {
+      printf("0x%lx: 0x%lx\n", (va+i*8), *(ptr+i));
+    }
+
     proc_ready(p);
     LOG_DEBUG("EXEC", "NEW PROCESS!!\n");
     LOG_DEBUG("EXEC", "name: %s\n",p->name);

@@ -49,7 +49,50 @@ SECTIONS
   . = ALIGN(4096);
   __stop_code = .;
 
+  __start_initcall = .;
+	__init_func_0_start = .;
+	.__init_func_0 : {
+		*(.__init_func_0)
+	}
+	__init_func_1_start = .;
+	.__init_func_1 : {
+		*(.__init_func_1)
+	}
+	__init_func_2_start = .;
+	.__init_func_2 : {
+		*(.__init_func_2)
+	}
+	__init_func_3_start = .;
+	.__init_func_3 : {
+		*(.__init_func_3)
+	}
+	__init_func_4_start = .;
+	.__init_func_4 : {
+		*(.__init_func_4)
+	}
+	__init_func_5_start = .;
+	.__init_func_5 : {
+		*(.__init_func_5)
+	}
+	__init_func_6_start = .;
+	.__init_func_6 : {
+		*(.__init_func_6)
+	}
+	__init_func_7_start = .;
+	.__init_func_7 : {
+		*(.__init_func_7)
+	}
+	__init_func_8_start = .;
+	.__init_func_8 : {
+		*(.__init_func_8)
+	}
+	__init_func_9_start = .;
+	.__init_func_9 : {
+		*(.__init_func_9)
+	}
+
   . = ALIGN(4096);
+  __stop_initcall = .;
   __start_data = .;
   .data : 
   {
