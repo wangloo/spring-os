@@ -136,7 +136,7 @@ exec(char *path, char **argv)
         mapva = align_page_down(ph.vaddr);
         mapsz = align_page_up(ph.memsz + (ph.vaddr-mapva));
         pa = vtop(kalloc(mapsz));
-        // LOG_DEBUG("EXEC", "va: 0x%lx, pa: 0x%lx, size: 0x%lx\n", mapva, pa, mapsz);
+        // LOG_DEBUG("va: 0x%lx, pa: 0x%lx, size: 0x%lx\n", mapva, pa, mapsz);
 
         if (pagetable_map(p->pagetable, mapva, pa, mapsz, VM_RWX) < 0) {
             kfree((void *)ptov(pa));
@@ -185,17 +185,17 @@ exec(char *path, char **argv)
     }
 
     proc_ready(p);
-    LOG_DEBUG("EXEC", "NEW PROCESS!!\n");
-    LOG_DEBUG("EXEC", "name: %s\n",p->name);
-    LOG_DEBUG("EXEC", "kstack base: 0x%lx\n",p->stack_base);
-    LOG_DEBUG("EXEC", "ctx->spel0: 0x%lx\n",proc_ectx(p)->ctx.sp0);
-    LOG_DEBUG("EXEC", "ctx->elr: 0x%lx\n",proc_ectx(p)->ctx.elr);
-    LOG_DEBUG("EXEC", "ctx->spsr: 0x%lx\n",proc_ectx(p)->ctx.spsr);
-    LOG_DEBUG("EXEC", "sizeof(struct econtext): 0x%x\n", sizeof(struct econtext));
-    LOG_DEBUG("EXEC", "addr of ctx: %p\n", proc_ectx(p));
-    LOG_DEBUG("EXEC", "addr of ctx->sp_el0: %p\n", &(proc_ectx(p)->ctx.sp0));
-    LOG_DEBUG("EXEC", "addr of ctx->elr: %p\n", &(proc_ectx(p)->ctx.elr));
-    LOG_DEBUG("EXEC", "addr of ctx->spsr: %p\n", &(proc_ectx(p)->ctx.spsr));
+    LOG_DEBUG("NEW PROCESS!!\n");
+    LOG_DEBUG("name: %s\n",p->name);
+    LOG_DEBUG("kstack base: 0x%lx\n",p->stack_base);
+    LOG_DEBUG("ctx->spel0: 0x%lx\n",proc_ectx(p)->ctx.sp0);
+    LOG_DEBUG("ctx->elr: 0x%lx\n",proc_ectx(p)->ctx.elr);
+    LOG_DEBUG("ctx->spsr: 0x%lx\n",proc_ectx(p)->ctx.spsr);
+    LOG_DEBUG("sizeof(struct econtext): 0x%x\n", sizeof(struct econtext));
+    LOG_DEBUG("addr of ctx: %p\n", proc_ectx(p));
+    LOG_DEBUG("addr of ctx->sp_el0: %p\n", &(proc_ectx(p)->ctx.sp0));
+    LOG_DEBUG("addr of ctx->elr: %p\n", &(proc_ectx(p)->ctx.elr));
+    LOG_DEBUG("addr of ctx->spsr: %p\n", &(proc_ectx(p)->ctx.spsr));
     return 0;
 bad:
     return -1;

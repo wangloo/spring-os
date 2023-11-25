@@ -470,7 +470,7 @@ int load_root_service(void)
 		goto failed;
 	}
 
-	LOG_INFO("LOAD", "Root service load successfully prepare to run...");
+	LOG_INFO("Root service load successfully prepare to run...");
 
 	return wake_up_process(proc);
 

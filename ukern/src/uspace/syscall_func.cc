@@ -23,7 +23,7 @@ out:
   
   /* DEBUG */
   if (ret) {
-    LOG_ERROR("KOBJ", "invaild kobject, ret=%d", ret);
+    LOG_ERROR("invaild kobject, ret=%d", ret);
   }
   return ret;
 }

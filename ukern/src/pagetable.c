@@ -392,10 +392,10 @@ pagetable_map(struct pagetable *pagetable, u64 va, u64 pa, size_t size, int flag
   assert(page_aligned(va) && page_aligned(size) && page_aligned(pa));
   
   if (map_pgd_range(pagetable, va, pa, size, flag) != SPR_OK) {
-    LOG_ERROR("MAP", "Map region[0x%lx, 0x%lx] Error\n", va, va+size);
+    LOG_ERROR("Map region[0x%lx, 0x%lx] Error\n", va, va+size);
     return -SPR_ERR;
   }
-  LOG_INFO("MAP", "Map region 0x%lx ==> 0x%lx, size: 0x%lx\n", va, pa, size);
+  LOG_INFO("Map region 0x%lx ==> 0x%lx, size: 0x%lx\n", va, pa, size);
   return 0;
 }
 

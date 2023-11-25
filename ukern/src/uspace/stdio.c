@@ -31,7 +31,7 @@ stdio_send(struct kobject *kobj, void __user *data,
 		if (ret <= 0)
 			goto out;
 
-    // LOG_DEBUG("STDIO", "copy: %d, stdio_out_buf: %s\n", copy, stdio_out_buf);
+    // LOG_DEBUG("copy: %d, stdio_out_buf: %s\n", copy, stdio_out_buf);
 		console_puts(stdio_out_buf, copy);
 		left -= copy;
 		data += copy;

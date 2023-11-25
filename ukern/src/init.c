@@ -29,7 +29,7 @@ call_init_func(unsigned long fn_start, unsigned long fn_end)
 	int size, i;
 
 	size = (fn_end - fn_start) / sizeof(init_call);
-	LOG_DEBUG("INIT", "call init func : 0x%x 0x%x %d\n", fn_start, fn_end, size);
+	LOG_DEBUG("call init func : 0x%x 0x%x %d\n", fn_start, fn_end, size);
 
 	if (size <= 0)
 		return;
@@ -93,7 +93,7 @@ load_root_service(void)
 	// 	goto failed;
 	// }
 
-	// LOG_INFO("LOAD", "Root service load successfully prepare to run...");
+	// LOG_INFO("Root service load successfully prepare to run...");
 
 	// return wake_up_process(proc);
 
@@ -119,20 +119,20 @@ kernel_init(void)
     
     
     if (init_cfi() < 0) {
-        LOG_ERROR("INIT", "Init PFLASH ERROR\n"); 
+        LOG_ERROR("Init PFLASH ERROR\n"); 
         goto init_failed;
     }
 
     if (init_ramdisk() < 0) {
-       LOG_ERROR("INIT", "Init RAMDISK ERROR\n"); 
+       LOG_ERROR("Init RAMDISK ERROR\n"); 
        goto init_failed;
     }
 
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space
-    LOG_INFO("INIT", "Loading root service...\n");
+    LOG_INFO("Loading root service...\n");
     if (load_root_service() < 0) {
-        LOG_ERROR("INIT", "Load root service err\n");
+        LOG_ERROR("Load root service err\n");
     }
 
     // Start scheduling
@@ -186,7 +186,7 @@ void kernel_init()
 
   if (cpuid == 0) {
     procinfo_init();
-    LOG_INFO("INIT", "Load Root Service...");
+    LOG_INFO("Load Root Service...");
     extern int load_root_service(void);
     load_root_service();
   }

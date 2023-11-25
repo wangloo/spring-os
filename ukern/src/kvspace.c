@@ -115,9 +115,9 @@ kern_map_const_regions(void)
 
     ret = kern_map(r->vbase, r->pbase, r->size,  r->flag);
     if (ret) {
-      LOG_ERROR("KVSPCE", "failed when mapping region[%d]", i);
+      LOG_ERROR("failed when mapping region[%d]", i);
     } else {
-      LOG_DEBUG("KVSPACE", "ok\n");    
+      LOG_DEBUG("ok\n");    
     }
   }
 }

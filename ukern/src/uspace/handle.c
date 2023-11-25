@@ -23,7 +23,7 @@ new_handle_table(int index)
   struct handle_table_desc *htd;
 
   if (index >= PROC_MAX_HANDLE) {
-    LOG_ERROR("HANDLE", "handle table too big exceed %d\n", PROC_MAX_HANDLE);
+    LOG_ERROR("handle table too big exceed %d\n", PROC_MAX_HANDLE);
     return NULL;
   }
   

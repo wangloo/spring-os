@@ -64,7 +64,7 @@ irq_register(u32 intid, irq_handler_fp handler, char *name)
 	irq->handler = handler;
 
 	irq_enable(intid);
-    LOG_DEBUG("IRQ", "here\n");
+    LOG_DEBUG("here\n");
 	// spin_unlock_irqrestore(&irq_desc->lock, flag); // FIXME
 
   return 0;
@@ -79,7 +79,7 @@ void send_sgi(u32 sgi, int cpuid)
 
   cpumask_clearall(&cpu);
   cpumask_set_cpu(cpuid, &cpu);
-  LOG_DEBUG("IRQ", "send sgi: %d to cpu %d\n", sgi, cpuid);
+  LOG_DEBUG("send sgi: %d to cpu %d\n", sgi, cpuid);
   gicv3_send_sgi(sgi, SGI_TO_LIST, &cpu);
 }
 

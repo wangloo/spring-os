@@ -94,8 +94,8 @@ pick_next(void)
   head = &cpu->ready_list[prio];
   assert(!list_empty(head));
   np = list_first_entry(head, struct proc, sched_list);
-//   LOG_DEBUG("SCHED", "hello\n");
-  LOG_DEBUG("SCHED", "task %s ==> task %s\n", cur_proc()->name, np->name);
+//   LOG_DEBUG("hello\n");
+  LOG_DEBUG("task %s ==> task %s\n", cur_proc()->name, np->name);
 
   // Move selected process(first) to last of the ready list
   // For fair

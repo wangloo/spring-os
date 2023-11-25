@@ -51,7 +51,7 @@ __sys_kobject_send(struct gp_regs *regs)
 			(void __user *)regs->x3,
 			(size_t)regs->x4,
 			(uint32_t)regs->x5);
-  // LOG_DEBUG("SYSCALL", "sys_kobject_send ret: %ld\n", regs->x0);
+  // LOG_DEBUG("sys_kobject_send ret: %ld\n", regs->x0);
 }
 
 static void 
@@ -103,7 +103,7 @@ __sys_unsupport(struct gp_regs *regs)
   int nr = regs->x8;
   
   regs->x0 = -ENOENT;
-  LOG_ERROR("SYSCALL", "Unsupported syscall:%d\n", nr);
+  LOG_ERROR("Unsupported syscall:%d\n", nr);
   exit();
 }
 
@@ -126,7 +126,7 @@ syscall_handler(struct gp_regs *regs)
 {
   int nr = regs->x8;
 
-  // LOG_DEBUG("SYSCALL", "in syscall handler, nr = %d\n", nr);
+  // LOG_DEBUG("in syscall handler, nr = %d\n", nr);
 
   if (nr >= __NR_syscalls) {
     regs->x0 = -EINVAL;

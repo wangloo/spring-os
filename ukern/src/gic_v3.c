@@ -144,7 +144,7 @@ gicd_init(void)
     /* Calculate MAX SPI number */
     typer = ioread32(&gicd_map->typer);
     nr_lines = 32 * ((typer&0x1f) + 1);
-    LOG_DEBUG("GICV3", "max spi number: %d\n", nr_lines);
+    LOG_DEBUG("max spi number: %d\n", nr_lines);
 
     /* default all SPIs to level, active low */
     for (i = SPI_MIN; i < nr_lines; i += 16) 
@@ -359,5 +359,5 @@ init_gicv3(void)
     gicd_init();
     gicr_init(cpu_id());
     gicc_init();
-    LOG_DEBUG("GICV3", "init ok\n");
+    LOG_DEBUG("init ok\n");
 }

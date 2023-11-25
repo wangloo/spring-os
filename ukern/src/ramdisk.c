@@ -93,13 +93,13 @@ ramdisk_open(char *name, struct ramdisk_file *fd)
     struct ramdisk_inode *inode;
 
     if (!sb) {
-        LOG_ERROR("RAMDISK", "super block not found, forget to init ramdisk?\n");
+        LOG_ERROR("super block not found, forget to init ramdisk?\n");
         return -ENOENT;
     }
 
     inode = __ramdisk_open(name);
     if (!inode) {
-        LOG_ERROR("RAMDISK", "open %s: file not found!\n", name);
+        LOG_ERROR("open %s: file not found!\n", name);
         return -ENOENT;
     }
 
@@ -117,21 +117,21 @@ init_ramdisk(void)
     ramdisk_copy_from_flash();
 
     if (!ramdisk_start || !ramdisk_end) {
-        LOG_ERROR("RAMDISK", "ramdisk address is not set yet\n");
+        LOG_ERROR("ramdisk address is not set yet\n");
         return -EINVAL;
     }
     if (!page_aligned(ramdisk_start)) {
-        LOG_ERROR("RAMDISK", "ramdisk start address need PAGE align\n");
+        LOG_ERROR("ramdisk start address need PAGE align\n");
         return -EINVAL;
     }
     if (strncmp((void *)ramdisk_start, RAMDISK_MAGIC, RAMDISK_MAGIC_SIZE) != 0) {
-        LOG_ERROR("RAMDISK", "bad ramdisk format\n");
+        LOG_ERROR("bad ramdisk format\n");
         return -EBADF;
     }
 
     sb = (struct ramdisk_sb *)(ramdisk_start+RAMDISK_MAGIC_SIZE);
     root = (struct ramdisk_inode *)(ramdisk_start + sb->inode_offset);
     ramdisk_data = (void *)(ramdisk_start+sb->data_offset);
-    LOG_DEBUG("RAMDISK", "init ok\n");
+    LOG_DEBUG("init ok\n");
     return 0;
 }

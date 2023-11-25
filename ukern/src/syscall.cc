@@ -12,7 +12,7 @@ static void aarch64_syscall_unsupport(syscall_regs *regs)
 {
   u64 nr = *(u64 *)(regs + 1); // x8
   
-  LOG_ERROR("SYSCALL", "Unsupported syscall:%d\n", nr);
+  LOG_ERROR("Unsupported syscall:%d\n", nr);
   exit();
   regs->a0 = -ENOENT;
 }
@@ -65,7 +65,7 @@ void syscall_handler(syscall_regs *regs)
 	int nr = *(u64 *)(regs + 1); // x8
 
 	// arch_enable_local_irq(); // FIXME
-  LOG_INFO("SYSCALL", "in syscall handler, nr = %d", nr);
+  LOG_INFO("in syscall handler, nr = %d", nr);
 	if (nr >= __NR_syscalls) {
 		regs->a0 = -EINVAL;
 		return;

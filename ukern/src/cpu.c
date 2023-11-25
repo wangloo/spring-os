@@ -61,9 +61,9 @@ init_cpus(void)
       INIT_LIST_HEAD(&cpu->ready_list[j]);
     }
 
-    LOG_DEBUG("CPU", "cpu%d intr stack base: 0x%lx\n", i, cpu->intr_stack);
-    LOG_DEBUG("CPU", "addr of intr_stack: %p\n", &(cpu->intr_stack));
-    LOG_DEBUG("CPU", "offset: %d\n", offsetof(struct cpu, intr_stack));
+    LOG_DEBUG("cpu%d intr stack base: 0x%lx\n", i, cpu->intr_stack);
+    LOG_DEBUG("addr of intr_stack: %p\n", &(cpu->intr_stack));
+    LOG_DEBUG("offset: %d\n", offsetof(struct cpu, intr_stack));
   }   
 
   // FIXME

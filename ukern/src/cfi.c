@@ -87,7 +87,7 @@ int cfi_query(void)
     
     // query device size
     capacity = 1u << cfi_query_1b(0x27);
-    LOG_INFO("CFI", "device size: 0x%x\n", capacity);
+    LOG_INFO("device size: 0x%x\n", capacity);
         
     // query page bit(max number of bytes in buffer write)
     pgsz = 1u << cfi_query_2b(0x2A);
@@ -106,7 +106,7 @@ int cfi_query(void)
     eblksz = cfi_query_2b(0x2f);
     eblksz *= 256;
     assert(eblksz == QEMU_EXPECTED_ERASE_BLOCK_SZ);
-    LOG_INFO("CFI", "erase block size: 0x%x\n", eblksz);
+    LOG_INFO("erase block size: 0x%x\n", eblksz);
 
     CFI_PUTW(0, 0xff);
     return 0;
@@ -297,6 +297,6 @@ init_cfi(void)
 {
     if (cfi_query() < 0)
         return -1;
-    LOG_DEBUG("CFI", "init ok\n");
+    LOG_DEBUG("init ok\n");
     return 0;
 }
