@@ -1,13 +1,14 @@
-/**
- * 实现双向链表list_head 和带有头结点的双向链表
- * hlist_head,hlist_node, hlist常用于哈希表中.
- * 
- * Ref: https://www.cnblogs.com/muahao/articles/8109733.html
- */
-#pragma once
+// Operation of list, No other dependence
+// Copy from Linux Kernel, change a little bit
+// 
+// Notice: only for C, keyword 'new' needs to
+// be fixed if use for C++ in the future
 
-#include <types.h>
-#include <config/config.h>
+#pragma once 
+
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
 
 // import from include/linux/types.h
 struct list_head {
@@ -21,6 +22,7 @@ struct hlist_head {
 struct hlist_node {
   struct hlist_node *next, **pprev;
 };
+
 
 // import from include/linux/poison.h
 /*
@@ -41,7 +43,6 @@ struct hlist_node {
  */
 #define LIST_POISON1  ((void *) 0x00100100 + POISON_POINTER_DELTA)
 #define LIST_POISON2  ((void *) 0x00200200 + POISON_POINTER_DELTA)
-
 
 // import from include/linux/stddef.h
 #undef offsetof
@@ -64,10 +65,9 @@ struct hlist_node {
         const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
         (type *)( (char *)__mptr - offsetof(type,member) );})
 
-
-/////////////////////////////////////////////
-// 简单双向链表的一些操作
-/////////////////////////////////////////////
+//////////////////////////////////////////////////
+// Operation of Double-linked list
+//////////////////////////////////////////////////
 /*
  * Simple doubly linked list implementation.
  *
@@ -88,13 +88,13 @@ static inline void INIT_LIST_HEAD(struct list_head *list) {
     list->prev = list;
 }
 
+
 /*
  * Insert a new entry between two known consecutive entries.
  *
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-#ifndef CONFIG_DEBUG_LIST
 static inline void __list_add(struct list_head *new,
     struct list_head *prev,
     struct list_head *next) {
@@ -103,11 +103,6 @@ static inline void __list_add(struct list_head *new,
     new->prev = prev;
     prev->next = new;
 }
-#else
-extern void __list_add(struct list_head *new,
-                  struct list_head *prev,
-                  struct list_head *next);
-#endif
 
 /**
  * list_add - add a new entry
@@ -151,8 +146,6 @@ static inline void __list_del(struct list_head *prev, struct list_head *next) {
  * Note: list_empty() on entry does not return true after this, the entry is
  * in an undefined state.
  */
-#ifndef CONFIG_DEBUG_LIST
-
 static inline void __list_del_entry(struct list_head *entry) {
     __list_del(entry->prev, entry->next);
 }
@@ -163,10 +156,6 @@ static inline void list_del(struct list_head *entry) {
     entry->prev = LIST_POISON2;
 }
 
-#else
-extern void __list_del_entry(struct list_head *entry);
-extern void list_del(struct list_head *entry);
-#endif
 
 /**
  * list_replace - replace old entry by new one
@@ -628,11 +617,9 @@ static inline void list_splice_tail_init(struct list_head *list,
 #define list_safe_reset_next(pos, n, member)                \
     n = list_next_entry(pos, member)
 
-
-/////////////////////////////////////////////
-// 带头结点的双向链表的一些操作
-/////////////////////////////////////////////
-
+//////////////////////////////////////////////////
+// Operation of Double-linked list with head node
+//////////////////////////////////////////////////
 #define HLIST_HEAD_INIT { .first = NULL }
 #define HLIST_HEAD(name) struct hlist_head name = {  .first = NULL }
 #define INIT_HLIST_HEAD(ptr) ((ptr)->first = NULL)

@@ -1,5 +1,6 @@
-#include <slab.h>
 #include <kernel.h>
+#include <page.h>
+#include <slab.h>
 
 #if 0
 void print_freelist(int depth, struct slab *slab)

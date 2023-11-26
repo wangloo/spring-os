@@ -1,6 +1,6 @@
-#include <slab.h>
-#include <page.h>
 #include <kernel.h>
+#include <page.h>
+#include <slab.h>
 
 
 #define MAX_MEM_POOLS       32
