@@ -1,3 +1,4 @@
+#include <minos/compiler.h>
 struct slab_header {
   unsigned long size;
   union {
@@ -13,8 +14,8 @@ struct slab_cache {
 };
 
 
-
-
+void *
+halloc(size_t size);
 void *
 halloc_zero(size_t size);
 void *
