@@ -39,7 +39,7 @@ LDFLAGS += $(APP_LDFLAGS)
 CFLAGS := -Wall -g -D_XOPEN_SOURCE -D_GNU_SOURCE \
 	-Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing \
 	-fno-common -Werror-implicit-function-declaration -O$(O_LEVEL) \
-	-Wno-format-security -I$(APP_INCLUDE_DIR) -I$(UAPI_INC_DIR)
+	-Wno-format-security -I$(TARGET_INCLUDE_DIR) -I$(UAPI_INC_DIR)
 
 CFLAGS	+= $(APP_CFLAGS) -DAPP_TAG=\"$(DBG_TAG)\" 
 CFLAGS  += -MD -MP

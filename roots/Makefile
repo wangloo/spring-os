@@ -1,5 +1,5 @@
 TARGET 		= roots.elf
-APP_CFLAGS 	= 
+APP_CFLAGS 	= -I./src
 # APP_LINK_LIBS	= fdt
 
 SRC_C	:= $(wildcard src/*.c)
