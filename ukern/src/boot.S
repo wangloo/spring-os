@@ -277,7 +277,7 @@ boot_pgtbl_ptr:       .quad  0x0
   * kernel_end: 虚拟地址，这是在建立映射之后赋值的，从 kernel_stack_top
     之后先是boot页表和kernel页表的其他级页表用的池子，然后 kernel_end
     就标定了这个池子用到了哪里。 从kernel_end之后的内存就是由内核来管理了，
-    完全的自由，内核一共可以掌管 CONFIG_KERNEL_RAM_SIZE 这么多内存。
+    完全的自由，内核一共可以掌管 CONFIG_RAM_SIZE 这么多内存。
   
 
   (5) boot阶段的结束。开启MMU后，其实就可以进入kernel的世界了，kernel
@@ -316,7 +316,7 @@ boot_pgtbl_ptr:       .quad  0x0
 
         KERNEL FREE MEM
 
-  ------------------------------- kernel_end+CONFIG_KERNEL_RAM_SIZE
+  ------------------------------- kernel_end+CONFIG_RAM_SIZE
 
 
  */

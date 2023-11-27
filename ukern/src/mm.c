@@ -98,7 +98,7 @@ init_mm(void)
     :);
 
   kmem_base = align_page_up(kmem_base);
-  kmem_size = CONFIG_KERNEL_RAM_SIZE;
+  kmem_size = CONFIG_RAM_SIZE;
   assert(page_aligned(kmem_base) && page_aligned(kmem_size));
 
   // System memory allocator init
