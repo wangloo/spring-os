@@ -82,11 +82,11 @@ struct proto_brk {
 };
 
 struct proto_mmap {
-	void *addr;
-	size_t len;
-	int prot;
+	void *addr;  // Expected mapped addr
+	size_t len;  // Map length
+	int prot;    // Right
 	int flags;
-	int fd;
+	int fd;      // File Descriptor
 	off_t offset;
 };
 
