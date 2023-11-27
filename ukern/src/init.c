@@ -133,6 +133,7 @@ kernel_init(void)
     LOG_INFO("Loading root service...\n");
     if (load_root_service() < 0) {
         LOG_ERROR("Load root service err\n");
+        goto init_failed;
     }
 
     // Start scheduling

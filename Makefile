@@ -50,13 +50,18 @@ export TARGET_AS TARGET_LD TARGET_CC TARGET_APP_CC TARGET_CPP TARGET_AR TARGET_N
 export TARGET_INCLUDE_DIR TARGET_LIBS_DIR TARGET_OUT_DIR
 export UAPI_INC_DIR
 
+# Path definition
 OUT_DIR = $(projtree)/out
+SERVS_DIR = service
+
+SERVS_SUB_DIR = $(foreach dir, $(SERVS_DIR), $(shell find $(dir) -maxdepth 1 -type d))
+SERVS_TARGETS = $(filter-out $(SERVS_DIR),$(SERVS_SUB_DIR))
 
 _all: all
 
-PHONY += kernel roots libc prepare
+PHONY += kernel servs libc prepare
 
-all: ramdisk kernel roots 
+all: ramdisk kernel servs 
 
 objdirs:
 	$(Q) mkdir -p $(srctree)/out
@@ -68,18 +73,27 @@ objdirs:
 	$(Q) mkdir -p $(srctree)/out/rootfs/driver
 	$(Q) mkdir -p $(srctree)/out/rootfs/etc
 
+servs: libc
+	$(Q) set -e;					\
+	for i in $(SERVS_TARGETS); do 			\
+		if [ -f $$i/Makefile ]; then		\
+			echo "\n\033[32m ---> Compiling App $$i ... \033[0m \n";	\
+			$(MAKE) $(MFLAGS) -C $$i ;		\
+			$(MAKE) $(MFLAGS) -C $$i install;	\
+		fi					\
+	done
 roots: libc
 	$(Q) echo "\n\033[32m ---> Compiling Root Service ... \033[0m \n";	
 	$(Q)$(MAKE) $(MFLAGS) -C roots
 	$(Q)$(MAKE) $(MFLAGS) -C roots install
 roots-dump: roots
 	$(Q)$(OBJDUMP) -S out/ramdisk/roots.elf > out/roots.dump
-ramdisk: kernel roots-dump
+ramdisk: kernel servs
 	$(Q)$(MAKE) $(MFLAGS) -C tools/mkrmd 
 	$(Q) echo "\n\033[32m ---> Packing Ramdisk image ... \033[0m \n"
 	$(Q) qemu-img create -f raw out/ramdisk.bin 64M  > /dev/null
 	$(Q) chmod +x ./tools/mkrmd/mkrmd 
-	$(Q) ./tools/mkrmd/mkrmd -f out/ramdisk.bin out/ramdisk/roots.elf > /dev/null
+	$(Q) ./tools/mkrmd/mkrmd -d out/ramdisk.bin out/ramdisk
 #	$(Q) qemu-img -q resize ramdisk.bin 64M  2> /dev/null
 
 kernel:
@@ -105,16 +119,21 @@ gdb-client: ramdisk kernel
 	$(Q) bash ./tools/gdb.sh
 
 .PHONY: clean $(PHONY)
-clean: clean-libc clean-roots clean-ukern
+clean: clean-libc clean-servs clean-ukern
 
 	@$(MAKE) $(MFLAGS) -C tools/mkrmd clean
 
 clean-ukern:
 	$(Q) echo "\033[32m Clean ukern \033[0m"
 	$(Q) $(MAKE) $(MFLAGS) -C ukern clean
-clean-roots:
-	$(Q) echo "\033[32m Clean roots \033[0m"
-	$(Q) $(MAKE) $(MFLAGS) -C roots clean
+clean-servs:
+	$(Q)set -e;					\
+	for i in $(SERVS_TARGETS); do 			\
+		if [ -f $$i/Makefile ]; then		\
+			echo "\033[32m Clean $$i \033[0m";		\
+			$(MAKE) $(MFLAGS) -C $$i clean;	\
+		fi					\
+	done
 clean-libc:
 	$(Q) echo "\033[32m Clean libc \033[0m"
 	$(Q) $(MAKE) $(MFLAGS) -C libc clean

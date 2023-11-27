@@ -1,8 +1,8 @@
-TARGET 		= roots.elf
-APP_CFLAGS 	= -I./src
+TARGET 		= sh.elf
+APP_CFLAGS 	= -I.
 # APP_LINK_LIBS	= fdt
 
-SRC_C	:= $(wildcard src/*.c)
+SRC_C	:= $(wildcard *.c)
 
 
 APP_INSTALL_DIR = ramdisk

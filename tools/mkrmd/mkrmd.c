@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #define MODE_FILE 0
 #define MODE_DIR  1
@@ -29,7 +30,36 @@ struct ramdisk_sb superblk;
 const char *mkrmd_usage = 
               "mkrmd -f <out file> <in file>\n";
 
-int __add_file(int fd, char *filename)
+static void 
+mem_block_init(void)
+{
+  imem.mem = malloc(IMEM_BLOCK_SIZE);
+  imem.size = imem.free = IMEM_BLOCK_SIZE;
+  imem.used = 0;
+
+  fmem.mem = malloc(FMEM_BLOCK_SIZE);
+  fmem.size = fmem.free = FMEM_BLOCK_SIZE;
+  fmem.used = 0;
+
+	if (!imem.mem || !fmem.mem) {
+		printf("alloc memory for ramdisk failed\n");
+		exit(-ENOMEM);
+	}
+}
+
+// Filename we pass to mkrmd include misleading prefix
+static void
+clean_file_name(char **name)
+{
+  // Redundant and meaningless prefix
+  char *prefix = "out/ramdisk/";
+  
+  assert(strstr(*name, prefix) == *name);
+  *name += strlen(prefix);
+}
+
+static int 
+__add_file(int fd, char *filename)
 {
   struct ramdisk_inode *inode;
 
@@ -77,44 +107,29 @@ int __add_file(int fd, char *filename)
   return 0;
 }
 
-int add_file(char *filepath)
+static int 
+add_file(char *path)
 {
-  char *filename;
-  int fd;
+  char *last_slash;
+  int fd, ret=0;
 
-  fd = open(filepath, O_RDONLY);
-  if (fd < 0) {
-    printf("open file %s failed!\n", filepath);
+  if ((fd = open(path, O_RDONLY)) < 0) {
+    printf("open file %s failed!\n", path);
     return fd;
   }
 
-  // filepath ==> keep filename only
-  size_t path_len = strlen(filepath);
-  int i;
+  clean_file_name(&path);
+  
+  ret = __add_file(fd, path);
 
-  for (i = path_len-1; filepath[i] !='/' && i>=0; i--);
-  if (i == path_len-1) {
-    close(fd);
-    return -1;
-  }
-  else if (i != 0) {
-    i++;
-  }
-  filename = filepath + i;
-
-
-  if (__add_file(fd, filename)) {
-    close(fd);
-    return -1;
-  }
-
-
+out:
   close(fd);
-  return 0;
+  return ret;
 }
 
 
-int fill_memblock_files(int cnt, char **files)
+static int 
+make_ramdisk_files(int cnt, char **files)
 {
   int i;
 
@@ -125,7 +140,49 @@ int fill_memblock_files(int cnt, char **files)
   return 0;
 }
 
-int ramdisk_pack(int fd)
+static int
+make_ramdisk_dir(char *dir)
+{
+  DIR *dp;
+  char path[256];
+  struct dirent *dirp;
+  size_t dirlen = strlen(dir);
+
+  if (dir[dirlen-1] == '/')
+    dir[dirlen-1] = 0;
+  
+  if ((dp = opendir(dir)) == NULL) {
+    printf("can not open directory %s\n", dir);
+    return -ENOENT;
+  }
+
+  while ((dirp = readdir(dp)) != NULL) {
+    if (strcmp(dirp->d_name, ".") == 0 || strcmp(dirp->d_name, "..") == 0)
+      continue;
+
+    if (dirp->d_type != 8) {
+      printf("skip %s\n", dirp->d_name);
+      continue;
+    }
+    if ((strlen(dir) + strlen(dirp->d_name)) > 255
+        || (strlen(dirp->d_name) + 1) > RAMDISK_FNAME_SIZE) {
+      printf("skip file %s: filename too long\n", dirp->d_name);
+      continue;
+    }
+
+    sprintf(path, "%s/%s", dir, dirp->d_name);
+    add_file(path);
+  }
+
+  closedir(dp);
+  return 0;
+}
+
+
+
+
+static int
+pack_ramdisk(int fd)
 {
   ssize_t cnt;
   size_t inode_offset, data_offset;
@@ -166,19 +223,8 @@ int ramdisk_pack(int fd)
   return 0;
 }
 
-
-void mem_block_init(void)
-{
-  imem.mem = malloc(IMEM_BLOCK_SIZE);
-  imem.size = imem.free = IMEM_BLOCK_SIZE;
-  imem.used = 0;
-
-  fmem.mem = malloc(FMEM_BLOCK_SIZE);
-  fmem.size = fmem.free = FMEM_BLOCK_SIZE;
-  fmem.used = 0;
-}
-
-int main(int argc, char **argv)
+int 
+main(int argc, char **argv)
 {
   char opt;
   int mode;
@@ -199,7 +245,7 @@ int main(int argc, char **argv)
     }
   }
 
-  printf("mkrmd with mode: %s\n", mode == MODE_DIR? "DIR" : "FILE");
+  // printf("mkrmd with mode: %s\n", mode == MODE_DIR? "DIR" : "FILE");
 
   outfd = open(argv[optind], O_RDWR | O_CREAT, 0666);
   if (outfd < 0) {
@@ -209,12 +255,17 @@ int main(int argc, char **argv)
 
   mem_block_init();
 
-  if (mode == MODE_FILE) 
-    fill_memblock_files(argc-3, &argv[optind+1]);
-  else
-    assert(0);
+  if (mode == MODE_FILE) {
+    ret = make_ramdisk_files(argc-3, &argv[3]);
+  } else {
+    ret = make_ramdisk_dir(argv[3]);
+  }
+  if (ret) {
+		printf("create %s failed wit %d\n", argv[2], ret);
+		goto out;
+  }
 
-  ret = ramdisk_pack(outfd);
+  ret = pack_ramdisk(outfd);
   if (ret)
     goto out;
   

@@ -17,7 +17,6 @@
 #include <kernel.h>
 #include <memlayout.h>
 #include <page.h>
-// #include <memattr.h>
 #include <cfi.h>
 #include <ramdisk.h>
 
@@ -86,6 +85,8 @@ __ramdisk_open(const char *name)
     return NULL;
 }
 
+
+
 // Open a file, fill the file descriptor
 int 
 ramdisk_open(char *name, struct ramdisk_file *fd)
@@ -106,6 +107,20 @@ ramdisk_open(char *name, struct ramdisk_file *fd)
     memset(fd, 0, sizeof(struct ramdisk_file));
     fd->inode = inode;
     return 0;
+}
+
+
+// List all files in ramdisk
+// No dir-file now, so depth of tree is always 1
+void
+ramdisk_tree(void)
+{
+  struct ramdisk_inode *inode;
+  int nr_file = sb->file_cnt;
+  printf("File            Size    \n");
+  for (inode = root; inode < root+nr_file; inode++) {
+    printf("%-16s%-10d\n", inode->f_name, inode->f_size);
+  }
 }
 
 // Init kernel component -- RAMDISK
@@ -132,6 +147,8 @@ init_ramdisk(void)
     sb = (struct ramdisk_sb *)(ramdisk_start+RAMDISK_MAGIC_SIZE);
     root = (struct ramdisk_inode *)(ramdisk_start + sb->inode_offset);
     ramdisk_data = (void *)(ramdisk_start+sb->data_offset);
+
     LOG_DEBUG("init ok\n");
+    ramdisk_tree();
     return 0;
 }
