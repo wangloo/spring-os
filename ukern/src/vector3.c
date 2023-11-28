@@ -9,14 +9,14 @@
 #include <syscall.h>
 
 void 
-sync_from_current_el(void)
+sync_from_current_el(struct econtext *ectx)
 {
-  struct econtext *ectx;
+  // struct econtext *ectx;
   int ec;
 
   // Interrupt is disable here
   // So use cur_proc() will enable interrupt improperly
-  ectx = proc_ectx(cur_cpu()->proc);
+  // ectx = proc_ectx(cur_cpu()->proc);
   ec = ectx->esr.ec;
   
   printf("SYNC FROM CURRENT EL\n");
@@ -49,6 +49,7 @@ sync_from_lower_el(void)
   printf("- EC: 0x%lx\n", ec);
   printf("      \"%s\"\n", get_ec_string(ec));
   printf("ELR: 0x%lx\n", ectx->ctx.elr);
+  printf("FAR: 0x%lx\n", ectx->far);
 
   panic("SPRING-OS oops!\n");
 }
