@@ -110,7 +110,7 @@ kern_map_const_regions(void)
 
   for (int i = 0; i < NR_KERN_CONST_MAP; i++) {
     r = kern_const_map + i;
-    LOG_INFO("KVSPACE", "start mapping const region[%d], va: 0x%lx, pa: 0x%lx, size: %lx\n",
+    LOG_INFO("start mapping const region[%d], va: 0x%lx, pa: 0x%lx, size: %lx\n",
             i, r->vbase, r->pbase, r->size);
 
     ret = kern_map(r->vbase, r->pbase, r->size,  r->flag);

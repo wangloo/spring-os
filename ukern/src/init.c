@@ -73,26 +73,6 @@ load_root_service(void)
     }
     return 0;
 
-	// proc = create_root_process(NULL, NULL, OS_PRIO_SYSTEM, TASK_AFF_ANY,
-	// 		TASK_FLAGS_SRV | TASK_FLAGS_NO_AUTO_START);
-	// assert(proc != NULL);
-    
-    // entry = elf_load_process(proc, &file);
-    // assert(entry > 0);
-
-	// arch_set_task_entry_point(proc->root_task, entry);
-
-	// if (setup_root_service_env(proc)) {
-	// 	printf("setup root service env failed\n");
-	// 	goto failed;
-	// }
-
-	// ret = setup_root_service_ustack(proc);
-	// if (ret) {
-	// 	printf("serup user stack for root service failed\n");
-	// 	goto failed;
-	// }
-
 	// LOG_INFO("Root service load successfully prepare to run...");
 
 	// return wake_up_process(proc);

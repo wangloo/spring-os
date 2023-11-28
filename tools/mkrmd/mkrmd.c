@@ -110,7 +110,6 @@ __add_file(int fd, char *filename)
 static int 
 add_file(char *path)
 {
-  char *last_slash;
   int fd, ret=0;
 
   if ((fd = open(path, O_RDONLY)) < 0) {
@@ -122,7 +121,6 @@ add_file(char *path)
   
   ret = __add_file(fd, path);
 
-out:
   close(fd);
   return ret;
 }
