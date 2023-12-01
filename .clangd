@@ -1,0 +1,2 @@
+CompileFlags:
+    Remove: [-march=armv8-a] # invalid target CPU values in clangd-15
