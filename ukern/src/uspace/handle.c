@@ -45,6 +45,8 @@ lookup_handle_desc(struct proc *proc, handle_t handle,
 	struct handle_desc *table = proc->handle_desc_table;
 	struct handle_table_desc *tdesc = to_handle_table_desc(table);
 
+  // Handle is built sequentially
+  // Find the handle table and index belonging to
 	while (handle >= NR_DESC_PER_PAGE) {
 		handle -= NR_DESC_PER_PAGE;
 		table = tdesc->next;
@@ -139,6 +141,7 @@ __handle_alloc(struct proc *proc, struct kobject *kobj, right_t right)
   
   if (!hd) {
     // TODO: allocate a new handle table for this process
+    TODO();
     goto out;
   }
 

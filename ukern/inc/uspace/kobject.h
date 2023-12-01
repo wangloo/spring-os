@@ -65,15 +65,15 @@ struct kobject_ops {
 typedef int (*kobject_create_cb)(struct kobject **kobj, right_t *right,
                                  unsigned long data);
 
-struct kobject_desc {
+struct kobject_type_desc {
   char *name;
   int type;
   kobject_create_cb ops;
 };
 
-#define DEFINE_KOBJECT(kname, ktype, kops)                                     \
-  static struct kobject_desc __kobject_##kname __used __section(               \
-      ".__kobject_desc") = {                                                   \
+#define DEFINE_KOBJECT_TYPE_DESC(kname, ktype, kops)                                     \
+  static struct kobject_type_desc __kobject_type_##kname __used __section(               \
+      ".__kobj_type_desc") = {                                                   \
       .name = #kname,                                                          \
       .type = ktype,                                                           \
       .ops = kops,                                                             \

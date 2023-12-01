@@ -98,9 +98,9 @@ SECTIONS
   {
     *(.data)
 
-    __start_kobject_desc = .;
-    *(.__kobject_desc)
-    __stop_kobject_desc = .;
+    __kobj_type_desc_start = .;
+    *(.__kobj_type_desc)
+    __kobj_type_desc_stop = .;
   }
 
   . = ALIGN(8);

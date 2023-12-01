@@ -12,4 +12,5 @@
 #include <types.h>
 
 void *kalloc(size_t size);
+void *kallocz(size_t size);
 void kfree(void *addr);

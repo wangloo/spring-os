@@ -19,8 +19,8 @@ DEFINE_GET_LDS_VAR __stop_boot_data
 DEFINE_GET_LDS_VAR __start_kernel
 DEFINE_GET_LDS_VAR __start_code
 DEFINE_GET_LDS_VAR __stop_code
-DEFINE_GET_LDS_VAR __start_kobject_desc
-DEFINE_GET_LDS_VAR __stop_kobject_desc
+DEFINE_GET_LDS_VAR __kobj_type_desc_start
+DEFINE_GET_LDS_VAR __kobj_type_desc_stop
 DEFINE_GET_LDS_VAR __start_data
 DEFINE_GET_LDS_VAR __start_bss
 DEFINE_GET_LDS_VAR __stop_bss

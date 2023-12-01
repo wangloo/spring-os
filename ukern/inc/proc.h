@@ -5,6 +5,7 @@
 #include <list.h>
 #include <uspace/kobject.h>
 
+#define PROC_NAME_MAX 16
 
 enum procstate { UNUSED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
@@ -36,14 +37,20 @@ struct proc {
   u64 stack_size;              // Size of kenrel stack
 
   struct kobject kobj;         // Process's first kobject is its PCB
-  char name[16]; // Process name (debugging)
+  char name[PROC_NAME_MAX];    // Process name (debugging)
 };
+
+static inline int
+proc_is_roots(struct proc *p)
+{
+  return (0 == strcmp(p->name, "roots"));
+}
 
 struct proc*
 cur_proc(void);
 void 
 proc_set_context(struct proc *p, void *entry, vaddr_t sp);
-struct proc*
-create_root_proc(void);
+struct proc* create_proc(char *name, int pid, int prio);
+struct proc* create_root_proc(void);
 void
 proc_ready(struct proc *p);

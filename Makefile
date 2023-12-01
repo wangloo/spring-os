@@ -86,7 +86,8 @@ roots: libc
 	$(Q) echo "\n\033[32m ---> Compiling Root Service ... \033[0m \n";	
 	$(Q)$(MAKE) $(MFLAGS) -C roots
 	$(Q)$(MAKE) $(MFLAGS) -C roots install
-roots-dump: roots
+dump: kernel servs
+	$(Q)$(OBJDUMP) -S ukern/build/spring > out/spring.dump
 	$(Q)$(OBJDUMP) -S out/ramdisk/roots.elf > out/roots.dump
 ramdisk: kernel servs
 	$(Q)$(MAKE) $(MFLAGS) -C tools/mkrmd 

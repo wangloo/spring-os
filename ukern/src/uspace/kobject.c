@@ -1,4 +1,5 @@
 #include <kernel.h>
+#include <init.h>
 #include <atomic.h>
 #include <spinlock.h>
 #include <proc.h>
@@ -6,6 +7,16 @@
 
 
 static kobject_create_cb kobj_create_cbs[KOBJ_TYPE_MAX];
+
+static void 
+register_kobject_type(kobject_create_cb cb, int type)
+{
+  assert(cb && type < KOBJ_TYPE_MAX);
+
+  if (kobj_create_cbs[type])
+    LOG_WARN("Overwrite kobject create callback for %d\n", type);
+  kobj_create_cbs[type] = cb;
+}
 
 
 static void 
@@ -76,8 +87,10 @@ int kobject_create(int type, struct kobject **kobj, right_t *right, unsigned lon
 		return -ENOENT;
 
 	ops = kobj_create_cbs[type];
-	if (!ops)
+	if (!ops) {
+    LOG_ERROR("Unsupport create kobject tpye: %d\n", type);
 		return -EOPNOTSUPP;
+  }
 
 	return ops(kobj, right, data);
 }
@@ -203,6 +216,25 @@ long kobject_ctl(struct kobject *kobj, right_t right,
 	return kobj->ops->ctl(kobj, req, data);
 }
 
+static int 
+init_kobject_type(void)
+{
+  extern unsigned long __kobj_type_desc_start;
+  extern unsigned long __kobj_type_desc_stop;
+  struct kobject_type_desc *desc;
+
+  section_for_each_item(__kobj_type_desc_start, __kobj_type_desc_stop, desc) {
+    if (desc->type >= KOBJ_TYPE_MAX) {
+      LOG_WARN("Unsupported kobject type [%d] name [%s]\n", desc->type, desc->name);
+      continue;
+    }
+    LOG_INFO("Register kobject type[%2d] name [%s]\n", desc->type, desc->name);
+    register_kobject_type(desc->ops, desc->type);
+  }
+  return 0;
+}
+uspace_initcall(init_kobject_type);
+
 
 
 
@@ -262,42 +294,42 @@ sys_kobject_recv(handle_t handle, void __user *data, size_t data_size,
 	// right_t right;
 	// long ret;
 
-// 	ret = get_kobject(handle, &kobj, &right);
-// 	if (ret)
-// 		return ret;
+  // 	ret = get_kobject(handle, &kobj, &right);
+  // 	if (ret)
+  // 		return ret;
 
-// 	if (!(right & KOBJ_RIGHT_READ)) {
-// 		ret = -EPERM;
-// 		goto out;
-// 	}
+  // 	if (!(right & KOBJ_RIGHT_READ)) {
+  // 		ret = -EPERM;
+  // 		goto out;
+  // 	}
 
-// 	ret = kobject_recv(kobj, data, data_size, actual_data, extra,
-// 			extra_size, actual_extra, timeout);
-// out:
-// 	put_kobject(kobj);
+  // 	ret = kobject_recv(kobj, data, data_size, actual_data, extra,
+  // 			extra_size, actual_extra, timeout);
+  // out:
+  // 	put_kobject(kobj);
 	// return ret;
   return 0;
 }
 
 
+
 handle_t 
 sys_kobject_create(int type, unsigned long data)
 {
-	// struct kobject *kobj;
-	// right_t right;
-	// int ret;
+	struct kobject *kobj;
+	right_t right;
+	int ret;
 
-	// ret = kobject_create(type, &kobj, &right, data);
-	// if (ret)
-	// 	return ret;
+	ret = kobject_create(type, &kobj, &right, data);
+	if (ret)
+		return ret;
 
-	// /*
-	//  * visable for all the threads in this process, and
-	//  * the owner of this kobject have the GRANT right for
-	//  * this kobject.
-	//  */
-	// return alloc_handle(kobj, right);
-  return 0;
+	/*
+	 * visable for all the threads in this process, and
+	 * the owner of this kobject have the GRANT right for
+	 * this kobject.
+	 */
+	return handle_alloc(kobj, right);
 }
 
 int 

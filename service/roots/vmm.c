@@ -4,12 +4,15 @@
 #include <sys/mman.h>
 
 #include <minos/types.h>
+#include <minos/service.h>
 #include <minos/page.h>
 #include <minos/utils.h>
+#include <minos/kobject.h>
 #include <minos/kobject_uapi.h>
 #include <minos/debug.h>
 #include <minos/list.h>
 #include <minos/proto.h>
+#include <memlayout.h>
 #include <proc.h>
 #include <halloc.h>
 #include <vmm.h>
@@ -18,15 +21,7 @@
 #define vma_size(vma) ((vma)->end-(vma)->start)
 
 
-static inline void
-vma_init(struct vma *vma, unsigned long start, unsigned long end,
-          int perm, int anon)
-{
-  vma->start = start;
-  vma->end = end;
-  vma->perm = perm;
-  vma->anon = anon;
-}
+
 
 struct vma *
 find_vma(struct proc *p, unsigned long addr)
@@ -48,12 +43,14 @@ split_vma(struct proc *proc, struct vma *vma,
 
   if (base > vma->start) {
     freevma = halloc(sizeof(*freevma));
-    vma_init(freevma, vma->start, base, 0, 0);
+    freevma->start = vma->start;
+    freevma->end = vma->end;
     list_add(&freevma->list, &proc->vma_free);
   }
   if (end < vma->end) {
     freevma = halloc(sizeof(*freevma));
-    vma_init(freevma, end, vma->end, 0, 0);
+    freevma->start = end;
+    freevma->end = vma->end;
     list_add(&freevma->list, &proc->vma_free);
   }
   vma->start = base;
@@ -93,6 +90,64 @@ request_vma(struct proc *proc, unsigned long base,
   out->anon = anon;
   list_add(&out->list, &proc->vma_used);
   return out;
+}
+
+int
+create_pma(int type, int right, unsigned long base, size_t size)
+{
+  struct pma_create_arg args = {
+    .size = size,
+    .type = type,
+    .start = base,
+    .right = right,
+  };
+  pr_debug("===============\n");
+  pr_debug("size: 0x%lx\n", size);
+  pr_debug("start: 0x%lx\n", base);
+  return kobject_create(KOBJ_TYPE_PMA, (unsigned long)&args);
+}
+
+
+int 
+vspace_init(struct proc *proc, unsigned long elf_start, size_t elf_size)
+{
+  struct vma *vma;
+
+  INIT_LIST_HEAD(&proc->vma_free);
+  INIT_LIST_HEAD(&proc->vma_used);
+
+  vma = halloc_zero(sizeof(*vma));
+  if (!vma) {
+    return -1;
+  }
+
+  // Mmap region: lazy allocation
+  vma->start = PROCESS_MMAP_BOTTOM;
+  vma->end = PROCESS_MMAP_TOP;
+  list_add(&vma->list, &proc->vma_free);
+
+  // Brk region
+  proc->brk_start = align_page_up(elf_start+elf_size);
+  proc->brk_end = PROCESS_BRK_TOP;
+  proc->brk_cur = proc->brk_start;
+  if (proc->brk_start > proc->brk_end) {
+    return -1;
+  }
+
+  // ELF region
+  vma = halloc_zero(sizeof(*vma));
+  if (!vma) {
+    return -1;
+  }
+  vma->start = elf_start;
+  vma->end = elf_start+elf_size;
+  vma->anon = 0;
+  vma->perm = KOBJ_RIGHT_RWX; // FIXME
+  vma->pma_handle = create_pma(PMA_TYPE_NORMAL, vma->perm, 0, elf_size);
+  if (vma->pma_handle <= 0) {
+    return -1;
+  }
+  return sys_map(proc->handle, vma->pma_handle, elf_start, elf_size, vma->perm);
 }
 
 int

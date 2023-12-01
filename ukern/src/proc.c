@@ -155,16 +155,35 @@ fork(void)
 }
 
 
+
+struct proc*
+create_proc(char *name, int pid, int prio)
+{
+  struct proc *p;
+
+  if (name && strlen(name) >= PROC_NAME_MAX) {
+    LOG_ERROR("proc name [%s] too long\n", name);
+    return NULL;
+  }
+  p = proc_alloc();
+  p->prio = prio;
+  p->pid = pid;
+  p->state = RUNNABLE;
+  if (name)
+    strcpy(p->name, name);
+
+  return p;
+}
+
 struct proc*
 create_root_proc(void)
 {
     struct proc *p;
     struct cpu *cpu = cur_cpu();
 
-    p = proc_alloc();
-    p->prio = 0;  // Highest priority
-    p->state = RUNNABLE;
-    strcpy(p->name, "roots");
+    p = create_proc("roots", 0, 0);
+    if (!p)
+      return NULL;
 
     // set cur_proc();
     cpu->proc = p;

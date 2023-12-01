@@ -16,6 +16,16 @@ void *kalloc(size_t size)
   return page_allocn(pages);
 }
 
+void *
+kallocz(size_t size)
+{
+  void *va = kalloc(size);
+  if (!va)
+    return NULL;
+  memset(va, 0, size);
+  return va;
+}
+
 
 void kfree(void *addr)
 {

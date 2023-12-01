@@ -41,6 +41,8 @@
 #define AT_SERVER_HANDLE 61/* for minos talk to root service */
 #define AT_HEAP_BASE 62
 #define AT_HEAP_END 63
+#define AT_RAMDISK_BASE 64
+#define AT_RAMDISK_END  65
 
 typedef struct
 {
@@ -63,13 +65,14 @@ static void *setup_auxv(void *va)
 	NEW_AUX_ENT(auxp, AT_PAGESZ, PAGE_SIZE);
 	NEW_AUX_ENT(auxp, AT_HWCAP, 0);		// TBD cpu feature.
 
-	/*
-	 * root service will have it own memory management
-	 * service, kernel will handle the page fault for
-	 * it.
-	 */
+	 // root service will have it own memory management
+	 // service, kernel will handle the page fault for it.
 	NEW_AUX_ENT(auxp, AT_HEAP_BASE, SYS_PROC_HEAP_BASE);
 	NEW_AUX_ENT(auxp, AT_HEAP_END, SYS_PROC_HEAP_END);
+
+  // root service load other service from ramdisk
+  NEW_AUX_ENT(auxp, AT_RAMDISK_BASE, SYS_PROC_RAMDISK_BASE);
+  NEW_AUX_ENT(auxp, AT_RAMDISK_END, SYS_PROC_RAMDISK_END);
 
 	return (void *)auxp;
 }
@@ -102,7 +105,7 @@ int
 exec(char *path, char **argv)
 {
     int i, off;
-    u64 pa, mapva, mapsz, sp, stackbase, stacksize;
+    u64 pa, mapva, mapsz, sp, size, stackbase, stacksize;
     struct ramdisk_file file;
     struct elfhdr elf;
     struct proghdr ph;
@@ -156,7 +159,21 @@ exec(char *path, char **argv)
         kfree((void *)ptov(pa));
         goto bad;
     }
+
+    size = SYS_PROC_HEAP_SIZE;
+    pa = (u64)vtop(kalloc(align_page_up(size)));
+    if (pagetable_map(p->pagetable, SYS_PROC_HEAP_BASE, pa, size, VM_RW)) {
+        kfree((void *)ptov(pa));
+        goto bad;
+    }
     
+    size = RAMDISK_SIZE;
+    pa = RAMDISK_BASE;
+    if (pagetable_map(p->pagetable, SYS_PROC_RAMDISK_BASE, pa, size, VM_RW)) {
+        kfree((void *)ptov(pa));
+        goto bad;
+    }
+
 
     // Put argc,argv,envp.. to user stack
     // C Runtime will decode them
@@ -165,7 +182,6 @@ exec(char *path, char **argv)
     void *origin = va;
     void *argvp[MAXARG+1];
     int argc;
-    size_t size;
 
     for (argc = 0; argv[argc]; argc++) {
         size = strlen(argv[argc])+1;
@@ -180,9 +196,7 @@ exec(char *path, char **argv)
     va = setup_envp(va);
     va = setup_argv(va, argc, argvp);
     proc_set_context(p, (void *)elf.entry, sp - (origin-va));
-    for (unsigned long i=0, *ptr=(u64 *)va; i < 30; i++) {
-      printf("0x%lx: 0x%lx\n", (va+i*8), *(ptr+i));
-    }
+
 
     proc_ready(p);
     LOG_DEBUG("NEW PROCESS!!\n");

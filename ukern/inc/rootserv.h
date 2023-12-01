@@ -13,8 +13,13 @@
  * kernel will handle the page fault for this heap region.
  */
 #define SYS_PROC_HEAP_BASE	(64UL * 1024 * 1024 * 1024)
-#define SYS_PROC_HEAP_SIZE	(256UL * 1024 * 1024)
+// TODO: support page fault and increase heap
+#define SYS_PROC_HEAP_SIZE	(1UL * 1024 * 1024) 
 #define SYS_PROC_HEAP_END	(SYS_PROC_HEAP_BASE + SYS_PROC_HEAP_SIZE)
 
 #define SYS_PROC_VMAP_BASE	(65UL * 1024 * 1024 * 1024)
 #define SYS_PROC_VMAP_END	(255UL * 1024 * 1024 * 1024)
+
+
+#define SYS_PROC_RAMDISK_BASE SYS_PROC_VMAP_BASE
+#define SYS_PROC_RAMDISK_END  (SYS_PROC_RAMDISK_BASE + RAMDISK_SIZE)
