@@ -1,0 +1,6 @@
+[submodule "ukern/thirdparty/libelf"]
+	path = ukern/thirdparty/libelf
+	url = git@github.com:wangloo/libelf.git
+[submodule "ukern/thirdparty/libdwarf"]
+	path = ukern/thirdparty/libdwarf
+	url = git@github.com:wangloo/libdwarf.git
