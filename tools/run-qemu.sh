@@ -5,7 +5,7 @@ qemu-system-aarch64 \
   -cpu cortex-a57            \
   -smp 4                    \
   -m 2G                      \
-  -kernel ukern/build/spring      \
+  -kernel ukern/build/spring.elf      \
   -serial mon:stdio         \
   -drive if=pflash,file=out/ramdisk.bin,unit=1,format=raw \
   -gdb tcp::1234              \

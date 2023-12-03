@@ -1,19 +1,23 @@
-NAME = spring
+NAME = spring.elf
 all:
 
+Q = 
 
-ROOT_DIR ?= .
-OBJ_DIR ?= ./build
-SRC_DIR ?= ./src
-INC_DIR ?= . \
+ROOT_DIR = .
+OBJ_DIR = ./build
+SRC_DIR = ./src
+INC_DIR = . \
 		   ./inc \
 		   $(UAPI_INC_DIR)
-BIN_DIR ?= ./build
+BIN_DIR = ./build
+LIB_DIR = ./lib
+INSTALL_DIR = ramdisk # install out
 
 BINARY = $(BIN_DIR)/$(NAME)
 SRCS := $(shell find $(SRC_DIR) -name '*.c' -or -name '*.S')
 OBJS := $(SRCS:$(SRC_DIR)/%=$(OBJ_DIR)/%.o) 
 INCS := $(addprefix -I, $(INC_DIR))
+LIBS := $(shell find $(LIB_DIR) -name '*.a' -or -name '*.so')
 DEPS := $(OBJS:.o=.d)
 
 offset_h  := $(ROOT_DIR)/asm/asm_offset.h
@@ -44,18 +48,26 @@ CFLAGS += -Wall -g3 -O0   \
 					-Wno-unused-function \
 					-fno-asynchronous-unwind-tables \
 					-ffixed-x18
+
 					
-LDFLAGS += -T $(SPRING_LDS)
+LDFLAGS += -T $(SPRING_LDS) -L$(ROOT_DIR)/lib --start-group -ldwarf --end-group
 
 -include kern_macro.mk
 
-
+PHONY += install
 
 all: $(offset_h) $(BINARY)
 
+install: $(BINARY)
+	$(Q) cp $(BINARY) $(TARGET_OUT_DIR)/$(INSTALL_DIR)
+
+
 $(BINARY): $(OBJS) $(SPRING_LDS)
 	@echo "LD      $@"
-	@$(LD) $(LDFLAGS) -o $@ $(OBJS) 
+	$(Q) $(LD)  -o $@ $(OBJS) $(LDFLAGS)
+
+# $(OBJS): thirdparty # 虽然thirdparty没用这种方式，保留以后扩展使用
+
 
 $(OBJ_DIR)/%.c.o: $(SRC_DIR)/%.c
 	@echo "CC      $<"
@@ -86,7 +98,12 @@ $(offset_h): $(offset_s)
 -include $(DEPS)
 
 
-.PHONY: clean
+.PHONY: clean distclean $(PHONY)
 
 clean:
 	-rm -rf $(BINARY) $(OBJ_DIR) $(offset_h)
+
+# lib and header from thirdparty
+distclean: clean
+	-rm -rf $(LIBS)
+	-rm -rf $(shell find $(ROOT_DIR)/inc/lib -name "*.h")

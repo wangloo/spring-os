@@ -64,6 +64,7 @@ unsigned long ramdisk_file_base(struct ramdisk_file *file)
 int 
 ramdisk_read(struct ramdisk_file *file, void *buf, size_t size, unsigned long offset)
 {
+    assert(file);
     if (offset > file->inode->f_size)
         return 0;
     if ((offset + size) > file->inode->f_size)

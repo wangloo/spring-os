@@ -108,6 +108,8 @@ kernel_init(void)
        goto init_failed;
     }
 
+    test_libdwarf();
+
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space
     LOG_INFO("Loading root service...\n");
