@@ -1,7 +1,9 @@
 NAME = spring.elf
 all:
 
-Q = 
+# Q = 
+
+
 
 ROOT_DIR = .
 OBJ_DIR = ./build
@@ -30,6 +32,10 @@ ARCH		  = aarch64
 PLATFORM	= qemu
 CROSS_COMPILE 	= aarch64-none-linux-gnu-
 
+MAKE  		= make
+MFLAGS		:= --no-print-directory
+export MAKE MFLAGS
+
 
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
@@ -50,17 +56,20 @@ CFLAGS += -Wall -g3 -O0   \
 					-ffixed-x18
 
 					
-LDFLAGS += -T $(SPRING_LDS) -L$(ROOT_DIR)/lib --start-group -ldwarf --end-group
+LDFLAGS += -T $(SPRING_LDS) -L$(ROOT_DIR)/lib --start-group -lelf -ldwarf --end-group
 
 -include kern_macro.mk
 
-PHONY += install
+PHONY += install thirdparty
 
 all: $(offset_h) $(BINARY)
 
 install: $(BINARY)
 	$(Q) cp $(BINARY) $(TARGET_OUT_DIR)/$(INSTALL_DIR)
 
+
+thirdparty:
+	$(Q) $(MAKE) $(MFLAGS) -C thirdparty
 
 $(BINARY): $(OBJS) $(SPRING_LDS)
 	@echo "LD      $@"
@@ -101,6 +110,7 @@ $(offset_h): $(offset_s)
 .PHONY: clean distclean $(PHONY)
 
 clean:
+	$(Q) $(MAKE) $(MFLAGS) -C thirdparty clean
 	-rm -rf $(BINARY) $(OBJ_DIR) $(offset_h)
 
 # lib and header from thirdparty

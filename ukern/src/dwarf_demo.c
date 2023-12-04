@@ -1,6 +1,7 @@
 #include <kernel.h>
 #include <kmem.h>
 #include <ramdisk.h>
+#include <elf.h>
 #include <lib/libdwarf.h>
 #include <lib/libdwarf_ukern.h>
 

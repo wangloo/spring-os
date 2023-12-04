@@ -17,7 +17,7 @@ rm -rf build install
 
 mkdir build && cd build
 ../configure  --prefix=$libelf_dir/install
-make CC=aarch64-none-linux-gnu-gcc LD=aarch64-none-linux-gnu-ld AR=aarch64-none-linux-gnu-ar
+make CC=aarch64-none-linux-gnu-gcc LD=aarch64-none-linux-gnu-ld AR=aarch64-none-linux-gnu-ar XCFLAGS="--include=$libelf_dir/lib/spring.h"
 make install
 
 
@@ -29,13 +29,11 @@ mkdir build && cd build
 ../configure --host=aarch64-none-linux-gnu CFLAGS="-I$libelf_dir/install/include" LDFLAGS="-L$libelf_dir/install/lib"
 make HOSTCC=cc gennames
 make HOSTCC=cc errmsg_check
-# make  
 make   POSTINCS="--include=$libdwarf_dir/spring.h" 
-make   
 
 
 ## Install lib and header
-# cp $libelf_dir/install/lib/libelf.a $install_lib_dir
+cp $libelf_dir/install/lib/libelf.a $install_lib_dir
 cp $libdwarf_dir/build/libdwarf.a   $install_lib_dir
 cp $libdwarf_dir/build/libdwarf.h   $install_inc_dir
 cp $libdwarf_dir/libdwarf_ukern.h   $install_inc_dir
