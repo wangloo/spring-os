@@ -98,6 +98,7 @@ SECTIONS
   {
     *(.data)
 
+    . = ALIGN(8);
     __kobj_type_desc_start = .;
     *(.__kobj_type_desc)
     __kobj_type_desc_stop = .;
