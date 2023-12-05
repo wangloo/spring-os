@@ -19,6 +19,7 @@ libdwarf:
 install: 
 	cp $(LIBDWARF_DIR)/build/libdwarf.a $(INSTALL_LIB_DIR)
 	cp $(LIBDWARF_DIR)/build/libdwarf.h $(INSTALL_INC_DIR)
+	cp $(LIBDWARF_DIR)/dwarf.h       $(INSTALL_INC_DIR)
 	cp $(LIBDWARF_DIR)/libdwarf_ukern.h $(INSTALL_INC_DIR)
 	cp $(LIBELF_DIR)/install/lib/libelf.a $(INSTALL_LIB_DIR)
 
