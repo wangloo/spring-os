@@ -22,12 +22,12 @@ static struct pool_info general_pools[] = {
     {"slabpool-8",               8},   {"slabpool-16",             16},   
     {"slabpool-32",             32},   {"slabpool-64",             64},   
     {"slabpool-128",           128},   {"slabpool-256",           256},  
-    {"slabpool-512",           512},   {"slabpool-1024",         1024},  
+    {"slabpool-512",           512},   {"slabpool-2048",         2048},  
 };
 
 // index 0 ==> root_pool
-struct slab_pool *pool_ptrs[MAX_MEM_POOLS];
-int nr_pools = 1;
+static struct slab_pool *pool_ptrs[MAX_MEM_POOLS];
+static int nr_pools = 1;
 
 
 
@@ -58,6 +58,7 @@ slab_pool_free(struct slab_pool *pool)
     slab_free((void *)pool);
 }
 
+// Allocate a slab pool
 struct slab_pool *
 slab_pool_alloc(char *name, size_t obj_size)
 {
@@ -96,8 +97,9 @@ slab_init(void)
     INIT_LIST_HEAD(&pool_ptrs[0]->partial);
     INIT_LIST_HEAD(&pool_ptrs[0]->full);
 
-    for (i = 1; i < nr_static_pool; i++) {
-        pool_ptrs[i] = slab_pool_alloc(general_pools[i].name, general_pools[i].size);
+    for (i = 0; i < nr_static_pool; i++) {
+        pool_ptrs[nr_pools++] = 
+                      slab_pool_alloc(general_pools[i].name, general_pools[i].size);
     }
 }
 
@@ -121,7 +123,7 @@ caculate_nr_object(struct slab *slab, int order, int obj_size)
     void *obj_start;
     void *page_end;
 
-    page_end = slab->page + PAGE_SIZE*(1<<order);
+    page_end = (unsigned long)slab + PAGE_SIZE*(1<<order);
 
     // 不可能达到的上限肯定是所有的空间都用来存 object
     // 由于此版本只考虑freelist放在slab内部的情况, 
@@ -149,7 +151,7 @@ slab_desc_alloc()
 
     page = page_alloc();
     new = (struct slab *)(page);
-    new->page = page;
+    // new->page = page;
     new->freelist = page + sizeof(*new);
     return new;
 }
@@ -248,16 +250,47 @@ slab_alloc(int bytes)
     
     // Slab pool is arranged size-descending
     // So the first fit == best fit
-    for (int i = 0; i < nelem(general_pools); i++) {
+    for (int i = 1; i <= nelem(general_pools); i++) {
         if (pool_ptrs[i]->obj_size >= bytes) {
             return slab_alloc_pool(pool_ptrs[i]);
             break;
         }
     }
+    LOG_ERROR("Can't find usable slab pool\n");
 
     return NULL;
 }
 
+// TODO: check is header of slab object
+int 
+slab_own_addr(void *ptr)
+{
+  struct slab_pool *sp;
+  struct slab *s;
+  int i;
+
+  // Go through all pools
+  for (i = 1; i < nr_pools; i++) {
+    sp = pool_ptrs[i];
+    LOG_DEBUG("go through slab %s\n", sp->name);
+    list_for_each_entry(s, &sp->partial, lru) {
+      if (ptr >= s->obj_start && 
+          ptr < (s->obj_start + sp->obj_size*s->nr_obj)) {
+        goto found;
+      }
+    }
+    list_for_each_entry(s, &sp->full, lru) {
+      if (ptr >= s->obj_start && 
+          ptr < (s->obj_start + sp->obj_size*s->nr_obj)) {
+        goto found;
+      }
+    }
+  }
+  return 0; // Not found
+found:
+  LOG_DEBUG("0x%lx is owned by slab pool[%s]\n",ptr, sp->name);
+  return 1;
+}
 
 // Free the slab memory to slab-pool
 void 

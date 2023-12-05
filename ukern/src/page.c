@@ -15,6 +15,7 @@ static void
 page_section_init(struct page_section *ps, paddr_t base, int pages)
 {
   struct page *page;
+  paddr_t origin = base;
 
   assert(page_aligned(base));
   assert(pages > 0);
@@ -33,7 +34,7 @@ page_section_init(struct page_section *ps, paddr_t base, int pages)
   // 所以实际管理的页面的数量一定是小于bitmap可以管理的数量的,
   // 这样其实也没关系, 剩下的结构不用就是了
   base = align_page_up(base);
-  ps->size = pages << PAGE_SHIFT;
+  ps->nr_pages = pages - ((base-origin) >> PAGE_SHIFT);
   ps->pa_base = base;
   ps->va_base = ptov(base);
 }
@@ -52,9 +53,7 @@ __page_allocn_sect(struct page_section *ps, int count)
 {
   int pos;
 
-  if (-1 == (pos = bitmap_find_next_0_area(ps->bitmap, 
-                                           BITMAP_SIZE(ps->size>>PAGE_SHIFT), 
-                                           0, count))) {
+  if (-1 == (pos = bitmap_find_next_0_area(ps->bitmap, BITMAP_SIZE(ps->nr_pages), 0, count))) {
     return NULL;
   }
   bitmap_set_bits(ps->bitmap, pos, count);
@@ -129,5 +128,27 @@ page_allocz(void)
 void 
 page_free(void *ptr)
 {
-  TODO();
+  struct page_section *ps;
+  struct page *p;
+  int i, pos=0;
+
+  assert(page_aligned(ptr));
+  
+  for (i = 0; i < 1; i++) {
+    ps = page_sections+i;
+    while ((pos = bitmap_find_next_1(ps->bitmap, BITMAP_SIZE(ps->nr_pages), pos)) != -1) {
+      p = ps->pages+pos;
+      // LOG_DEBUG("pa: 0x%lx\n", p->pa);
+
+      if (ptr >= ptov(p->pa) && ptr < (ptov(p->pa)+p->count*PAGE_SIZE)) {
+        bitmap_clear_bit(ps->bitmap, pos);
+        memset(p, 0, sizeof(*p));
+        return;
+      }
+
+      pos += 1;
+    } // while
+  } // for
+
+  LOG_ERROR("Page section of 0x%lx is not found\n", ptr);
 }

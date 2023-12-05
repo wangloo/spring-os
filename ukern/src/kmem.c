@@ -29,5 +29,8 @@ kallocz(size_t size)
 
 void kfree(void *addr)
 {
-  TODO();
+  if (slab_own_addr(addr))
+    slab_free(addr);
+  else
+    page_free(addr);
 }

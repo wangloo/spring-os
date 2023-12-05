@@ -110,6 +110,7 @@ bitmap_find_first_1(const bitmap_t *bitmap, u64 size)
   return pos;
 }
 
+// Return -1 if not found
 static inline int 
 bitmap_find_next_1(const bitmap_t *bitmap, u64 size, u64 start)
 {

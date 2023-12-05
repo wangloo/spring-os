@@ -19,14 +19,16 @@ struct slab_pool {
 };
 
 struct slab {
-    struct list_head lru;
     void *obj_start;    // addr of first object
-    void *page;        
+    // void *obj_end;      // End addr of last object
+    //                     // Not always equal to end of page, might have padding
+    // void *page;        
     struct slab_pool *pool; // slab-pool it belongs
     void *freelist; 
     unsigned long magic;
     int active;
     int nr_free, nr_obj;
+    struct list_head lru;
 };
 
 struct pool_info {
@@ -46,6 +48,8 @@ struct slab_pool *
 slab_pool_alloc(char *name, size_t obj_size);
 void 
 slab_pool_free(struct slab_pool *pool);
+int 
+slab_own_addr(void *ptr);
 
 // debug
 // void DBG_mem_pool(struct mem_pool *pool);

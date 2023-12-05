@@ -35,17 +35,18 @@
 #define align_page_down(x) align_down(x, PAGE_SIZE)
 
 struct page {
-    void *pa;
+    void *pa;    // Physicall address
+    int count;   // Number of continuous pages
     // struct list_head list;
-    int count;   // not used
 };
 
 
 struct page_section {
     paddr_t pa_base;
     vaddr_t va_base;
-    size_t  size; // 实际可以用于分配出去的size
-    int nr_pages; // 该section管理的总页面数, 包含管理数据
+    // size_t  size; 
+    int nr_pages; // 实际可以用于分配出去的页面数量
+    // int nr_pages; // 该section管理的总页面数, 包含管理数据
 
     bitmap_t *bitmap;
 
