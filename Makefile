@@ -61,7 +61,7 @@ _all: all
 
 PHONY += kernel servs libc prepare
 
-all: ramdisk kernel servs 
+all: ramdisk kernel servs dump
 
 objdirs:
 	$(Q) mkdir -p $(srctree)/out
@@ -87,7 +87,9 @@ roots: libc
 	$(Q)$(MAKE) $(MFLAGS) -C roots
 	$(Q)$(MAKE) $(MFLAGS) -C roots install
 dump: kernel servs
-	$(Q)$(OBJDUMP) -S ukern/build/spring > out/spring.dump
+	$(Q)$(OBJDUMP) --dwarf=info out/ramdisk/spring.elf > out/spring_dwarf_info.dump
+	$(Q)$(OBJDUMP) --dwarf=frames out/ramdisk/spring.elf > out/spring_dwarf_frames.dump
+	$(Q)$(OBJDUMP) -S out/ramdisk/spring.elf > out/spring.dump
 	$(Q)$(OBJDUMP) -S out/ramdisk/roots.elf > out/roots.dump
 ramdisk: kernel servs
 	$(Q)$(MAKE) $(MFLAGS) -C tools/mkrmd 
@@ -113,7 +115,7 @@ prepare: objdirs
 #	$(Q) cd kernel; make $(TARGET_PLATFORM)_defconfig
 	cp -f generic/include/uapi/* libc/include/minos/
 
-run: ramdisk kernel
+run: ramdisk kernel dump
 	$(Q) bash ./tools/run-qemu.sh
 run-gdb: ramdisk kernel
 	$(Q) bash ./tools/run-qemu.sh -S
