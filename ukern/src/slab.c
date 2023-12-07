@@ -22,7 +22,7 @@ static struct pool_info general_pools[] = {
     {"slabpool-8",               8},   {"slabpool-16",             16},   
     {"slabpool-32",             32},   {"slabpool-64",             64},   
     {"slabpool-128",           128},   {"slabpool-256",           256},  
-    {"slabpool-512",           512},   {"slabpool-2048",         2048},  
+    {"slabpool-512",           512},   {"slabpool-1024",         1024},  
 };
 
 // index 0 ==> root_pool
@@ -123,7 +123,7 @@ caculate_nr_object(struct slab *slab, int order, int obj_size)
     void *obj_start;
     void *page_end;
 
-    page_end = (unsigned long)slab + PAGE_SIZE*(1<<order);
+    page_end = (void *)((unsigned long)slab + PAGE_SIZE*(1<<order));
 
     // 不可能达到的上限肯定是所有的空间都用来存 object
     // 由于此版本只考虑freelist放在slab内部的情况, 
@@ -197,7 +197,7 @@ slab_alloc_pool(struct slab_pool *pool)
 
     assert(pool);
 
-    LOG_INFO("alloc from pool: %s\n", pool->name);
+    // LOG_INFO("alloc from pool: %s\n", pool->name);
 
 realloc:
     // 找到有空闲object的slab,
@@ -256,7 +256,7 @@ slab_alloc(int bytes)
             break;
         }
     }
-    LOG_ERROR("Can't find usable slab pool\n");
+    LOG_ERROR("Can't find usable slab pool for %d bytes \n", bytes);
 
     return NULL;
 }
@@ -268,11 +268,10 @@ slab_own_addr(void *ptr)
   struct slab_pool *sp;
   struct slab *s;
   int i;
-
   // Go through all pools
   for (i = 1; i < nr_pools; i++) {
     sp = pool_ptrs[i];
-    LOG_DEBUG("go through slab %s\n", sp->name);
+    // LOG_DEBUG("go through slab %s\n", sp->name);
     list_for_each_entry(s, &sp->partial, lru) {
       if (ptr >= s->obj_start && 
           ptr < (s->obj_start + sp->obj_size*s->nr_obj)) {
@@ -286,9 +285,10 @@ slab_own_addr(void *ptr)
       }
     }
   }
+  // LOG_DEBUG("Slab don't own this ptr %d\n", ptr);
   return 0; // Not found
 found:
-  LOG_DEBUG("0x%lx is owned by slab pool[%s]\n",ptr, sp->name);
+  // LOG_DEBUG("0x%lx is owned by slab pool[%s]\n",ptr, sp->name);
   return 1;
 }
 

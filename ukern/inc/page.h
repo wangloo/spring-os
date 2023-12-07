@@ -46,6 +46,7 @@ struct page_section {
     vaddr_t va_base;
     // size_t  size; 
     int nr_pages; // 实际可以用于分配出去的页面数量
+    int free;
     // int nr_pages; // 该section管理的总页面数, 包含管理数据
 
     bitmap_t *bitmap;
