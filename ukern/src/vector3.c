@@ -20,9 +20,11 @@ sync_from_current_el(struct econtext *ectx)
   ec = ectx->esr.ec;
   
   printf("SYNC FROM CURRENT EL\n");
-  printf("- EC: 0x%lx\n", ec);
+  printf("EC: 0x%lx\n", ec);
   printf("      \"%s\"\n", get_ec_string(ec));
-  printf("- ELR: 0x%lx\n", ectx->ctx.elr);
+  printf("ELR: 0x%lx\n", ectx->ctx.elr);
+  printf("Sp : 0x%lx\n", ectx->ctx.sp);
+  printf("FAR: 0x%lx\n", ectx->far);
   panic("SPRING-OS oops!\n");
 
 }

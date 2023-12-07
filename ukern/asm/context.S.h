@@ -82,18 +82,24 @@
 //        x0
 //        spsr_el1
 //        elr_el1  
-// [l]----sp_el0--- < sp
+//        sp_el0
+// [l]----sp------- < sp
 .macro SAVE_CTX
     SAVE_GP_REGS
+
+    // Gp regs are saved, use them freely
     mrs x21, spsr_el1
     mrs x22, elr_el1
     mrs x23, sp_el0
+    mov x24, sp
     str x21, [sp, #-8]!
     str x22, [sp, #-8]!
     str x23, [sp, #-8]!
+    str x24, [sp, #-8]!
 .endm
 
 .macro LOAD_CTX
+    ldr x24, [sp], 8   // sp
     ldr x23, [sp], 8   // sp_el0
     ldr x22, [sp], 8   // elr_el1
     ldr x21, [sp], 8   // spsr_el1
@@ -115,6 +121,7 @@
 //        spsr_el1
 //        elr_el1  
 //        sp_el0
+//        sp
 //        esr_el1
 // [l]----far_el1--- < sp
 .macro SAVE_ECTX

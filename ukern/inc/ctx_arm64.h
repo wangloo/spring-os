@@ -58,6 +58,8 @@ struct gp_regs {
 
 // Reserved when switching bewteen uspace and kspace
 struct context {
+    uint64_t sp;      // Stack pointer in error happended
+                      // Not accurate not, just for reference
     uint64_t sp0;     // Userspace stack pointer
     uint64_t elr;     // Saved PC
     uint64_t spsr;    // Saved processor state
