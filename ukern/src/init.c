@@ -107,8 +107,8 @@ kernel_init(void)
        LOG_ERROR("Init RAMDISK ERROR\n"); 
        goto init_failed;
     }
-
-    test_libdwarf();
+    printf("before\n");
+    init_libdwarf();
 
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space
