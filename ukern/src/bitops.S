@@ -34,7 +34,7 @@
 .global \name
 \name:
 .func	\name
-.cfi_startproc
+//.cfi_startproc
 	and	w3, w0, #31		// Get bit offset
 	eor	w0, w0, w3		// Clear low bits
 	mov	x2, #1
@@ -46,14 +46,14 @@
 	cbnz	w0, 1b
 	ret
 .endfunc
-.cfi_endproc
+//.cfi_endproc
 	.endm
 
 	.macro	testop, name, instr
 .global \name
 \name:
 .func	\name
-.cfi_startproc
+//.cfi_startproc
 	and	w3, w0, #31		// Get bit offset
 	eor	w0, w0, w3		// Clear low bits
 	mov	x2, #1
@@ -68,7 +68,7 @@
 	and	w0, w0, #1
 3:	ret
 .endfunc
-.cfi_endproc
+//.cfi_endproc
 	.endm
 
 /*

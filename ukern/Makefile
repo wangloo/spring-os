@@ -1,7 +1,7 @@
 NAME = spring.elf
 all:
 
-# Q = 
+Q = @ 
 
 
 
@@ -48,11 +48,14 @@ SPRING_LDS = $(OBJ_DIR)/spring.lds
 
 
 
-CFLAGS += -Wall -g3 -O0   \
+CFLAGS += -Wall \
+					-g \
+					-O0   \
 			 		-MMD -MP      \
 			 		--static -nostdlib -fno-builtin \
 					-Wno-unused-function \
 					-fno-asynchronous-unwind-tables \
+					-fno-unwind-tables \
 					-ffixed-x18
 
 					
@@ -81,7 +84,7 @@ $(BINARY): $(OBJS) $(SPRING_LDS)
 $(OBJ_DIR)/%.c.o: $(SRC_DIR)/%.c
 	@echo "CC      $<"
 	@mkdir -p $(dir $@)
-	@$(CC) $(CFLAGS) -D__KERNEL__ $(INCS) -c -o $@ $<
+	$(Q) $(CC) $(CFLAGS) -D__KERNEL__ $(INCS) -c -o $@ $<
 $(OBJ_DIR)/%.S.o: $(SRC_DIR)/%.S
 	@echo "CC      $<"
 	@mkdir -p $(dir $@)
