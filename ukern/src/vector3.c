@@ -7,6 +7,8 @@
 #include <esr.h>
 #include <irq.h>
 #include <syscall.h>
+#include <kmon/kmon.h>
+
 
 void 
 sync_from_current_el(struct econtext *ectx)
@@ -25,8 +27,10 @@ sync_from_current_el(struct econtext *ectx)
   printf("ELR: 0x%lx\n", ectx->ctx.elr);
   printf("Sp : 0x%lx\n", ectx->ctx.sp);
   printf("FAR: 0x%lx\n", ectx->far);
-  panic("SPRING-OS oops!\n");
 
+
+  kmon_main();
+  panic("SPRING-OS oops!\n");
 }
 
 

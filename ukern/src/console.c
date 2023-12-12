@@ -22,7 +22,8 @@ void console_putc(char ch)
   g_cons.putc(ch);
 }
 
-char console_getc(void)
+char 
+console_getc(void)
 {
   return g_cons.getc();
 }

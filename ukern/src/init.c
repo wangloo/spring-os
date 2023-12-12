@@ -107,8 +107,16 @@ kernel_init(void)
        LOG_ERROR("Init RAMDISK ERROR\n"); 
        goto init_failed;
     }
-    printf("before\n");
-    init_libdwarf();
+
+    if (init_kmon() < 0) {
+      LOG_ERROR("Init KMonitor ERROR\n");
+      goto init_failed;
+    }
+
+    // Cause sync exception from current el
+    // Test kmonitor
+    LOG_DEBUG("Test KMonitor\n");
+    *(long *)0 = 0;
 
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space

@@ -71,12 +71,10 @@ uart_init(void)
   return 0;
 }
 
-char uart_getc(void)
+char 
+uart_getc(void)
 {
-  if (uart.regs->FR & FR_RXFE) {
-    // input data is empty.
-    return -1;
-  }
+  while (uart.regs->FR & FR_RXFE);
   return (char)(uart.regs->DR);
 }
 
