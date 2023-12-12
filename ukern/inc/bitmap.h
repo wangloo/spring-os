@@ -72,11 +72,11 @@ bitmap_find_next_0(bitmap_t *bitmap, u64 size, u64 start)
   for (i = wi, pos = start; i < wsize; i++) {
     word = bitmap[i];
     if (word == BITMAP_FULL) {
-      pos += WORD_BITS;
+      pos = (i+1) * WORD_BITS;
       continue;
     }
     if (i == wi && (~(s64)(word >> bi)) == 0) {
-      pos += WORD_BITS;
+      pos = (i+1) * WORD_BITS;
       continue;
     }
     if (i == wi) 
@@ -124,11 +124,11 @@ bitmap_find_next_1(const bitmap_t *bitmap, u64 size, u64 start)
   for (i = wi, pos = start; i < wsize; i++) {
     word = bitmap[i];
     if (word == BITMAP_EMPTY) {
-      pos += WORD_BITS;
+      pos = (i+1) * WORD_BITS;
       continue;
     }
-    if (i == wi && (word >>= bi) == 0) {
-      pos += WORD_BITS;
+    if ((i == wi) && ((word >>= bi) == 0)) {
+      pos = (i+1) * WORD_BITS;
       continue;
     }
 
