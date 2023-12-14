@@ -71,6 +71,7 @@ uart_init(void)
   return 0;
 }
 
+// Asynchronous recv
 char 
 uart_getc(void)
 {

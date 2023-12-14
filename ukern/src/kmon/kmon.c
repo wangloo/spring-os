@@ -9,14 +9,15 @@ static unsigned long elr = (unsigned long)printf;
 static int
 runcmd(char *cmd)
 {
-  LOG_DEBUG("Run cmd: %s\n", cmd);
+  if (cmd && *cmd)
+    LOG_DEBUG("Run cmd: %s\n", cmd);
 
-  char *func, *file;
-  int line;
-  if (kmon_get_inst_info(elr, &func, &file, &line) < 0) {
-    return -1;
-  }
-  printf("%s (%s:%d)\n", func, file, line);
+  // char *func, *file;
+  // int line;
+  // if (kmon_get_inst_info(elr, &func, &file, &line) < 0) {
+  //   return -1;
+  // }
+  // printf("%s (%s:%d)\n", func, file, line);
   return 0;
 }
 
@@ -26,9 +27,7 @@ cmdloop(void)
   char *line;
 
   while (1) {
-    console_puts(">", 1);
-    
-    line = readline();
+    line = readline(">");
     if (!line) {
       LOG_ERROR("Read null cmd\n");
       return;

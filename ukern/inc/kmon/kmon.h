@@ -1,6 +1,6 @@
 
 char *
-readline(void);
+readline(const char *prompt);
 int
 init_kmon(void);
 void
