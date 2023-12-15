@@ -3,6 +3,7 @@
 #include <console.h>
 
 static int kmon_ok = 0;
+static int in_kmon = 0; // Avoid recursive
 static unsigned long elr = (unsigned long)printf;
 
 // Return <0 on error
@@ -48,7 +49,17 @@ kmon_main(void)
     return;
   }
 
+  // Exception happends in kmon
+  // Meaningless to enter again
+  if (in_kmon) {
+    LOG_ERROR("We already in kmon, but error happens\n");
+    return;
+  }
+  in_kmon = 1;
+
   cmdloop();
+
+  in_kmon = 0;
 }
 
 
@@ -58,7 +69,6 @@ init_kmon(void)
 
   if (kmon_symbol_init() < 0)
     return -1;
-
 
   kmon_ok = 1;
   return 0;
