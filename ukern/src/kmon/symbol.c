@@ -30,7 +30,7 @@ symbol_get_line(unsigned long pc, Dwarf_Die cu_die, unsigned int *line)
 }
 
 static int
-get_inst_info_die(unsigned long pc, Dwarf_Die cu_die, 
+findloc_die(unsigned long pc, Dwarf_Die cu_die, 
             Dwarf_Die prog_die, char **func, char **file, int *line)
 {
   Dwarf_Line *linebuf;
@@ -80,13 +80,13 @@ free_srcline:
 }
 
 static int
-get_inst_info_cu(unsigned long pc, Dwarf_Die cu_die, 
+findloc_cu(unsigned long pc, Dwarf_Die cu_die, 
                   char **func, char **file, int *line)
 {
   Dwarf_Die child;
   Dwarf_Error err;
   Dwarf_Error *errp=&err;
-  char *cuname;
+  char *cuname, *comp_path;
   int ret;
 
 
@@ -96,12 +96,21 @@ get_inst_info_cu(unsigned long pc, Dwarf_Die cu_die,
   else if (ret != DW_DLV_OK)
     return RET_ERR;
 
-  // For debug only
-  if (dwarf_diename(cu_die, &cuname, &err) != DW_DLV_OK) {
-    LOG_ERROR("Faild to get cudie name\n");
+  // Exclude cu of thirdparty
+  if (dwarf_die_text(cu_die, DW_AT_comp_dir, &comp_path, errp) != DW_DLV_OK) {
+    LOG_ERROR("Faild to get comp_path\n");
     return RET_ERR;
   }
-  printf("cuname: %s\n", cuname);
+  if (strstr(comp_path, "/lib")) {
+    return RET_NOT_FOUND;
+  }
+
+  // For debug only
+  // if (dwarf_diename(cu_die, &cuname, &err) != DW_DLV_OK) {
+  //   LOG_ERROR("Faild to get cudie name\n");
+  //   return RET_ERR;
+  // }
+  // printf("cuname: %s\n", cuname);
 
   do {
     Dwarf_Addr lowpc, highpc;
@@ -112,6 +121,8 @@ get_inst_info_cu(unsigned long pc, Dwarf_Die cu_die,
       LOG_ERROR("Failed to get DIE tag\n");
       return -1;
     }
+
+    // Exclude non-function
     if (tag != DW_TAG_subprogram)
       continue;
 
@@ -134,7 +145,7 @@ get_inst_info_cu(unsigned long pc, Dwarf_Die cu_die,
       if (lowpc <= pc && highpc >= pc) {
         printf("find!!\n\n");
         
-        return get_inst_info_die(pc, cu_die, child, func, file, line);
+        return findloc_die(pc, cu_die, child, func, file, line);
       }
     }
   } while (dwarf_siblingof(dbg, child, &child, &err) == DW_DLV_OK);
@@ -144,8 +155,7 @@ get_inst_info_cu(unsigned long pc, Dwarf_Die cu_die,
 
 
 int
-kmon_get_inst_info(unsigned long pc, 
-                char **func, char **file, int *line)
+findloc(unsigned long pc, char **func, char **file, int *line)
 {
     Dwarf_Unsigned cu_header_length = 0;
     Dwarf_Unsigned abbrev_offset = 0;
@@ -160,6 +170,7 @@ kmon_get_inst_info(unsigned long pc,
     Dwarf_Bool     is_info = TRUE;
     Dwarf_Error error;
     int cu_number = 0; // For debug only
+    int found = 0;
     Dwarf_Error *errp  = 0;
 
     errp = &error;
@@ -179,8 +190,8 @@ kmon_get_inst_info(unsigned long pc,
             printf("Error in dwarf_next_cu_header: %s\n",em);
             return RET_ERR;
         } else if (res == DW_DLV_NO_ENTRY) {
-            /* Done. */
-            return 0;
+            // All cu are walked through
+            goto out;
         }
 
         /* The CU will have a single sibling, a cu_die. */
@@ -196,15 +207,90 @@ kmon_get_inst_info(unsigned long pc,
             return -1;
         }
 
+        // Walk through all cu even already found,
+        // to make first cu returned for each call of 
+        // dwarf_next_cu_header_d()
+        if (found) {
+          dwarf_dealloc(dbg, cu_die, DW_DLA_DIE);
+          continue;
+        }
+
         // A valid die of CU is found
         // Check if it contains the function we need
-        res = get_inst_info_cu(pc, cu_die, func, file, line);
+        res = findloc_cu(pc, cu_die, func, file, line);
         dwarf_dealloc(dbg, cu_die, DW_DLA_DIE);
-        if (res != RET_NOT_FOUND) {
+        if (res == RET_ERR) {
           return res;
         }
+        if (res == RET_OK) found = 1;
     }
+
+out:
+    return (found == 1) ? 0 : -1;
+}
+
+// Give a function or global variable name,
+// return info about it
+int
+kmon_get_name_info(char *name,
+                unsigned long *addr, char **file, int *line)
+{
+}
+
+
+
+
+
+// Eventually function define
+// Call this recursive to unwind stack
+int 
+findcaller(u64 curpc, u64 cursp, u64 *callerpc, u64 *callersp)
+{
+  Dwarf_Fde target_fde; // Fde about curpc
+  Dwarf_Addr low_pc, high_pc; // Address range of fde
+  Dwarf_Regtable3 regtable = {0}; // Register value about curpc
+  Dwarf_Addr rowpc; // Start pc of row including curpc
+  Dwarf_Error err;
+  int oldrulecount = 0;
+
+  // Get targer fde about curpc
+  if (dwarf_get_fde_at_pc(fde_data, curpc, &target_fde, 
+          &low_pc, &high_pc, &err) != DW_DLV_OK) 
     return -1;
+  printf("lowpc: 0x%lx, highpc: 0x%lx\n", low_pc, high_pc);
+
+
+  // Set number of register in .debug_frame
+  // This number is Arch-defined, 30 for AArch64 x0-x30
+  oldrulecount = dwarf_set_frame_rule_table_size(dbg, 30);
+  dwarf_set_frame_rule_table_size(dbg, oldrulecount);
+
+  regtable.rt3_reg_table_size = oldrulecount;
+  regtable.rt3_rules = kallocz(sizeof(struct Dwarf_Regtable_Entry3_s) * oldrulecount);
+  if (!regtable.rt3_rules) {
+    printf("Unable to malloc for %d rules\n", oldrulecount);
+    return -1;
+  }
+
+  // Get all register value about curpc, fill regtable
+  if (dwarf_get_fde_info_for_all_regs3(target_fde, 
+        curpc, &regtable, &rowpc, &err) != DW_DLV_OK) {
+    LOG_WARN("Register not changed\n");
+    kfree(regtable.rt3_rules);
+    return -1;
+  }
+
+  u64 cfa, ra;
+  cfa = cursp + regtable.rt3_cfa_rule.dw_offset_or_block_len;
+  // printf("cfa off: %d\n", regtable.rt3_cfa_rule.dw_offset_or_block_len);
+  // printf("cfa: 0x%lx\n", cfa);
+  // printf("ra off: %d\n", regtable.rt3_rules[30].dw_offset_or_block_len);
+  ra = *(u64 *)((s64)cfa + regtable.rt3_rules[30].dw_offset_or_block_len);
+
+  *callersp = cfa;
+  *callerpc = ra;
+  kfree(regtable.rt3_rules);
+  return ra;
 }
 
 int 
@@ -221,9 +307,9 @@ kmon_symbol_init(void)
                 errhand, errptr, &dbg, &err) != DW_DLV_OK)
     return -1;
 
-  // if (dwarf_get_fde_list(dbg, &cie_data, &cie_element_count, 
-  //                     &fde_data, &fde_element_count, &err) != DW_DLV_OK)
-  //   return -1;
+  if (dwarf_get_fde_list(dbg, &cie_data, &cie_element_count, 
+                      &fde_data, &fde_element_count, &err) != DW_DLV_OK)
+    return -1;
 
   LOG_DEBUG("cie_element_count: %d, fde_element_count: %d\n", 
                           cie_element_count, fde_element_count);

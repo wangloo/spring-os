@@ -56,6 +56,7 @@ CFLAGS += -Wall \
 					-Wno-unused-function \
 					-fno-asynchronous-unwind-tables \
 					-fno-unwind-tables \
+					-fno-omit-frame-pointer \
 					-ffixed-x18
 
 					

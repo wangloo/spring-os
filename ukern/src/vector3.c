@@ -29,7 +29,8 @@ sync_from_current_el(struct econtext *ectx)
   printf("FAR: 0x%lx\n", ectx->far);
 
 
-  kmon_main();
+  backtrace(ectx->ctx.elr, ectx->ctx.sp);
+  // kmon_main();
   panic("SPRING-OS oops!\n");
 }
 

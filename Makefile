@@ -89,6 +89,7 @@ roots: libc
 dump: kernel servs
 	$(Q)$(OBJDUMP) --dwarf=info out/ramdisk/spring.elf > out/spring_dwarf_info.dump
 	$(Q)$(OBJDUMP) --dwarf=frames out/ramdisk/spring.elf > out/spring_dwarf_frames.dump
+	$(Q)$(OBJDUMP) --dwarf=frames-interp out/ramdisk/spring.elf > out/spring_dwarf_frames_interp.dump
 	$(Q)$(OBJDUMP) -S out/ramdisk/spring.elf > out/spring.dump
 	$(Q)$(OBJDUMP) -S out/ramdisk/roots.elf > out/roots.dump
 ramdisk: kernel servs

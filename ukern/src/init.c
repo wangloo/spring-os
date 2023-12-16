@@ -87,6 +87,18 @@ void timer_handler(int intid)
     timer_stop();
 }
 
+static inline void func2() {
+    *(long *)0 = 0;
+    
+
+    // make it not leaf
+    func1();
+}
+  
+void func1(void) {
+  func2();
+}
+
 void 
 kernel_init(void)
 {
@@ -112,11 +124,13 @@ kernel_init(void)
       LOG_ERROR("Init KMonitor ERROR\n");
       goto init_failed;
     }
+    
+    // unittest();
 
     // Cause sync exception from current el
     // Test kmonitor
     LOG_DEBUG("Test KMonitor\n");
-    *(long *)0 = 0;
+    func1();
 
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space
