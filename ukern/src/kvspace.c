@@ -149,5 +149,18 @@ kvspace_init(void)
 
   kern_map_const_regions();
 
+  // Map ut calls
+  extern unsigned char __start_ut_call, __stop_ut_call;
+  unsigned long ut_call_start = (unsigned long)&__start_ut_call;
+  unsigned long ut_call_end = (unsigned long)&__stop_ut_call;
+  size_t ut_call_size = ut_call_end - ut_call_start;
+  LOG_DEBUG("ut_call_size: %d\n", ut_call_size);
+
+  if (kern_map(ut_call_start, 
+               vtop(ut_call_start), 
+               ut_call_size, VM_RWX) < 0) {
+    LOG_ERROR("Map ut calls error\n");
+  }
+
 //   DBG_pagetable(kvspace.pgdp);
 }
