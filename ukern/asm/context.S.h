@@ -91,7 +91,8 @@
     mrs x21, spsr_el1
     mrs x22, elr_el1
     mrs x23, sp_el0
-    mov x24, sp
+    add x24, sp, #S_FRAME_SIZE // Restore accurate sp
+    // mov x24, sp
     str x21, [sp, #-8]!
     str x22, [sp, #-8]!
     str x23, [sp, #-8]!
