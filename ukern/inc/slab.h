@@ -10,7 +10,7 @@
 
 struct slab_pool {
     char *name;
-    int size;     // plus padding
+    int size;     // plus padding NOT USED
     int obj_size; // without padding
     int gfporder; // NOT USED
 

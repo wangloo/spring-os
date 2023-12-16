@@ -62,22 +62,30 @@ slab_pool_free(struct slab_pool *pool)
 struct slab_pool *
 slab_pool_alloc(char *name, size_t obj_size)
 {
-    struct slab_pool *pool;
-    
-    // TODO: 检查是否存在 obj_size 重复的 pool
+  struct slab_pool *pool;
 
-    pool = slab_alloc_pool(pool_ptrs[0]);
-    if (!pool)
-        return NULL;
-    
-    pool->name = name;
-    pool->obj_size = obj_size;
-    pool->size = pool->obj_size;
-    pool->gfporder = 0;
-    INIT_LIST_HEAD(&pool->partial);
-    INIT_LIST_HEAD(&pool->full);
+  if (nr_pools >= MAX_MEM_POOLS) {
+    LOG_ERROR("Too many slab pools\n");
+    return NULL;
+  }
 
-    return pool;
+  // if (nr_pools < nelem(general_pools)) {
+  //   LOG_ERROR("Slab system should be init first\n");
+  //   return NULL;
+  // }
+
+  if ((pool = slab_alloc_pool(pool_ptrs[0])) == NULL)
+    return NULL;
+
+  pool->name = name;
+  pool->obj_size = obj_size;
+  pool->size = pool->obj_size;
+  pool->gfporder = 0;
+  INIT_LIST_HEAD(&pool->partial);
+  INIT_LIST_HEAD(&pool->full);
+
+  pool_ptrs[nr_pools++] = pool;
+  return pool;
 }
 
 
@@ -98,8 +106,7 @@ slab_init(void)
     INIT_LIST_HEAD(&pool_ptrs[0]->full);
 
     for (i = 0; i < nr_static_pool; i++) {
-        pool_ptrs[nr_pools++] = 
-                      slab_pool_alloc(general_pools[i].name, general_pools[i].size);
+      slab_pool_alloc(general_pools[i].name, general_pools[i].size);
     }
 }
 
