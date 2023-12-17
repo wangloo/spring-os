@@ -4,7 +4,6 @@
 
 static int kmon_ok = 0;
 static int in_kmon = 0; // Avoid recursive
-static unsigned long elr = (unsigned long)printf;
 
 // Return <0 on error
 static int

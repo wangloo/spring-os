@@ -106,7 +106,7 @@ static int
 create_pma(struct kobject **kobj, right_t *right, unsigned long data)
 {
   struct pma_create_arg args;
-  struct proc *p;
+  // struct proc *p;
   int ret;
 
   // Only root service can create pma directly

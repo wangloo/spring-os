@@ -12,7 +12,7 @@ static struct linebuf *readlbuf = 0;
 
 #define cursorforwd(x) printf("\033[%dC", (x))
 #define cursorbackwd(x) printf("\033[%dD", (x))
-static inline
+static inline void
 backspace(int x)
 {
   for (int i = 0; i < x; i++)

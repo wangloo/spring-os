@@ -25,6 +25,11 @@ proc_set_context(struct proc *p, void *entry, vaddr_t sp)
     ectx->ctx.elr = (u64)entry;
 }
 
+int
+proc_is_roots(struct proc *p)
+{
+  return (0 == strcmp(p->name, "roots"));
+}
 
 // Return the current struct proc *, or zero if none.
 struct proc*

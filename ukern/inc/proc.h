@@ -40,12 +40,9 @@ struct proc {
   char name[PROC_NAME_MAX];    // Process name (debugging)
 };
 
-static inline int
-proc_is_roots(struct proc *p)
-{
-  return (0 == strcmp(p->name, "roots"));
-}
 
+int
+proc_is_roots(struct proc *p);
 struct proc*
 cur_proc(void);
 void 

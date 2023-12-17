@@ -19,6 +19,7 @@
 #include <exec.h>
 #include <irq.h>
 #include <init.h>
+#include <kmon/kmon.h>
 
 
 
@@ -61,7 +62,7 @@ load_root_service(void)
 {
     struct proc *proc = 0;
     char *argv[] = {"roots.elf", 0};
-    int ret;
+    // int ret;
 
 	
     if ((proc = create_root_proc()) == NULL) {
@@ -89,10 +90,8 @@ void timer_handler(int intid)
 
 static inline void func2() {
     *(long *)0 = 0;
-    
-
     // make it not leaf
-    func1();
+    func2();
 }
   
 void func1(void) {
@@ -125,7 +124,9 @@ kernel_init(void)
       goto init_failed;
     }
     
-    // unittest();
+#ifdef UNITTEST_ON
+    unittest(); 
+#endif
 
     // Cause sync exception from current el
     // Test kmonitor

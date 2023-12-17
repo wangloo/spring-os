@@ -23,19 +23,11 @@ static Dwarf_Fde *fde_data = NULL;
 static Dwarf_Signed fde_element_count = 0;
 
 static int
-symbol_get_line(unsigned long pc, Dwarf_Die cu_die, unsigned int *line)
-{
-
-
-}
-
-static int
 findloc_die(unsigned long pc, Dwarf_Die cu_die, 
             Dwarf_Die prog_die, char **func, char **file, int *line)
 {
   Dwarf_Line *linebuf;
   Dwarf_Signed linecount=0;
-  Dwarf_Die line_die;
   Dwarf_Unsigned lineno;
   Dwarf_Addr lineaddr;
   Dwarf_Error err;
@@ -86,7 +78,7 @@ findloc_cu(unsigned long pc, Dwarf_Die cu_die,
   Dwarf_Die child;
   Dwarf_Error err;
   Dwarf_Error *errp=&err;
-  char *cuname, *comp_path;
+  char *comp_path;
   int ret;
 
 
@@ -106,6 +98,7 @@ findloc_cu(unsigned long pc, Dwarf_Die cu_die,
   }
 
   // For debug only
+  // char *cuname;
   // if (dwarf_diename(cu_die, &cuname, &err) != DW_DLV_OK) {
   //   LOG_ERROR("Faild to get cudie name\n");
   //   return RET_ERR;
@@ -235,6 +228,7 @@ int
 kmon_get_name_info(char *name,
                 unsigned long *addr, char **file, int *line)
 {
+  return 0;
 }
 
 
@@ -299,7 +293,6 @@ kmon_symbol_init(void)
   Dwarf_Handler errhand = 0;
   Dwarf_Ptr errptr = 0;
   Dwarf_Error err;
-  int ret;
 
   ramdisk_open("spring.elf", &elf_file);
 
