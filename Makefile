@@ -102,9 +102,17 @@ ramdisk: kernel servs
 
 kernel:
 	$(Q)echo "\n\033[32m ---> Build Kernel ... \033[0m \n"
+# Thirdparty don't need to compile every time
+# But this can avoid forgetting now, delete it later
 	$(Q)$(MAKE) $(MFLAGS) -C ukern thirdparty
 	$(Q)$(MAKE) $(MFLAGS) -C ukern
 	$(Q)$(MAKE) $(MFLAGS) -C ukern install
+kernel-ut:
+	$(Q)echo "\n\033[32m ---> Build Kernel(Ut) ... \033[0m \n"
+	$(Q)$(MAKE) $(MFLAGS) -C ukern thirdparty
+	$(Q)$(MAKE) $(MFLAGS) -C ukern UNITTEST=1
+	$(Q)$(MAKE) $(MFLAGS) -C ukern install
+	
 
 libc:
 	$(Q) echo "\n\033[32m---> Build LIBC ... \033[0m \n"

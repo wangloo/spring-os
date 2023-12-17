@@ -9,8 +9,8 @@ ROOT_DIR = .
 OBJ_DIR = ./build
 SRC_DIR = ./src
 INC_DIR = . \
-		   ./inc \
-		   $(UAPI_INC_DIR)
+					./inc \
+					$(UAPI_INC_DIR)
 BIN_DIR = ./build
 LIB_DIR = ./lib
 INSTALL_DIR = ramdisk # install out
@@ -61,6 +61,10 @@ CFLAGS += -Wall \
 
 					
 LDFLAGS += -T $(SPRING_LDS) -L$(ROOT_DIR)/lib --start-group -lelf -ldwarf --end-group
+
+ifeq ($(UNITTEST),1)
+	CFLAGS += -DUNITTEST_ON
+endif
 
 -include kern_macro.mk
 

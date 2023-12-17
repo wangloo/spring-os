@@ -1,4 +1,4 @@
 #!/bin/bash
 
 
-gdb-multiarch -n -x .gdbinit
+gdb-multiarch -n -x tools/.gdbinit
