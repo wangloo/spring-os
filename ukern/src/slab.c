@@ -170,7 +170,7 @@ static int slab_refill(struct slab_pool *pool)
     int nr_obj;
     void *freelist_end;
 
-    LOG_DEBUG("mempool <%s> has been refilled\n", pool->name);
+    // LOG_DEBUG("mempool <%s> has been refilled\n", pool->name);
     // 从系统中索取几页 物理页面
     // page, freelist 成员会被赋值
     new = slab_desc_alloc(pool->gfporder);

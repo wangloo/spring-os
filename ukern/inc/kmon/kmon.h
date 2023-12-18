@@ -15,3 +15,12 @@ findcaller(u64 curpc, u64 cursp, u64 *callerpc, u64 *callersp);
 // Tmp
 void 
 backtrace(unsigned long pc, unsigned long sp);
+
+__notrace void
+functrace_enable();
+__notrace void
+functrace_disable();
+int
+init_functrace(void);
+__notrace void
+print_functrace();

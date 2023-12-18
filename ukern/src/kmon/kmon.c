@@ -65,8 +65,10 @@ kmon_main(void)
 int
 init_kmon(void)
 {
-
   if (kmon_symbol_init() < 0)
+    return -1;
+
+  if (init_functrace() < 0) 
     return -1;
 
   kmon_ok = 1;

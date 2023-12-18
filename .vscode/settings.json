@@ -66,7 +66,8 @@
       "unity.h": "c",
       "chrono": "c",
       "cmath": "c",
-      "kmon.h": "c"
+      "kmon.h": "c",
+      "tracebuf.h": "c"
     },
     "search.exclude": {
       // "ukern/thirdparty/libdwarf/dwarfdump":true,

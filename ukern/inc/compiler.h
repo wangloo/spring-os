@@ -9,6 +9,7 @@
 #define __cache_line_align  __align(__cache_line_size__)
 #define __packed            __attribute__((__packed__))
 #define __noreturn          __attribute__((noreturn))
+#define __notrace             __attribute__((no_instrument_function))
 #define likely(x)           __builtin_expect(!!(x), 1)
 #define unlikely(x)         __builtin_expect(!!(x), 0)
 #define barrier()           __asm__ __volatile__("" ::: "memory")

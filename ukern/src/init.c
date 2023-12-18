@@ -98,6 +98,14 @@ void func1(void) {
   func2();
 }
 
+
+void recur(int n)
+{
+  if (!n) 
+    return;
+  recur(n-1);
+}
+
 void 
 kernel_init(void)
 {
@@ -128,10 +136,21 @@ kernel_init(void)
     unittest(); 
 #endif
 
+    functrace_enable();
+    recur(100);
+    functrace_disable();
+    extern long functrace_count;
+    printf("functrace count: %d\n", functrace_count);
+    print_functrace();
+
+
     // Cause sync exception from current el
     // Test kmonitor
     LOG_DEBUG("Test KMonitor\n");
     func1();
+
+
+
 
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space
@@ -140,6 +159,8 @@ kernel_init(void)
         LOG_ERROR("Load root service err\n");
         goto init_failed;
     }
+
+
 
     // Start scheduling
     timer_setup(MILLISECS(500));
