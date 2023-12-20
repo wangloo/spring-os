@@ -5,12 +5,20 @@ int
 init_kmon(void);
 void
 kmon_main(void);
-int 
-kmon_symbol_init(void);
+
 int
-findloc(unsigned long pc, char **func, char **file, int *line);
-int 
-findcaller(u64 curpc, u64 cursp, u64 *callerpc, u64 *callersp);
+init_dbginfo(void);
+int
+dgbinfo_get_func_param(unsigned long pc, int *argc, 
+          unsigned int **offset, unsigned int **size);
+int
+dgbinfo_get_func_loc(unsigned long pc, char **name, char **file, int *line);
+int
+dbginfo_get_caller(u64 curpc, u64 cursp, u64 *callerpc, u64 *callersp);
+int
+dbginfo_get_func_lineno(unsigned long pc, char *file, int *line);
+
+
 
 // Tmp
 void 

@@ -26,6 +26,9 @@ void
 free_tracebuf(struct tracebuf **tb);
 
 #define roundi(i, size) ((i) % (size))
+
+// Release one old item once call
+// Return increased free size
 static int
 tracebuf_release_item(struct tracebuf *tb)
 {
@@ -38,9 +41,6 @@ tracebuf_release_item(struct tracebuf *tb)
         j = roundi(i+1,tb->size);
         k = roundi(j+1, tb->size);
         l = roundi(k+1, tb->size);
-    // LOG_DEBUG("i = %d, j: %d, k: %d\n", i, j, k);
-    // LOG_DEBUG("data[j]: 0x%x, data[k]: 0x%x, data[l]: 0x%x\n",
-              // tb->data[j], tb->data[k], tb->data[l]);
         if (tb->data[j] == 0x01 &&
             tb->data[k] == 0x02 &&
             tb->data[l] == 0x03) {
@@ -56,6 +56,7 @@ tracebuf_release_item(struct tracebuf *tb)
   }
 }
 
+// Write in one item
 // Return the size have write in
 int
 tracebuf_insert(struct tracebuf *tb, char *s)
@@ -74,16 +75,18 @@ tracebuf_insert(struct tracebuf *tb, char *s)
   tmps[len++] = 0x2;
   tmps[len++] = 0x3;
     
-
+  // Caculate free size in tracebuffer
+  // witre==read might be empty or full 
   if ((tb->write > tb->read) || 
-        ((tb->write==tb->read) && !tb->cur_size)) {
+      ((tb->write==tb->read) && !tb->cur_size)) {
     free = tb->size - tb->write + tb->read;
   } else {
     free = tb->read - tb->write;
   }
 
+  // No enough space to store this item,
+  // so we must release some old items
   while (free < len) {
-    // Release an item
     // long before = free;
     free += tracebuf_release_item(tb);
     // LOG_DEBUG("free %u bit\n", free-before);
@@ -98,8 +101,10 @@ tracebuf_insert(struct tracebuf *tb, char *s)
     memcpy(tb->data, tmps+tail, len-tail);
     tb->write = len-tail;
   }
+
   tb->cur_size += len;
   tb->items += 1;
+  kfree(tmps);
   return len;
 }
     

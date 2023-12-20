@@ -44,6 +44,7 @@ func _mcount
   
 	mcount_get_pc	x0		//       function's pc
 	mcount_get_lr	x1		//       function's lr (= parent's pc)
+  ldr x2, [x29]       //       function's fp
   bl functrace
 
   mcount_exit

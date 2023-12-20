@@ -98,11 +98,21 @@ void func1(void) {
   func2();
 }
 
+int
+docaculate(int a, int b)
+{
+  int c = b+a;
+  c *= a;
+  return c;
+}
+
 
 void recur(int n)
 {
-  if (!n) 
+  if (!n)  {
+    docaculate(n, n+1);
     return;
+  }
   recur(n-1);
 }
 
@@ -136,12 +146,19 @@ kernel_init(void)
     unittest(); 
 #endif
 
+    LOG_DEBUG("Test Ftrace\n");
     functrace_enable();
-    recur(100);
+    recur(40);
     functrace_disable();
-    extern long functrace_count;
-    printf("functrace count: %d\n", functrace_count);
     print_functrace();
+
+    // Kernel component init ok, load No.0 user process
+    // Load root service and enter user space
+    LOG_INFO("Loading root service...\n");
+    if (load_root_service() < 0) {
+        LOG_ERROR("Load root service err\n");
+        goto init_failed;
+    }
 
 
     // Cause sync exception from current el
@@ -152,13 +169,6 @@ kernel_init(void)
 
 
 
-    // Kernel component init ok, load No.0 user process
-    // Load root service and enter user space
-    LOG_INFO("Loading root service...\n");
-    if (load_root_service() < 0) {
-        LOG_ERROR("Load root service err\n");
-        goto init_failed;
-    }
 
 
 

@@ -83,7 +83,7 @@ __page_allocn(int pages)
     }
   }
 
-  panic("no more pages in all section!\n");
+  LOG_ERROR("no more pages in all section!\n");
   return NULL;
 }
 
@@ -93,11 +93,15 @@ __page_allocn(int pages)
 void *
 page_allocn(int count)
 {
-  struct page *page = __page_allocn(count);
-
+  struct page *page;
+  
+  if (count > 512) {
+    LOG_ERROR("Allocate %d pages at once is forbidden\n", count);
+    exit();
+  }
+  page = __page_allocn(count);
   if (page)
     return (void *)ptov((paddr_t)page->pa);
-  
   return NULL;
 }
 
