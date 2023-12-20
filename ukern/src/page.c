@@ -64,8 +64,8 @@ __page_allocn_sect(struct page_section *ps, int count)
   page->pa = (void *)ps->pa_base + pos*PAGE_SIZE;
   ps->free -= count;
 
-  LOG_DEBUG("allocate %d page(s), base pa: 0x%lx, left %d pages\n", 
-              count, page->pa, ps->free);
+  // LOG_DEBUG("allocate %d page(s), base pa: 0x%lx, left %d pages\n", 
+  //             count, page->pa, ps->free);
   return page;
 }
 
@@ -184,6 +184,7 @@ page_free(void *ptr)
       if ((unsigned long)ptr >= ptov(p->pa) && 
           (unsigned long)ptr < (ptov(p->pa)+p->count*PAGE_SIZE)) {
         ps->free += p->count;
+        // LOG_DEBUG("Release %d pages, base: %lx, %d pages left\n", p->count, p->pa, ps->free);
         bitmap_clear_bit(ps->bitmap, pos);
         memset(p, 0, sizeof(*p));
         return;

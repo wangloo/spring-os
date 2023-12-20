@@ -179,6 +179,7 @@ static int slab_refill(struct slab_pool *pool)
     // 确定这个页面可以存放多少个 object?
     nr_obj = caculate_nr_object(new, pool->gfporder, pool->size);
     freelist_end = new->freelist + nr_obj*sizeof(int);
+    new->active = 0;
     new->nr_free = nr_obj;
     new->nr_obj = nr_obj;
     new->obj_start = (void *)align_up((vaddr_t)freelist_end, 8);
@@ -329,4 +330,13 @@ slab_free(void *ptr)
         list_del(&slab->lru);
         page_free(slab);
     }
+}
+
+void
+print_slab_info(void)
+{
+  struct slab_pool *pool;
+
+  pool = general_pools + 4;
+  printf("Pool name: %s\nObject size: %d\n", pool->name, pool->obj_size);
 }

@@ -54,3 +54,5 @@ slab_own_addr(void *ptr);
 // debug
 // void DBG_mem_pool(struct mem_pool *pool);
 // void DBG_mem_pools();
+void
+print_slab_info(void);
