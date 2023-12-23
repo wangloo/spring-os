@@ -53,6 +53,7 @@ static Dwarf_Signed fde_element_count = 0;
 static int targetline;
 static unsigned long targetpc;
 static char *targetfile;
+static int targetline_found;
 
 typedef int (*die_handler)(Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die die);
 typedef int (*cu_filter_t)(Dwarf_Debug dbg, Dwarf_Die cudie);
@@ -457,7 +458,6 @@ dbginfo_get_caller(u64 curpc, u64 cursp, u64 *callerpc, u64 *callersp)
   // For debug
   // printf("lowpc: 0x%lx, highpc: 0x%lx\n", low_pc, high_pc);
 
-
   // Set number of register in .debug_frame
   // This number is Arch-defined, 30 for AArch64 x0-x30
   oldrulecount = dwarf_set_frame_rule_table_size(dbg, 30);
@@ -478,17 +478,19 @@ dbginfo_get_caller(u64 curpc, u64 cursp, u64 *callerpc, u64 *callersp)
     return -1;
   }
 
-  u64 cfa, ra;
-  cfa = cursp + regtable.rt3_cfa_rule.dw_offset_or_block_len;
-  // printf("cfa off: %d\n", regtable.rt3_cfa_rule.dw_offset_or_block_len);
-  // printf("cfa: 0x%lx\n", cfa);
-  // printf("ra off: %d\n", regtable.rt3_rules[30].dw_offset_or_block_len);
-  ra = *(u64 *)((s64)cfa + regtable.rt3_rules[30].dw_offset_or_block_len);
-
-  *callersp = cfa;
-  *callerpc = ra;
+  u64 cfa_off, ra_off;
+  cfa_off = regtable.rt3_cfa_rule.dw_offset_or_block_len;
+  ra_off = regtable.rt3_rules[30].dw_offset_or_block_len;
+  
+  // printf("cfa off: %d\n", cfa_off);
+  // printf("ra off: %d\n", ra_off);
+  *callersp = cursp + cfa_off;
+  if (!ra_off)
+    *callerpc = 0;
+  else
+    *callerpc = *(u64 *)((s64)(*callersp) + ra_off);
   kfree(regtable.rt3_rules);
-  return ra;
+  return 0;
 }
 
 
@@ -499,7 +501,7 @@ func_get_line_handler(Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
   Dwarf_Line *linebuf;
   Dwarf_Signed linecount=0;
   Dwarf_Unsigned lineno;
-  Dwarf_Addr lineaddr;
+  Dwarf_Addr lineaddr, endaddr;
   Dwarf_Error err;
   Dwarf_Error *errp=&err;
   int i;
@@ -523,8 +525,23 @@ func_get_line_handler(Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
       dwarf_srclines_dealloc(dbg, linebuf, linecount);
       return RET_ERR;
     }
-    if (lineaddr == targetpc) // Yeah, we find it!
+
+    // Get the end address of the line, if available
+    if (i + 1 < linecount) {
+        if (dwarf_lineaddr(linebuf[i + 1], &endaddr, errp) != DW_DLV_OK) {
+            dwarf_srclines_dealloc(dbg, linebuf, linecount);
+            return RET_ERR;
+        }
+    } else {
+        // TODO: In last row, how to caculate end addr?
+        endaddr = lineaddr + 4; 
+    }
+
+    // printf("lineaddr: %lx, endaddr: %lx, lineno: %d\n", lineaddr, endaddr, lineno);
+    if (targetpc >= lineaddr && targetpc < endaddr) { // Yeah, we find it!
+      targetline_found = 1;
       break;
+    }
   }
   dwarf_srclines_dealloc(dbg, linebuf, linecount);
 
@@ -559,9 +576,14 @@ dbginfo_get_func_lineno(unsigned long pc, char *file, int *line)
 {
   targetpc = pc;
   targetfile = file;
+  targetline_found = 0;
   if (walk_all_die(dbg, func_get_line_handler, func_get_line_cu_filter) < 0)
     return -1;
 
+  if (!targetline_found) {
+    LOG_ERROR("targetpc: %lx of %s not found lineno\n", targetpc, targetfile);
+    return -1;
+  }
   *line = targetline;
   return 0;
 }

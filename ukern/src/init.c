@@ -91,10 +91,11 @@ void timer_handler(int intid)
 static inline void func2() {
     *(long *)0 = 0;
     // make it not leaf
-    func2();
+    // func2();
 }
   
 void func1(void) {
+  // docaculate(1, 2);
   func2();
 }
 
@@ -103,6 +104,7 @@ docaculate(int a, int b)
 {
   int c = b+a;
   c *= a;
+    *(long *)0 = 0;
   return c;
 }
 
@@ -146,11 +148,7 @@ kernel_init(void)
     unittest(); 
 #endif
 
-    LOG_DEBUG("Test Ftrace\n");
-    functrace_enable();
-    recur(40);
-    functrace_disable();
-    print_functrace();
+
 
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space
@@ -159,7 +157,11 @@ kernel_init(void)
         LOG_ERROR("Load root service err\n");
         goto init_failed;
     }
-
+    // LOG_DEBUG("Test Ftrace\n");
+    // functrace_enable();
+    // recur(40);
+    // functrace_disable();
+    // print_functrace();
 
     // Cause sync exception from current el
     // Test kmonitor

@@ -21,7 +21,7 @@ dbginfo_get_func_lineno(unsigned long pc, char *file, int *line);
 
 // Tmp
 void 
-backtrace(unsigned long pc, unsigned long sp);
+backtrace(unsigned long pc, unsigned long sp, unsigned long x30);
 
 __notrace void
 functrace_enable();
