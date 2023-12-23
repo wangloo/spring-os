@@ -18,8 +18,8 @@ enum {
 
 
 struct dbgi_func_param {
-  unsigned int *size;
-  unsigned int *offset;
+  int *size;
+  int *offset;
   int count;
 };
 struct dbgi_func_loc {
@@ -70,10 +70,9 @@ install_func_pc(struct dbgi_func *df,
             Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
 {
   Dwarf_Addr lowpc, highpc;
-  Dwarf_Half highpc_form, tag;
+  Dwarf_Half highpc_form;
   enum Dwarf_Form_Class highpc_class;
   Dwarf_Error err;
-  // Dwarf_Error *errp=&err;
 
   if (dwarf_lowpc(funcdie, &lowpc, &err) == DW_DLV_OK && 
       dwarf_highpc_b(funcdie, &highpc, &highpc_form, &highpc_class, &err) == DW_DLV_OK) {
@@ -99,7 +98,7 @@ install_func_param(struct dbgi_func *df,
   Dwarf_Half tag = 0;
   Dwarf_Error err;
   Dwarf_Error *errp=&err;
-  unsigned int *poff, *psize;
+  int *poff, *psize;
   int i, pcount=0;
 
   poff = kalloc(8 * sizeof(unsigned int *));
@@ -117,7 +116,8 @@ install_func_param(struct dbgi_func *df,
       continue;
 
     // 获取参数名
-    // if (dwarf_diename(param_die, &param_name, errp) == DW_DLV_OK) {
+    // char *param_name;
+    // if (dwarf_diename(paramdie, &param_name, errp) == DW_DLV_OK) {
     //   printf("Parameter Name: %s\n", param_name);
     //   dwarf_dealloc(dbg, param_name, DW_DLA_STRING);
     // }
@@ -128,7 +128,6 @@ install_func_param(struct dbgi_func *df,
     Dwarf_Off type_off;
     Dwarf_Die type_die;
     // Dwarf_Unsigned type_size;
-    // char *typename;
     if (dwarf_attr(paramdie, DW_AT_type, &type_attr, errp) != DW_DLV_OK) {
       return -1;
     }
@@ -143,6 +142,7 @@ install_func_param(struct dbgi_func *df,
     // For paramter which type are not directly,
     // only the original type has 'AT_bytesize' attribute
     if (dwarf_tag(type_die, &type_tag, errp) != DW_DLV_OK) {
+      dwarf_dealloc(dbg, type_die, DW_DLA_DIE);
       return -1;
     }
     while (type_tag == DW_TAG_typedef || type_tag == DW_TAG_const_type
@@ -160,6 +160,7 @@ install_func_param(struct dbgi_func *df,
     }
 
     // For debug
+    // char *typename;
     // if (dwarf_diename(type_die, &typename, errp) == DW_DLV_OK) {
     //   printf("Parameter Type: %s\n", typename);
     //   dwarf_dealloc(dbg, typename, DW_DLA_STRING);
@@ -169,6 +170,7 @@ install_func_param(struct dbgi_func *df,
       return -1;
     if (dwarf_formudata(size_attr, (Dwarf_Unsigned *)&psize[pcount], errp) != DW_DLV_OK)
       return -1;
+    dwarf_dealloc(dbg, type_die, DW_DLA_DIE);
     // printf("====>\n");
 
     // Get location of paramter
@@ -416,8 +418,7 @@ dgbinfo_get_func_loc(unsigned long pc, char **name, char **file, int *line)
 
 
 int
-dgbinfo_get_func_param(unsigned long pc, int *argc, 
-          unsigned int **offset, unsigned int **size)
+dgbinfo_get_func_param(unsigned long pc, int *argc, int **offset, int **size)
 {
   struct dbgi_func *df = func_head.next;
   struct dbgi_func_param *dfp;

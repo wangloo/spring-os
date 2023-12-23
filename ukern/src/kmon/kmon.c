@@ -71,6 +71,7 @@ init_kmon(void)
   if (init_functrace() < 0) 
     return -1;
 
+  LOG_INFO("Kmonitor init ok\n");
   kmon_ok = 1;
   return 0;
 }

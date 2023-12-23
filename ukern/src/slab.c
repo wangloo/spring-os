@@ -335,8 +335,4 @@ slab_free(void *ptr)
 void
 print_slab_info(void)
 {
-  struct slab_pool *pool;
-
-  pool = general_pools + 4;
-  printf("Pool name: %s\nObject size: %d\n", pool->name, pool->obj_size);
 }

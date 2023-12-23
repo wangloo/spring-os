@@ -9,8 +9,7 @@ kmon_main(void);
 int
 init_dbginfo(void);
 int
-dgbinfo_get_func_param(unsigned long pc, int *argc, 
-          unsigned int **offset, unsigned int **size);
+dgbinfo_get_func_param(unsigned long pc, int *argc, int **offset, int **size);
 int
 dgbinfo_get_func_loc(unsigned long pc, char **name, char **file, int *line);
 int
