@@ -32,6 +32,7 @@ extern void log_init(void);
 	static init_call __init_call_##fn __used __init_##id = fn
 
 #define early_initcall(fn)     __define_initcall(fn, 0)
+#define irqhook_initcall(fn)   __define_initcall(fn, 3) // section3 used for register irq initcalls
 #define uspace_initcall(fn)    __define_initcall(fn, 5) // section5 used for uspace initcalls
 
 

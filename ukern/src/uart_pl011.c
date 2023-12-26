@@ -1,6 +1,6 @@
-#include <uart_pl011.h>
-#include <memlayout.h>
 #include <kernel.h>
+#include <memlayout.h>
+#include <uart_pl011.h>
 
 #define DEFAULT_CLOCK (24000000) // clock frequency: 24M
 #define BAUDRATE      (115200)
@@ -25,6 +25,40 @@ static inline void
 wait_tx_complete(volatile struct uart_pl011_regs *regs)
 {
   while ((regs->FR & FR_BUSY) != 0) {}
+}
+
+
+
+// Asynchronous recv
+char 
+uart_getc(void)
+{
+  while (uart.regs->FR & FR_RXFE);
+  return (char)(uart.regs->DR);
+}
+
+void uart_putc(char c)
+{
+  uart.regs->DR = c;
+  wait_tx_complete(uart.regs);
+}
+
+void
+uart_irq_init(void)
+{
+  struct uart_pl011 *u = &uart;
+
+  /* Disable UART before anything else */
+  u->regs->CR &= ~CR_UARTEN;
+
+  /* Clear out any spuriously appearing RX interrupts */
+  u->regs->ICR = ICR_RTIC | ICR_RXIC | ICR_TXIC;
+
+  /* Enable Receive timeout interrupt and Receive interrupt */
+  u->regs->IMSC = IMSC_RTIM | IMSC_RXIM;
+
+  /* Finally enable UART */
+  u->regs->CR |= CR_UARTEN;
 }
 
 int 
@@ -68,33 +102,6 @@ uart_init(void)
   u->regs->CR |= CR_TXEN | CR_RXEN;
   // Finally enable UART
   u->regs->CR |= CR_UARTEN;
+
   return 0;
-}
-
-// Asynchronous recv
-char 
-uart_getc(void)
-{
-  while (uart.regs->FR & FR_RXFE);
-  return (char)(uart.regs->DR);
-}
-
-void uart_putc(char c)
-{
-  uart.regs->DR = c;
-  wait_tx_complete(uart.regs);
-}
-
-
-extern void console_handle(char);
-void
-uart_irq_handler(void)
-{
-  // read and process incoming characters.
-  while(1){
-    char c = uart_getc();
-    if(c == -1)
-      break;
-    console_handle(c);
-  }
 }

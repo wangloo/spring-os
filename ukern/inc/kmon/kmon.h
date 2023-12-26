@@ -4,7 +4,9 @@ readline(const char *prompt);
 int
 init_kmon(void);
 void
-kmon_main(void);
+kmon_sync(void *ectx);
+void
+kmon_main();
 
 int
 init_dbginfo(void);
@@ -31,3 +33,14 @@ int
 init_functrace(void);
 __notrace void
 print_functrace();
+
+
+int
+runcmd(int argc, char **argv);
+int exec_bt(int argc, char **argv);
+int exec_ft(int argc, char **argv);
+int exec_hwt(int argc, char **argv);
+int exec_where(int argc, char **argv);
+int exec_cont(int argc, char **argv);
+int exec_regs(int argc, char **argv);
+int exec_print(int argc, char **argv);

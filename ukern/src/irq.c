@@ -64,9 +64,7 @@ irq_register(u32 intid, irq_handler_fp handler, char *name)
 	irq->handler = handler;
 
 	irq_enable(intid);
-    LOG_DEBUG("here\n");
 	// spin_unlock_irqrestore(&irq_desc->lock, flag); // FIXME
-
   return 0;
 }
 

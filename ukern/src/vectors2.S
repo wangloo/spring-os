@@ -74,7 +74,7 @@ endfunc __sync_from_lower_el
 // only trigger for starting scheduler.
 // Will not back, context doesn't matter 
 func __irq_from_current_el
-  // SAVE_ECTX
+  SAVE_ECTX
 
   // Process switch could happen before exception return
   // So must update the current process's kernel stack pointer 
@@ -86,22 +86,23 @@ func __irq_from_current_el
   // We can call C function after here
   // SWITCHTO_INTR_STACK x0
 
+  mov x0, sp   // function paramter
   bl irq_from_current_el
 
   // Before return from interrupt, always check 
   // whether need to resched. x18 will the next process
-	bl sched
+	// bl sched
 
-  ldr x1, [x18, PROC_PAGETABLE_OFFSET]
-  msr ttbr0_el1, x1
+  // ldr x1, [x18, PROC_PAGETABLE_OFFSET]
+  // msr ttbr0_el1, x1
 
   // Switch to new process's kernel stack
   // Not load context before IRQ, but new process's 
   // user context
-  SWITCHTO_PROC_STACK x0
-  sub sp, sp, ECTX_SIZE
+  // SWITCHTO_PROC_STACK x0
+  // sub sp, sp, ECTX_SIZE
 	LOAD_ECTX
-  sub sp, sp, ECTX_SIZE
+  // sub sp, sp, ECTX_SIZE
 	eret
 endfunc __irq_from_current_el
 

@@ -49,6 +49,12 @@ init_uspace(void)
                   (unsigned long)&__init_func_6_start);
 }
 
+void
+init_irqhooks(void)
+{
+  call_init_func((unsigned long)&__init_func_3_start,
+                  (unsigned long)&__init_func_4_start);
+}
 
 
 
@@ -82,11 +88,7 @@ failed:
 	return -EFAULT;
 }
 
-void timer_handler(int intid)
-{
-    printf("timer!!\n");
-    timer_stop();
-}
+
 
 static inline void func2() {
     *(long *)0 = 0;
@@ -127,6 +129,7 @@ kernel_init(void)
     init_cpus();
     init_timer();
     init_uspace();
+    init_irqhooks();
     
     
     if (init_cfi() < 0) {
@@ -166,6 +169,7 @@ kernel_init(void)
     // Cause sync exception from current el
     // Test kmonitor
     LOG_DEBUG("Test KMonitor\n");
+    // while(1);
     func1();
 
 
@@ -176,8 +180,6 @@ kernel_init(void)
 
     // Start scheduling
     timer_setup(MILLISECS(500));
-    if (irq_register(INTID_VTIMER, timer_handler, "timer") < 0)
-        goto init_failed;
     cpu_intr_on();
     timer_start();
     while (1);

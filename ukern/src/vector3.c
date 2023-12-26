@@ -29,8 +29,9 @@ sync_from_current_el(struct econtext *ectx)
   printf("FAR: %lx\n", ectx->far);
 
 
-  backtrace(ectx->ctx.elr, ectx->ctx.sp, ectx->ctx.gp_regs.lr);
-  // kmon_main();
+  // backtrace(ectx->ctx.elr, ectx->ctx.sp, ectx->ctx.gp_regs.lr);
+  kmon_sync(ectx);
+  kmon_main();
   panic("SPRING-OS oops!\n");
 }
 
@@ -64,9 +65,10 @@ sync_from_lower_el(void)
 
 
 void 
-irq_from_current_el(void)
+irq_from_current_el(struct econtext *ectx)
 {
-  printf("IRQ FROM CURRENT EL\n");
+  // printf("IRQ FROM CURRENT EL\n");
+  kmon_sync(ectx);
   do_irq_handler();
   // panic("SPRING-OS oops!\n");
 }

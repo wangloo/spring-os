@@ -8,6 +8,7 @@ struct dev_console {
   struct spinlock lock;
 
   int (*init)();
+  void (*irq_init)();
   void (*putc)(char ch);
   char (*getc)(void);
 };
