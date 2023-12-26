@@ -1,7 +1,7 @@
 #pragma once
 
 #define __cache_line_size__ (64)
-
+#define __always_inline	    inline __attribute__((always_inline))
 #define __section(S)        __attribute__((__section__(#S)))
 #define __used              __attribute__((__used__))
 #define __unused            __attribute__((__unused__))

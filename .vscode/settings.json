@@ -68,7 +68,11 @@
       "cmath": "c",
       "kmon.h": "c",
       "tracebuf.h": "c",
-      "cstdlib": "c"
+      "cstdlib": "c",
+      "timer.h": "c",
+      "barrier.h": "c",
+      "intid.h": "c",
+      "math.h": "c"
     },
     "search.exclude": {
       // "ukern/thirdparty/libdwarf/dwarfdump":true,

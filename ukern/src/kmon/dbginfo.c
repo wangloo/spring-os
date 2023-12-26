@@ -119,7 +119,7 @@ install_func_param(struct dbgi_func *df,
   poff = kalloc(8 * sizeof(unsigned int *));
   psize = kalloc(8 * sizeof(unsigned int *));
   if (dwarf_child(funcdie, &paramdie, errp) != DW_DLV_OK) {
-    LOG_WARN("Func has no parameter\n");
+    // LOG_WARN("Func has no parameter\n");
     goto out;
   }
 

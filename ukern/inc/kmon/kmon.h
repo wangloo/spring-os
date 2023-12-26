@@ -47,6 +47,15 @@ init_functrace(void);
 __notrace void
 print_functrace();
 
+void
+ftrace_timer_setup(u64 ns);
+void 
+ftrace_timer_start(void);
+void 
+ftrace_timer_stop(void);
+void 
+init_ftrace_timer(void);
+
 
 int
 runcmd(int argc, char **argv);

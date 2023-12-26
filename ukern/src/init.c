@@ -16,6 +16,7 @@
 // #include <ramdisk.h>
 // #include <procinfo.h>
 #include <proc.h>
+#include <sched2.h>
 #include <exec.h>
 #include <irq.h>
 #include <init.h>
@@ -127,7 +128,7 @@ kernel_init(void)
     init_mm();
     init_gicv3();
     init_cpus();
-    init_timer();
+    init_sched_timer();
     init_uspace();
     init_irqhooks();
     
@@ -179,9 +180,9 @@ kernel_init(void)
 
 
     // Start scheduling
-    timer_setup(MILLISECS(500));
+    sched_timer_setup(MILLISECS(500));
     cpu_intr_on();
-    timer_start();
+    sched_timer_start();
     while (1);
     
 
