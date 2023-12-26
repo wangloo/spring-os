@@ -8,9 +8,8 @@
 #define MAXARGS  8
 #define WHITESPACE " \t\n\r"
 
-static int kmon_ok = 0;
-static int in_kmon = 0; // Avoid recursive
 
+struct km_state cur_state;
 struct econtext *cur_ectx;
 
 // Return <0 on error
@@ -24,12 +23,10 @@ handlecmd(char *cmd)
     LOG_ERROR("Input cmd is NULL\n");
     return -1;
   }
-  if (!(*cmd)) {
-    return 0;
-  }
+  if (!(*cmd)) return 0;
 
   // For debug
-  LOG_DEBUG("Run cmd: %s\n", cmd);
+  // LOG_DEBUG("Run cmd: %s\n", cmd);
 
   // Parse parameters
   while (1) {
@@ -77,33 +74,41 @@ cmdloop(void)
 void
 kmon_main(void)
 {
-  if (!kmon_ok) {
+  if (!cur_state.initok) {
     LOG_WARN("KMonitor is not available\n");
     return;
   }
 
   // Exception happends in kmon
   // Meaningless to enter again
-  if (in_kmon) {
+  if (cur_state.inside) {
     LOG_ERROR("We already in kmon, but error happens\n");
     return;
   }
 
-  in_kmon = 1;
+  functrace_disable();
+  cur_state.inside = 1;
   cmdloop(); // Never return
 }
 
 void
-kmon_sync(void *ectx)
+kmon_sync(void *ectx, int returnable)
 {
   cur_ectx = ectx;
+  cur_state.returnable = returnable;
+  cur_state.ftrace_disabled = functrace_is_disable();
 }
 
-void
-kmon_exit(void)
+int
+kmon_return(void)
 {
-  in_kmon = 0;
-  cur_ectx = NULL; // Clear will be better
+  if (!cur_state.returnable)
+    return -1;
+
+  if (!cur_state.ftrace_disabled)
+    functrace_enable();
+  cur_state.inside = 0;
+  return 0;
 }
 
 
@@ -117,6 +122,6 @@ init_kmon(void)
     return -1;
 
   LOG_INFO("Kmonitor init ok\n");
-  kmon_ok = 1;
+  cur_state.initok = 1;
   return 0;
 }

@@ -5,6 +5,8 @@
 #include <kmon/kmon.h>
 
 extern struct econtext *cur_ectx;
+extern struct km_state cur_state;
+extern void load_ectx(struct econtext *ectx);
 
 struct km_cmd {
   char *name;
@@ -24,10 +26,13 @@ struct km_cmd allcmds[] = {
   
 
 #define DEFINE_FUNC_EXEC(cmdname) int exec_##cmdname(int argc, char **argv)
+#define assert_no_param(argc) do {assert(argc==1);}while(0)
+#define assert_has_param(argc) do {assert(argc>1);}while(0)
 
 DEFINE_FUNC_EXEC(bt)
 {
-  assert(argc == 1);
+  assert_no_param(argc);
+
   backtrace(cur_ectx->ctx.elr, 
             cur_ectx->ctx.sp, 
             cur_ectx->ctx.gp_regs.lr);
@@ -35,8 +40,22 @@ DEFINE_FUNC_EXEC(bt)
   return 0;
 }
 
+// ft [opt]
 DEFINE_FUNC_EXEC(ft)
 {
+  int enable;
+
+  if (argc == 1) {
+    print_functrace();
+    return 0;
+  }
+
+  enable = (int)strtol(argv[1], NULL, 10);
+  if (enable >= 2 || enable < 0) {
+    return -1;
+  }
+
+  cur_state.ftrace_disabled = !enable;
   return 0;
 }
 
@@ -52,6 +71,13 @@ DEFINE_FUNC_EXEC(where)
 
 DEFINE_FUNC_EXEC(cont)
 {
+  assert_no_param(argc);
+
+  if (kmon_return() < 0) {
+    LOG_WARN("Context can't be reload, might in exception!\n");
+    return 0;
+  }
+  load_ectx(cur_ectx); // Never return
   return 0;
 }
 

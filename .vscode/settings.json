@@ -67,7 +67,8 @@
       "chrono": "c",
       "cmath": "c",
       "kmon.h": "c",
-      "tracebuf.h": "c"
+      "tracebuf.h": "c",
+      "cstdlib": "c"
     },
     "search.exclude": {
       // "ukern/thirdparty/libdwarf/dwarfdump":true,

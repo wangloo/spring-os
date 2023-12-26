@@ -19,6 +19,12 @@ functrace_disable()
   functrace_disabled = 1;
 }
 
+__notrace int
+functrace_is_disable(void)
+{
+  return functrace_disabled;
+}
+
 __notrace void
 print_functrace()
 {
@@ -53,15 +59,18 @@ functrace (unsigned long pc, unsigned long lr, unsigned long fp)
     showname = 0;
 
   if (dgbinfo_get_func_param(pc, &argc, &argoff, &argsize) < 0) {
-    LOG_ERROR("Get invalid func param info for %lx\n", pc);
+    // LOG_ERROR("Get invalid func param info for %lx\n", pc);
     showparam = 0;
   }
+
+  // LOG_DEBUG("For pc: %lx\n", pc);  
+  // LOG_DEBUG("argc: %d\n", argc);
 
   if (showparam) {
     unsigned long *argv;
     unsigned long callerfp;
 
-    assert(argc > 0 && argc <= 8);
+    assert(argc >= 0 && argc <= 8);
     if (argc == 0) {
       strcpy(argstr, "void");
     } else {

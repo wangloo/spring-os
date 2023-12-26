@@ -30,7 +30,7 @@ sync_from_current_el(struct econtext *ectx)
 
 
   // backtrace(ectx->ctx.elr, ectx->ctx.sp, ectx->ctx.gp_regs.lr);
-  kmon_sync(ectx);
+  kmon_sync(ectx, 0);
   kmon_main();
   panic("SPRING-OS oops!\n");
 }
@@ -68,7 +68,7 @@ void
 irq_from_current_el(struct econtext *ectx)
 {
   // printf("IRQ FROM CURRENT EL\n");
-  kmon_sync(ectx);
+  kmon_sync(ectx, 1);
   do_irq_handler();
   // panic("SPRING-OS oops!\n");
 }

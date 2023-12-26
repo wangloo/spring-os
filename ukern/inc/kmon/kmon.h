@@ -1,10 +1,21 @@
+struct km_state {
+  // Enter from kernel exception can't return.
+  // Otherwise, from hotkey or breakpoint can return normally
+  int returnable;
+  int ftrace_disabled;
+  int initok;
+  // Flag we already in KMonitor to avoid recursive
+  int inside;
+};
 
 char *
 readline(const char *prompt);
 int
 init_kmon(void);
 void
-kmon_sync(void *ectx);
+kmon_sync(void *ectx, int returnable);
+int
+kmon_return(void);
 void
 kmon_main();
 
@@ -29,6 +40,8 @@ __notrace void
 functrace_enable();
 __notrace void
 functrace_disable();
+__notrace int
+functrace_is_disable(void);
 int
 init_functrace(void);
 __notrace void
