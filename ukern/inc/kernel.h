@@ -6,6 +6,7 @@
 #include <print.h>
 #include <errno.h>
 #include <types.h>
+#include <ctype.h>
 #include <utils.h>
 #include <qemu.h>
 #include <log.h>
