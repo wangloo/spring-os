@@ -70,10 +70,24 @@ static inline int
 install_func_pc(struct dbgi_func *df, 
             Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
 {
+
   Dwarf_Addr lowpc, highpc;
   Dwarf_Half highpc_form;
   enum Dwarf_Form_Class highpc_class;
   Dwarf_Error err;
+
+  // TODO: Support record inline function
+  // Dwarf_Attribute inline_attr;
+  // Dwarf_Signed inline_value;
+  // if (dwarf_attr(funcdie, DW_AT_byte_size, &inline_attr, errp) == DW_DLV_OK) {
+  //   if (dwarf_formudata(inline_attr, (Dwarf_Unsigned *)&inline_value, errp) != DW_DLV_OK)
+  //     return -1;
+  //   if ((inline_value == DW_INL_inlined) || 
+  //       (inline_value == DW_INL_declared_inlined)) {
+  //     df->highpc = df->lowpc = -1;
+  //     return 0;
+  //   }
+  // }
 
   if (dwarf_lowpc(funcdie, &lowpc, &err) == DW_DLV_OK && 
       dwarf_highpc_b(funcdie, &highpc, &highpc_form, &highpc_class, &err) == DW_DLV_OK) {
@@ -247,9 +261,17 @@ install_func_loc(struct dbgi_func *df,
 int
 func_install_handler(Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
 {
+  Dwarf_Attribute attr;
+  Dwarf_Signed attr_value;
   Dwarf_Half tag=0;
-  Dwarf_Error err;
+  Dwarf_Error err, *errp=&err;
   struct dbgi_func *df;
+
+  // For debug
+  // Dwarf_Unsigned offset;
+  // dwarf_dieoffset(funcdie, &offset, errp);
+  // LOG_DEBUG("Now handle tag <0x%x>\n", offset);
+
 
   if (dwarf_tag(funcdie, &tag, &err) != DW_DLV_OK) {
     LOG_ERROR("Failed to get DIE tag\n");
@@ -259,6 +281,22 @@ func_install_handler(Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
   // Exclude non-function
   if (tag != DW_TAG_subprogram)
     return 0;
+  
+  // Exclude function declaration
+  if (dwarf_attr(funcdie, DW_AT_declaration, &attr, errp) == DW_DLV_OK)
+    return 0;
+  
+
+  // Exclude inline function
+  if (dwarf_attr(funcdie, DW_AT_inline, &attr, errp) == DW_DLV_OK) {
+    if (dwarf_formudata(attr, (Dwarf_Unsigned *)&attr_value, errp) != DW_DLV_OK) {
+      LOG_ERROR("Has inline attr, but get value err\n");
+      return -1;
+    }
+    if ((attr_value == DW_INL_inlined) || 
+        (attr_value == DW_INL_declared_inlined))
+      return 0;
+  }
 
   df = kallocz(sizeof(*df));
 
