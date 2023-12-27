@@ -23,7 +23,7 @@ myteardown(void)
 static void
 UtSlabInit(void)
 {
-  pool = slab_pool_alloc("TestPool", 64);
+  pool = slab_pool_create("TestPool", 64);
   TEST_ASSERT_NOT_EMPTY(&pool);
   TEST_ASSERT_EQUAL(64, pool->obj_size);
 }
