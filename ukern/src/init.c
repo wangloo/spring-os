@@ -143,10 +143,12 @@ kernel_init(void)
        goto init_failed;
     }
 
+#ifndef UNITTEST_ON
     if (init_kmon() < 0) {
       LOG_ERROR("Init KMonitor ERROR\n");
       goto init_failed;
     }
+#endif
     
 #ifdef UNITTEST_ON
     unittest(); 
