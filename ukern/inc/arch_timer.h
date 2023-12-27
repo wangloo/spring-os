@@ -57,6 +57,7 @@ arch_timer_reg_read(enum arch_timer_reg reg)
   case ARCH_TIMER_REG_V_TVAL:
     return read_sysreg(cntv_tval_el0);
   }
+  return (u32)-1;
 }
 
 static __always_inline u32 
