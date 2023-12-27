@@ -26,7 +26,7 @@ cd "$libdwarf_dir"
 rm -rf build
 
 mkdir build && cd build
-../configure --host=aarch64-none-linux-gnu CFLAGS="-I$libelf_dir/install/include" LDFLAGS="-L$libelf_dir/install/lib"
+../configure --host=aarch64-none-linux-gnu CFLAGS="-I$libelf_dir/install/include -g" LDFLAGS="-L$libelf_dir/install/lib"
 make HOSTCC=cc gennames
 make HOSTCC=cc errmsg_check
 make   POSTINCS="--include=$libdwarf_dir/spring.h" 
