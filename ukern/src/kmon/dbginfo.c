@@ -285,7 +285,9 @@ func_install_handler(Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
   // Exclude function declaration
   if (dwarf_attr(funcdie, DW_AT_declaration, &attr, errp) == DW_DLV_OK)
     return 0;
-  
+  // Exclude abstrace function
+  if (dwarf_attr(funcdie, DW_AT_abstract_origin, &attr, errp) == DW_DLV_OK)
+    return 0;  
 
   // Exclude inline function
   if (dwarf_attr(funcdie, DW_AT_inline, &attr, errp) == DW_DLV_OK) {
@@ -336,16 +338,6 @@ walk_all_die_cu(Dwarf_Debug dbg, Dwarf_Die cu_die, die_handler handler)
     return RET_ERR;
 
   // Exclude cu of thirdparty
-  // if (dwarf_die_text(cu_die, DW_AT_comp_dir, &comp_path, errp) != DW_DLV_OK) {
-  //   LOG_ERROR("Faild to get comp_path\n");
-  //   return RET_ERR;
-  // }
-  // if (strstr(comp_path, "/lib") || strstr(comp_path, "src/kmon/")) {
-  //   dwarf_dealloc(dbg,comp_path, DW_DLA_STRING);
-  //   return RET_NOT_FOUND;
-  // }
-  // dwarf_dealloc(dbg,comp_path, DW_DLA_STRING);
-
   char *cuname;
   if (dwarf_diename(cu_die, &cuname, &err) != DW_DLV_OK) {
     LOG_ERROR("Faild to get cudie name\n");
@@ -535,6 +527,9 @@ dbginfo_get_caller(u64 curpc, u64 cursp, u64 *callerpc, u64 *callersp)
 static int
 func_get_line_handler(Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
 {
+  enum Dwarf_Form_Class highpc_class;
+  Dwarf_Addr lowpc, highpc;
+  Dwarf_Half highpc_form;
   Dwarf_Half tag=0;
   Dwarf_Line *linebuf;
   Dwarf_Signed linecount=0;
@@ -552,6 +547,16 @@ func_get_line_handler(Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
   // Exclude non-function
   if (tag != DW_TAG_subprogram)
     return 0;
+  // Exclude die which pc not inside
+  if (dwarf_lowpc(funcdie, &lowpc, &err) == DW_DLV_OK && 
+      dwarf_highpc_b(funcdie, &highpc, &highpc_form, &highpc_class, &err) == DW_DLV_OK) {
+    if (highpc_form != DW_FORM_addr)
+      highpc = lowpc + highpc; // returned highpc if offset
+    if (targetpc < lowpc || targetpc >= highpc)
+      return 0;
+  } else {
+    TODO();
+  }
 
   // Handle line number last
   if (dwarf_srclines(cudie, &linebuf, &linecount, errp) != DW_DLV_OK) {
@@ -589,18 +594,21 @@ func_get_line_handler(Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
   return 0;
 }
 
-// The filter to only walk cu of target file
+// If 1 is returned, won't go through all dies
 int
 func_get_line_cu_filter(Dwarf_Debug dbg, Dwarf_Die cudie)
 {
   Dwarf_Error err;
   char *cuname;
 
-  dwarf_diename(cudie, &cuname, &err);
+  if (targetline_found) return 1;
 
-  if (strstr(cuname, targetfile))
-    return 0;
-  return 1;
+  // The filter to only walk cu of target file
+  dwarf_diename(cudie, &cuname, &err);
+  if (!strstr(cuname, targetfile)) return 1;
+
+
+  return 0;
 }
 
 // Ugly design!!
