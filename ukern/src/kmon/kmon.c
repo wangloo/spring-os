@@ -120,6 +120,8 @@ init_kmon(void)
 
   if (init_functrace() < 0) 
     return -1;
+  if (init_ftrace_timer() < 0)
+    return -1;
 
   LOG_INFO("Kmonitor init ok\n");
   cur_state.initok = 1;

@@ -107,7 +107,7 @@ docaculate(int a, int b)
 {
   int c = b+a;
   c *= a;
-    *(long *)0 = 0;
+    // *(long *)0 = 0;
   return c;
 }
 
@@ -165,9 +165,10 @@ kernel_init(void)
     }
     // LOG_DEBUG("Test Ftrace\n");
     // functrace_enable();
-    // recur(40);
+    // recur(10);
     // functrace_disable();
     // print_functrace();
+    // exit();
 
     // Cause sync exception from current el
     // Test kmonitor

@@ -58,7 +58,8 @@ CFLAGS += -Wall \
 					-fno-unwind-tables \
 					-fno-omit-frame-pointer \
 					-ffixed-x18
-CFLAGS += -pg
+# CFLAGS += -pg
+CFLAGS += -finstrument-functions
 					
 LDFLAGS += -T $(SPRING_LDS) -L$(ROOT_DIR)/lib --start-group -lelf -ldwarf --end-group
 

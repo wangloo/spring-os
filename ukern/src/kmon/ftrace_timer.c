@@ -11,7 +11,7 @@
 #define MILLISECS(ms)  		((unsigned long)((ms) * 1000000ULL))
 #define MICROSECS(us)  		((unsigned long)((us) * 1000ULL))
 
-#define tick2ns(tick) muldiv64(ticks, SECONDS(1), 1000*cpukhz)
+// #define tick2ns(ticks) muldiv64(ticks, SECONDS(1), 1000*cpukhz)
 #define ns2tick(ns)   muldiv64(ns, 1000*cpukhz, SECONDS(1))
 #define systick() arch_counter_get_cntpct()
 #define systime() tick2ns(systick())
@@ -19,6 +19,18 @@
 static u64 alarm_tick = 0;
 static u64 cpukhz = 0;
 
+unsigned long
+ftrace_timer_tick(void)
+{
+  return systick();
+}
+
+unsigned long
+tick2ns(unsigned long ticks)
+{
+  return muldiv64(ticks, SECONDS(1), 1000*cpukhz);
+}
+  
 void 
 ftrace_timer_start(void)
 {
@@ -65,8 +77,9 @@ ftrace_timer_setup(u64 ns)
 
 
 
-void 
+int 
 init_ftrace_timer(void)
 {
-    cpukhz = arch_timer_get_cntfrq()/1000;
+  cpukhz = arch_timer_get_cntfrq()/1000;
+  return 0;
 }
