@@ -2,6 +2,7 @@
 #include <esr.h>
 #include <ctx_arm64.h>
 #include <exception.h>
+#include <slab.h>
 #include <kmon/kmon.h>
 
 extern struct econtext *cur_ectx;
@@ -14,15 +15,7 @@ struct km_cmd {
   int (*exec)(int argc, char **argv);
 };
 
-struct km_cmd allcmds[] = {
-  {"bt", "Backtrace", exec_bt},
-  {"ft", "Function trace", exec_ft},
-  {"hwt", "Hardware trace", exec_hwt},
-  {"where", "Where i am", exec_where},
-  {"cont", "Continue", exec_cont},
-  {"regs", "Show registers", exec_regs},
-  {"print", "Show var or func", exec_print},
-};
+
   
 
 #define DEFINE_FUNC_EXEC(cmdname) int exec_##cmdname(int argc, char **argv)
@@ -90,6 +83,26 @@ DEFINE_FUNC_EXEC(print)
 {
   return 0;
 }
+
+DEFINE_FUNC_EXEC(slab)
+{
+  assert_no_param(argc);
+  print_slab_info();
+  return 0;
+}
+
+
+struct km_cmd allcmds[] = {
+  {"bt", "Backtrace", exec_bt},
+  {"ft", "Function trace", exec_ft},
+  {"hwt", "Hardware trace", exec_hwt},
+  {"where", "Where i am", exec_where},
+  {"cont", "Continue", exec_cont},
+  {"regs", "Show registers", exec_regs},
+  {"print", "Show var or func", exec_print},
+  {"slab", "Show status of slab", exec_slab},
+};
+
 
 int
 runcmd(int argc, char **argv)
