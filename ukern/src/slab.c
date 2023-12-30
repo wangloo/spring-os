@@ -14,6 +14,15 @@ static struct slab_pool root_pool = {
     .obj_size = sizeof(struct slab_pool),
     .size = sizeof(struct slab_pool),
     .gfporder = 0,
+    .cache = NULL,
+};
+
+static struct slab_pool cache_pool = {
+    .name = "[cache-pool]",
+    .obj_size = sizeof(struct slab_cache),
+    .size = sizeof(struct slab_cache),
+    .gfporder = 0,
+    .cache = NULL,
 };
 
 // System pre-defined general pools
@@ -26,7 +35,8 @@ static struct pool_info general_pools[] = {
 
 // index 0 ==> root_pool
 static struct slab_pool *pool_ptrs[MAX_MEM_POOLS];
-static int nr_pools = 1;
+static int nr_pools = 0;
+static int normal_pool_start = 2;
 
 
 
@@ -39,7 +49,12 @@ slab_pool_free(struct slab_pool *pool)
 
   // 确定没有slab挂在上面了
   assert(pool);
-  assert(list_empty(&pool->full) && list_empty(&pool->partial));
+  assert(pool->cache || ((&pool->full) && list_empty(&pool->partial)));
+
+  // TODO
+  if (pool->cache) {
+    return;
+  }
 
   for (i = 0; i < nr_pools; i++) {
     if (pool_ptrs[i] == pool) {
@@ -175,6 +190,7 @@ print_slab_info(void)
 void 
 slab_free(void *ptr)
 {
+  struct slab_cache *cache;
   struct slab *slab;
   int obj_index;
 
@@ -189,6 +205,11 @@ slab_free(void *ptr)
   assert(slab->nr_free < slab->nr_obj);
   assert(isaligned(ptr, slab->pool->obj_size));
 
+  cache = slab_alloc_pool(&cache_pool);
+  cache->obj = ptr;
+  cache->next = slab->pool->cache;
+  slab->pool->cache = cache;
+  return;
 
   // Update slab descriptor
   slab->active--;
@@ -226,12 +247,21 @@ slab_magic_check(void)
 void *
 slab_alloc_pool(struct slab_pool *pool)
 {
+  struct slab_cache *cache;
   struct slab *slab;
   void *obj;
   short obj_index;
 
   assert(pool);
   // LOG_INFO("alloc from pool: %s\n", pool->name);
+
+  if (pool->cache) {
+    cache = pool->cache;
+    obj = cache->obj;
+    pool->cache = cache->next;
+    // slab_free(cache); // Make it leak
+    return obj;
+  };
 realloc:
   slab = NULL;
 
@@ -286,7 +316,7 @@ slab_alloc(int bytes)
 
   // Slab pool is arranged size-descending
   // So the first fit == best fit
-  for (int i = 1; i <= nelem(general_pools); i++) {
+  for (int i = normal_pool_start; i <= normal_pool_start+nelem(general_pools); i++) {
     if (pool_ptrs[i]->obj_size >= bytes)
       return slab_alloc_pool(pool_ptrs[i]);
   }
@@ -306,6 +336,7 @@ slab_pool_init(struct slab_pool *pool, char *name, int objsize)
   pool->obj_size = objsize;
   pool->size = pool->obj_size;
   pool->gfporder = 0;
+  pool->cache = NULL;
   INIT_LIST_HEAD(&pool->partial);
   INIT_LIST_HEAD(&pool->full);
 
@@ -336,9 +367,13 @@ init_slab(void)
 
   // Root pool needs to be initialized first
   // So other pools' descriptor can be allocated
-  pool_ptrs[0] = &root_pool;
+  pool_ptrs[nr_pools++] = &root_pool;
   INIT_LIST_HEAD(&root_pool.partial);
   INIT_LIST_HEAD(&root_pool.full);
+
+  pool_ptrs[nr_pools++] = &cache_pool;
+  INIT_LIST_HEAD(&cache_pool.partial);
+  INIT_LIST_HEAD(&cache_pool.full);
 
 
   LOG_DEBUG("Create general pools...\n");

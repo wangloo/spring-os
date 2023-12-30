@@ -8,6 +8,10 @@
 //  - struct slab和freelist均放到slab指向的物理页帧中
 //  - object后没有添加padding，即没有越界的检查
 
+struct slab_cache {
+  void *obj;
+  struct slab_cache *next;
+};
 struct slab_pool {
     char *name;
     int size;     // plus padding NOT USED
@@ -16,6 +20,7 @@ struct slab_pool {
 
     struct list_head partial;
     struct list_head full;
+    struct slab_cache *cache;
 };
 
 struct slab {
