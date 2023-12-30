@@ -17,7 +17,23 @@ enum {
 };
 
 
+// TODO
+struct dbgi_var {
+  char *name;
+  char *typename;
+  int size;
+
+  // loc_type and loc_val decide location 
+  // of the var together. For local var, 
+  // loc_val might be offset of sp/fp.
+  int loc_type;
+  unsigned long loc_val;
+
+  struct dbgi_var *next;
+};
+
 struct dbgi_func_param {
+  char **name; // TODO
   int *size;
   int *offset;
   int count;
@@ -38,6 +54,7 @@ struct dbgi_func {
 };
 
 static struct dbgi_func func_head;
+static struct dbgi_var  var_head; // TODO
 
 struct ramdisk_file elf_file;
 static Dwarf_Debug dbg;
@@ -270,7 +287,7 @@ func_install_handler(Dwarf_Debug dbg, Dwarf_Die cudie, Dwarf_Die funcdie)
   // For debug
   // Dwarf_Unsigned offset;
   // dwarf_dieoffset(funcdie, &offset, errp);
-  // LOG_DEBUG("Now handle tag <0x%x>\n", offset);
+  // LOG_DEBUG("Now handle tag <%x>\n", offset);
 
 
   if (dwarf_tag(funcdie, &tag, &err) != DW_DLV_OK) {
