@@ -1,5 +1,6 @@
 #include <kernel.h>
 #include <kmem.h>
+#include <time.h>
 #include <kmon/kmon.h>
 #include <kmon/tracebuf.h>
 

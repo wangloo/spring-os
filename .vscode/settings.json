@@ -72,7 +72,12 @@
       "timer.h": "c",
       "barrier.h": "c",
       "intid.h": "c",
-      "math.h": "c"
+      "math.h": "c",
+      "memory_resource": "c",
+      "tuple": "c",
+      "arch_timer.h": "c",
+      "time.h": "c",
+      "init.h": "c"
     },
     "search.exclude": {
       // "ukern/thirdparty/libdwarf/dwarfdump":true,

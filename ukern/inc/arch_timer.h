@@ -1,4 +1,4 @@
-
+#include <barrier.h>
 #define CNT_CTL_ISTATUS (1 << 2)
 #define CNT_CTL_IMASK   (1 << 1)
 #define CNT_CTL_ENABLE  (1 << 0)
@@ -77,3 +77,7 @@ static inline u64 arch_counter_get_cntpct(void)
 	isb();
 	return read_sysreg(cntpct_el0);
 }
+
+
+int 
+init_arch_timer(void);

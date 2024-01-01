@@ -10,5 +10,5 @@ void
 sched_timer_start(void);
 void 
 sched_timer_stop(void);
-void 
+int 
 init_sched_timer(void);

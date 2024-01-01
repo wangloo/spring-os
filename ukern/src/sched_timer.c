@@ -1,24 +1,17 @@
 #include <kernel.h>
-#include <barrier.h>
 #include <intid.h>
 #include <math.h>
 #include <init.h>
 #include <irq.h>
 #include <arch_timer.h>
+#include <time.h>
 
 
 #define TIMER_PRECISION 1000000 // 1000000ns = 1ms
-#define SECONDS(s)     		((unsigned long)((s)  * 1000000000ULL))
-#define MILLISECS(ms)  		((unsigned long)((ms) * 1000000ULL))
-#define MICROSECS(us)  		((unsigned long)((us) * 1000ULL))
-
-#define tick2ns(tick) muldiv64(ticks, SECONDS(1), 1000*cpukhz)
-#define ns2tick(ns)   muldiv64(ns, 1000*cpukhz, SECONDS(1))
 #define systick() arch_counter_get_cntvct()
 #define systime() tick2ns(systick())
 
 static u64 alarm_tick = 0;
-static u64 cpukhz = 0;
 
 void 
 sched_timer_start(void)
@@ -63,8 +56,10 @@ sched_timer_setup(u64 ns)
     alarm_tick = systick()+ns2tick(ns);
 }
 
-void 
+int 
 init_sched_timer(void)
 {
-    cpukhz = arch_timer_get_cntfrq()/1000;
+  if (init_arch_timer() < 0)
+    return -1;
+  return 0;  
 }

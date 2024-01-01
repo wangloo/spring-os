@@ -58,8 +58,6 @@ init_ftrace_timer(void);
 unsigned long
 ftrace_timer_tick(void);
 
-unsigned long
-tick2ns(unsigned long ticks);
 
 int
 runcmd(int argc, char **argv);
