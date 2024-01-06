@@ -14,4 +14,5 @@ size_t strlen(const char *s);
 char *strchr(const char *src, char ch);
 char *strstr(const char *haystack, const char *needle);
 long  strtol(const char *s, char **endptr, int base);
+unsigned long strtoul(const char * nptr, char ** endptr, int base);
 void bzero(void *s, size_t n);
