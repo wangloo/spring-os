@@ -2,8 +2,9 @@
 #include <esr.h>
 #include <ctx_arm64.h>
 #include <exception.h>
-#include <kmon/kmon.h>
 #include <console.h>
+#include <cpu.h>
+#include <kmon/kmon.h>
 
 #define MAXARGS  8
 #define WHITESPACE " \t\n\r"
@@ -65,7 +66,7 @@ cmdloop(void)
     }
 
     if (handlecmd(line) < 0) {
-      LOG_ERROR("A command return non-zero, exit!\n");
+      LOG_ERROR("A command return non-zero, exec failed!\n");
       return;
     }
   }
@@ -111,6 +112,12 @@ kmon_return(void)
   return 0;
 }
 
+// Enter KMonitor mannually
+void
+kmon_enter(void)
+{
+  asm("brk #0\n");
+}
 
 int
 init_kmon(void)
@@ -122,6 +129,13 @@ init_kmon(void)
     return -1;
   if (init_ftrace_timer() < 0)
     return -1;
+
+  // Do architecture config
+  write_sysreg(0x0, oslar_el1);
+  write_sysreg(0xa000, mdscr_el1);
+  write_sysreg(read_sysreg(dbgbcr0_el1) & ~(0xf << 20), dbgbcr0_el1);
+  write_sysreg(read_sysreg(dbgbcr1_el1) & ~(0xf << 20), dbgbcr1_el1);
+  cpu_debug_on();
 
   LOG_INFO("Kmonitor init ok\n");
   cur_state.initok = 1;

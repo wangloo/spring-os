@@ -464,6 +464,21 @@ dgbinfo_get_func_loc(unsigned long pc, char **name, char **file, int *line)
   return -1;
 }
 
+int
+dbgsym_func_name2addr(char *name, unsigned long *pc)
+{
+  struct dbgi_func *df = func_head.next;
+  struct dbgi_func_loc *dfl;
+
+  while (df) {
+    if (df->name && strcmp(df->name, name)==0) {
+      *pc = df->lowpc;
+      return 0;
+    }
+    df = df->next;
+  }
+  return -1;
+}
 
 int
 dgbinfo_get_func_param(unsigned long pc, int *argc, int **offset, int **size)
@@ -650,6 +665,7 @@ dbginfo_get_func_lineno(unsigned long pc, char *file, int *line)
   *line = targetline;
   return 0;
 }
+
 
 int
 dgbinfo_init_all_func(Dwarf_Debug dbg)

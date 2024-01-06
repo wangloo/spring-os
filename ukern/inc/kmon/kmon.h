@@ -14,6 +14,8 @@ int
 init_kmon(void);
 void
 kmon_sync(void *ectx, int returnable);
+void
+kmon_enter(void);
 int
 kmon_return(void);
 void
@@ -29,6 +31,8 @@ int
 dbginfo_get_caller(u64 curpc, u64 cursp, u64 *callerpc, u64 *callersp);
 int
 dbginfo_get_func_lineno(unsigned long pc, char *file, int *line);
+int
+dbgsym_func_name2addr(char *name, unsigned long *pc);
 
 
 
@@ -58,6 +62,18 @@ init_ftrace_timer(void);
 unsigned long
 ftrace_timer_tick(void);
 
+int 
+brkpnt_add(unsigned long addr);
+int
+brkpnt_enable(int id);
+int
+brkpnt_disable(int id);
+int
+brkpnt_del(int id);
+void
+brkpnt_hit_handler(unsigned long breakaddr);
+void
+print_brkpnts(void);
 
 int
 runcmd(int argc, char **argv);

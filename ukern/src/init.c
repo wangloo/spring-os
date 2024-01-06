@@ -154,7 +154,8 @@ kernel_init(void)
     unittest(); 
 #endif
 
-
+    
+    kmon_enter();
 
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space
@@ -165,7 +166,7 @@ kernel_init(void)
     }
     // LOG_DEBUG("Test Ftrace\n");
     // functrace_enable();
-    // recur(10);
+    recur(10);
     // functrace_disable();
     // print_functrace();
     // exit();

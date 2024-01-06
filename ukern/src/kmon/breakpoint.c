@@ -2,7 +2,7 @@
 #include <kmem.h>
 #include <kmon/kmon.h>
 
-#define BRKPNT_MAX  4  // 最多同时支持4个断点
+#define BRKPNT_MAX  2  // 最多同时支持4个断点
 
 enum brkpnt_state {
   BRKPNT_OFF = 0,
@@ -12,6 +12,7 @@ enum brkpnt_state {
 struct brkpnt {
   int id;             // Id of breakpoint
   int state;          // State of breakpoint
+  int hit;            // Count of breakpoint hit
   unsigned long addr; // Binded virtual addr
 };
 
@@ -28,9 +29,9 @@ print_brkpnts(void)
   for (i = 0; i < BRKPNT_MAX; i++) {
     if ((b = allbrks[i])) {
       if (b->state == BRKPNT_ON)
-        printf("id: %u, ON, %lx\n", b->id, b->addr);
+        printf("id: %u, ON, hit: %d, addr: %lx\n", b->id, b->hit, b->addr);
       else
-        printf("id: %u, OFF, %lx\n", b->id, b->addr);
+        printf("id: %u, OFF, hit: %d, addr: %lx\n", b->id, b->hit, b->addr);
     }
   }
   printf("\n");
@@ -65,15 +66,19 @@ brkpnt_add(unsigned long addr)
     return -1;
   b->addr = addr;
   b->id = id;
+  b->hit = 0;
   b->state = BRKPNT_OFF;
   allbrks[id] = b;
 
+  LOG_INFO("Breakpoint add: #%d at %lx\n", id, addr);
   return id;
 }
 
 int
 brkpnt_enable(int id)
 {
+  unsigned long val;
+
   assert(id >= 0 && id < BRKPNT_MAX);
   assert(allbrks[id]);
   
@@ -85,8 +90,19 @@ brkpnt_enable(int id)
   // Set hardward breakpoint register
   switch (id) {
   case 0:
-  case 1:
+    val = read_sysreg(dbgbcr0_el1);
+    write_sysreg(allbrks[id]->addr, dbgbvr0_el1);
+    write_sysreg((val | ((0xf<<5) | (0x3<<1) | 0x1)), dbgbcr0_el1);
+    
+    LOG_DEBUG("bcr: %lx\nbvr: %lx\n", read_sysreg(dbgbcr0_el1), read_sysreg(dbgbvr0_el1));
     break;
+  case 1:
+    val = read_sysreg(dbgbcr1_el1);
+    write_sysreg(allbrks[id]->addr, dbgbvr1_el1);
+    write_sysreg((val | ((0xf<<5) | (0x3<<1) | 0x1)), dbgbcr1_el1);
+    break;
+  default:
+    assert(0);
   }
   return 0;
 }
@@ -94,6 +110,8 @@ brkpnt_enable(int id)
 int
 brkpnt_disable(int id)
 {
+  unsigned long val;
+
   assert(id >= 0 && id < BRKPNT_MAX);
   assert(allbrks[id]);
 
@@ -105,8 +123,15 @@ brkpnt_disable(int id)
   // Set hardward breakpoint register
   switch (id) {
   case 0:
-  case 1:
+    val = read_sysreg(dbgbcr0_el1);
+    write_sysreg((val & ~0x1), dbgbcr0_el1);
     break;
+  case 1:
+    val = read_sysreg(dbgbcr1_el1);
+    write_sysreg((val & ~0x1), dbgbcr1_el1);
+    break;
+  default:
+    assert(0);
   }
   return 0;
 }
@@ -127,12 +152,27 @@ brkpnt_del(int id)
   return 0;
 }
 
-int
-init_breakpoints(void)
+void
+brkpnt_hit_handler(unsigned long breakaddr)
 {
-  int i;
-  for (i = 0; i < BRKPNT_MAX; i++) {
-    allbrks[i] = NULL;
+  int id;
+
+  for (id = 0; id < BRKPNT_MAX; id++) {
+    if (allbrks[id] && allbrks[id]->addr == breakaddr) {
+      allbrks[id]->hit += 1;
+      printf("Hit breakpoint #%d, %lx\n", id, allbrks[id]->addr);
+      break;
+    }
   }
-  return 0;
+  assert(id != BRKPNT_MAX);
 }
+
+// int
+// init_breakpoints(void)
+// {
+//   int i;
+//   for (i = 0; i < BRKPNT_MAX; i++) {
+//     allbrks[i] = NULL;
+//   }
+//   return 0;
+// }

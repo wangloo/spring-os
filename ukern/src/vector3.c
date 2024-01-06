@@ -21,18 +21,32 @@ sync_from_current_el(struct econtext *ectx)
   // ectx = proc_ectx(cur_cpu()->proc);
   ec = ectx->esr.ec;
   
-  printf("SYNC FROM CURRENT EL\n");
-  printf("EC: 0x%lx\n", ec);
-  printf("      \"%s\"\n", get_ec_string(ec));
-  printf("ELR: %lx\n", ectx->ctx.elr);
-  printf("Sp : %lx\n", ectx->ctx.sp);
-  printf("FAR: %lx\n", ectx->far);
+  // Brk instruct is allocated for enter KMonitor mannually
+  if (ec == ESR_ELx_EC_BRK64) {
+    // Return addr of brk inst still points to brk,
+    // Adjust it for normally return.
+    ectx->ctx.elr += 4;
+
+    kmon_sync(ectx, 1);
+    kmon_main();
+  } else if (ec == ESR_ELx_EC_BREAKPT_CUR) {
+    brkpnt_hit_handler(ectx->ctx.elr);
+    kmon_sync(ectx, 1);
+    kmon_main();
+  } else {
+    printf("SYNC FROM CURRENT EL\n");
+    printf("EC: 0x%lx\n", ec);
+    printf("      \"%s\"\n", get_ec_string(ec));
+    printf("ELR: %lx\n", ectx->ctx.elr);
+    printf("Sp : %lx\n", ectx->ctx.sp);
+    printf("FAR: %lx\n", ectx->far);
 
 
-  // backtrace(ectx->ctx.elr, ectx->ctx.sp, ectx->ctx.gp_regs.lr);
-  kmon_sync(ectx, 0);
-  kmon_main();
-  panic("SPRING-OS oops!\n");
+    // backtrace(ectx->ctx.elr, ectx->ctx.sp, ectx->ctx.gp_regs.lr);
+    kmon_sync(ectx, 0);
+    kmon_main();
+    panic("SPRING-OS oops!\n");
+  }
 }
 
 

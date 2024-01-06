@@ -16,11 +16,57 @@ struct km_cmd {
 };
 
 
-  
-
 #define DEFINE_FUNC_EXEC(cmdname) int exec_##cmdname(int argc, char **argv)
 #define assert_no_param(argc) do {assert(argc==1);}while(0)
 #define assert_has_param(argc) do {assert(argc>1);}while(0)
+#define check_no_param(cmd, argc) do {if (argc!1) {return 0;}}while(0)
+#define check_has_param(cmd, argc) do {if (argc<=1) {return 0;}}while(0)
+
+static inline int
+is_dbgsym(char *str)
+{
+  int len = strlen(str);
+
+  // If use instruction address as parameter, 
+  // only handle hex and must start with 0x.
+  if (len > 2 && (str[0]=='0' && str[1]=='x'))
+    return 0;
+  return 1;
+}
+
+
+DEFINE_FUNC_EXEC(bp)
+{
+  unsigned long breakaddr;
+  int breakid;
+  check_has_param(bp, argc);
+
+  if (argc == 1 || !argv[1]) {
+    LOG_ERROR("parameter invalid\n");
+    return 0;
+  }
+
+  if (is_dbgsym(argv[1])) {
+    if (dbgsym_func_name2addr(argv[1], &breakaddr) < 0) {
+      LOG_ERROR("Can't find address for symbol: %s\n", argv[1]);
+      return 0;
+    }
+  } else {
+    breakaddr = strtoul(argv[1], NULL, 16);
+  }
+
+  if ((breakid = brkpnt_add(breakaddr)) < 0)
+    return -1;
+
+  brkpnt_enable(breakid);
+  return 0;
+}
+
+DEFINE_FUNC_EXEC(bl)
+{
+  print_brkpnts();
+  return 0;
+}
 
 DEFINE_FUNC_EXEC(bt)
 {
@@ -62,7 +108,7 @@ DEFINE_FUNC_EXEC(where)
   return 0;
 }
 
-DEFINE_FUNC_EXEC(cont)
+DEFINE_FUNC_EXEC(go)
 {
   assert_no_param(argc);
 
@@ -93,11 +139,13 @@ DEFINE_FUNC_EXEC(slab)
 
 
 struct km_cmd allcmds[] = {
+  {"bp", "Set breakpoints", exec_bp},
+  {"bl", "List breakpoints", exec_bl},
   {"bt", "Backtrace", exec_bt},
   {"ft", "Function trace", exec_ft},
   {"hwt", "Hardware trace", exec_hwt},
   {"where", "Where i am", exec_where},
-  {"cont", "Continue", exec_cont},
+  {"go", "Go on", exec_go},
   {"regs", "Show registers", exec_regs},
   {"print", "Show var or func", exec_print},
   {"slab", "Show status of slab", exec_slab},
