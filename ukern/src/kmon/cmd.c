@@ -98,13 +98,28 @@ DEFINE_FUNC_EXEC(ft)
   return 0;
 }
 
-DEFINE_FUNC_EXEC(hwt)
-{
-  return 0;
-}
+DEFINE_FUNC_EXEC(hwt) { return 0; }
+DEFINE_FUNC_EXEC(where) { return 0; }
 
-DEFINE_FUNC_EXEC(where)
+DEFINE_FUNC_EXEC(ss)
 {
+  int count=1; // Step count
+
+  if (argc > 1) 
+    count = (int)strtol(argv[1], NULL, 10);
+  if (count < 1 || count > 100)
+    return -1;
+
+  // If has breakpoint at elr, disable it temporarily,
+  // re-enable in ss handler
+  brkpnt_suspend(cur_ectx->ctx.elr);
+  step_asm(count);
+
+  if (kmon_return() < 0) {
+    LOG_WARN("Context can't be reload, might in exception!\n");
+    return 0;
+  }
+  load_ectx(cur_ectx); // Never return
   return 0;
 }
 
@@ -145,6 +160,7 @@ struct km_cmd allcmds[] = {
   {"ft", "Function trace", exec_ft},
   {"hwt", "Hardware trace", exec_hwt},
   {"where", "Where i am", exec_where},
+  {"ss", "Single step", exec_ss},
   {"go", "Go on", exec_go},
   {"regs", "Show registers", exec_regs},
   {"print", "Show var or func", exec_print},

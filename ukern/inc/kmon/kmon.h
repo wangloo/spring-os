@@ -73,7 +73,20 @@ brkpnt_del(int id);
 void
 brkpnt_hit_handler(unsigned long breakaddr);
 void
+brkpnt_restore(void);
+void
+brkpnt_suspend(unsigned long pc);
+void
 print_brkpnts(void);
+
+enum step_action {
+  STEP_EXIT = 0,
+  STEP_MORE,
+};
+int
+step_asm(int count);
+int 
+step_handler(unsigned long pc);
 
 int
 runcmd(int argc, char **argv);

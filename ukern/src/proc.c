@@ -86,10 +86,7 @@ proc_alloc(void)
   memset(ectx, 0, sizeof(*ectx));
   ectx->ctx.sp0 = (uint64_t)page_alloc();
   ectx->ctx.elr = 0;    // FIXME: fake a right return addr
-  ectx->ctx.spsr = AARCH64_SPSR_EL0t | \
-                    AARCH64_SPSR_F | \
-                    AARCH64_SPSR_I | \
-                    AARCH64_SPSR_A;   
+  ectx->ctx.spsr = SPSR_EL0t | SPSR_F | SPSR_I | SPSR_A;   
   
   return p;
 }

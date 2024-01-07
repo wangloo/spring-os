@@ -7,6 +7,7 @@
 enum brkpnt_state {
   BRKPNT_OFF = 0,
   BRKPNT_ON,
+  BRKPNT_SUSPEND_SS, // suspended for single step
 };
 
 struct brkpnt {
@@ -72,6 +73,62 @@ brkpnt_add(unsigned long addr)
 
   LOG_INFO("Breakpoint add: #%d at %lx\n", id, addr);
   return id;
+}
+
+// Restore all breakpoints suspended by single step.
+void
+brkpnt_restore(void)
+{
+  int id;
+
+  for (id=0; id<BRKPNT_MAX; id++) {
+    if (allbrks[id] &&
+        allbrks[id]->state == BRKPNT_SUSPEND_SS) {
+      allbrks[id]->state = BRKPNT_ON;
+      switch (id) {
+      case 0:
+        write_sysreg((read_sysreg(dbgbcr0_el1) | 0x1), dbgbcr0_el1);
+        break;
+      case 1:
+        write_sysreg((read_sysreg(dbgbcr1_el1) | 0x1), dbgbcr1_el1);
+        break;
+      default: assert(0);
+      }
+    }
+  }
+}
+
+void
+brkpnt_suspend(unsigned long pc)
+{
+  int id;
+  unsigned long val;
+
+  for (id=0; id < BRKPNT_MAX; id++) {
+    if (allbrks[id] && 
+        allbrks[id]->addr == pc && 
+        allbrks[id]->state == BRKPNT_ON) {
+      break;
+    }
+  }
+  if (id == BRKPNT_MAX) 
+    return;
+
+  assert(allbrks[id]->hit > 0);
+  allbrks[id]->state= BRKPNT_SUSPEND_SS;
+
+  switch(id) {
+  case 0:
+    val = read_sysreg(dbgbcr0_el1);
+    write_sysreg((val & ~0x1), dbgbcr0_el1);
+    break;
+  case 1:
+    val = read_sysreg(dbgbcr1_el1);
+    write_sysreg((val & ~0x1), dbgbcr1_el1);
+    break;
+  default:
+    assert(0);
+  }
 }
 
 int

@@ -20,7 +20,9 @@ sync_from_current_el(struct econtext *ectx)
   // So use cur_proc() will enable interrupt improperly
   // ectx = proc_ectx(cur_cpu()->proc);
   ec = ectx->esr.ec;
-  
+
+
+
   // Brk instruct is allocated for enter KMonitor mannually
   if (ec == ESR_ELx_EC_BRK64) {
     // Return addr of brk inst still points to brk,
@@ -33,6 +35,15 @@ sync_from_current_el(struct econtext *ectx)
     brkpnt_hit_handler(ectx->ctx.elr);
     kmon_sync(ectx, 1);
     kmon_main();
+  } else if (ec == ESR_ELx_EC_SOFTSTP_CUR) {
+    if (step_handler(ectx->ctx.elr) == STEP_EXIT) {
+      brkpnt_restore();
+      write_sysreg(read_sysreg(mdscr_el1) & ~MDSCR_SS, mdscr_el1);
+      ectx->ctx.spsr &= ~SPSR_SS;
+      kmon_sync(ectx, 1);
+      kmon_main();
+    }
+    return;
   } else {
     printf("SYNC FROM CURRENT EL\n");
     printf("EC: 0x%lx\n", ec);

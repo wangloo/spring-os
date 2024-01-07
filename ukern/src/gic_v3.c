@@ -1,7 +1,6 @@
 #include <kernel.h>
 #include <bitmap.h>
 #include <cpu_feature.h>
-#include <arm64_sysreg.h>
 #include <io.h>
 #include <smp.h>
 #include <cpu.h>

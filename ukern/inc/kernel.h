@@ -11,6 +11,7 @@
 #include <qemu.h>
 #include <log.h>
 #include <compiler.h>
+#include <sysreg.h>
 #include <utils_arm64.h>
 
 #define ptov(addr)	((unsigned long)(addr) + CONFIG_KERNEL_ADDR_MASK)

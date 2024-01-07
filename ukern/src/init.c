@@ -118,6 +118,7 @@ void recur(int n)
     docaculate(n, n+1);
     return;
   }
+  printf("recur, n=%d\n", n);
   recur(n-1);
 }
 
