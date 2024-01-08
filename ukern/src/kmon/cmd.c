@@ -81,13 +81,13 @@ __exec_md(unsigned long addr, int grans, int radix, int count)
     for (i = 0; i < lcount; i++) {
       switch (grans) {
       case 1:
-        lidx += sprintf(lstr+lidx, "%02x ", *((unsigned char *)addr + i*grans));
+        lidx += sprintf(lstr+lidx, "%02x ", *((unsigned char *)(addr + i*grans)));
         break;
       case 4:
-        lidx += sprintf(lstr+lidx, "%08x ", *((unsigned int *)addr + i*grans));
+        lidx += sprintf(lstr+lidx, "%08x ", *((unsigned int *)(addr + i*grans)));
         break;
       case 8:
-        lidx += sprintf(lstr+lidx, "%016lx ", *((unsigned long *)addr + i*grans));
+        lidx += sprintf(lstr+lidx, "%016lx ", *((unsigned long *)(addr + i*grans)));
         break;
       default: break;
       }
@@ -206,6 +206,36 @@ DEFINE_FUNC_EXEC(mdp)
   return __exec_md(ptov(addr), grans, radix, count);
 }
 
+// mm <vaddr> <value>
+DEFINE_FUNC_EXEC(mm)
+{
+  unsigned long addr, val;
+  check_has_param(mm, argc);
+  
+  if (argc != 3)
+    return KM_BADPARAM;
+
+  addr = strtoul(argv[1], NULL, 16);
+  val = strtoul(argv[2], NULL, 16);
+  *((unsigned long *)addr) = val;
+  return 0;
+}
+
+// mmB <vaddr> <value>
+DEFINE_FUNC_EXEC(mmB)
+{
+  unsigned long addr;
+  unsigned char val;
+  check_has_param(mmB, argc);
+  if (argc != 3)
+    return KM_BADPARAM;
+
+  addr = strtoul(argv[1], NULL, 16);
+  val = (unsigned char)strtoul(argv[2], NULL, 16);
+  *((unsigned char *)addr) = val;
+  return 0;
+}
+
 // ft [opt]
 DEFINE_FUNC_EXEC(ft)
 {
@@ -286,6 +316,8 @@ struct km_cmd allcmds[] = {
   {"bt", "Stack backtrace", exec_bt},
   {"md", "Memory display", exec_md},
   {"mdp", "Memory display(physical)", exec_mdp},
+  {"mm", "Modify memory", exec_mm},
+  {"mmB", "Modify memory(bytes)", exec_mmB},
   {"ft", "Function trace", exec_ft},
   {"hwt", "Hardware trace", exec_hwt},
   {"where", "Where i am", exec_where},
