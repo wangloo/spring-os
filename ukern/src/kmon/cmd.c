@@ -23,6 +23,13 @@ struct km_cmd {
 #define check_no_param(cmd, argc) do {if (argc!1) {return 0;}}while(0)
 #define check_has_param(cmd, argc) do {if (argc<=1) {return 0;}}while(0)
 
+enum kmon_cmd_errcode {
+  KM_BADGRANS = 10,
+  KM_BADRADIX,
+  KM_BADCOUNT,
+  KM_BADPARAM,
+};
+
 static inline int
 is_dbgsym(char *str)
 {
@@ -34,7 +41,64 @@ is_dbgsym(char *str)
     return 0;
   return 1;
 }
+static inline int
+is_hexaddr(char *str)
+{
+  int len = strlen(str);
 
+  // If use instruction address as parameter, 
+  // only handle hex and must start with 0x.
+  if (len > 2 && (str[0]=='0' && str[1]=='x'))
+    return 1;
+  return 0;
+}
+
+
+
+static int 
+__exec_md(unsigned long addr, int grans, int radix, int count)
+{
+  int line;
+
+  if (!strchr("dxo", (char)radix))
+    return KM_BADRADIX;
+  if (grans != 1 && grans != 4 && grans != 8)
+    return KM_BADGRANS;
+  if (count <= 0 || count > 32)
+    return KM_BADCOUNT;
+  
+  // Round address down modulo grans
+  addr &= ~(grans-1);
+
+  // Display 16bytes one line
+  for (line = 0; ; line ++) {
+    char lstr[128];
+    int lcount, i, lidx=0;
+    if (!count) break;
+
+    lcount = (16/grans <= count)? 16/grans : count;
+    lidx += sprintf(lstr, "%lx: ", addr);
+    for (i = 0; i < lcount; i++) {
+      switch (grans) {
+      case 1:
+        lidx += sprintf(lstr+lidx, "%02x ", *((unsigned char *)addr + i*grans));
+        break;
+      case 4:
+        lidx += sprintf(lstr+lidx, "%08x ", *((unsigned int *)addr + i*grans));
+        break;
+      case 8:
+        lidx += sprintf(lstr+lidx, "%016lx ", *((unsigned long *)addr + i*grans));
+        break;
+      default: break;
+      }
+    }
+    printf("%s\n", lstr);
+
+    count -= lcount;
+    addr += 16;
+  }
+  return 0;
+}
 
 DEFINE_FUNC_EXEC(bp)
 {
@@ -90,6 +154,56 @@ DEFINE_FUNC_EXEC(bt)
             cur_ectx->ctx.gp_regs.lr);
   
   return 0;
+}
+
+
+// md [[148][dxo]N] <vaddr>
+DEFINE_FUNC_EXEC(md)
+{
+  // radix: format of display
+  // grans: bytes of each count
+  // count: display total grans*count bytes
+  int radix='x', count=4, grans=8;
+  unsigned long addr;
+  check_has_param(md, argc);
+
+  if (!is_hexaddr(argv[1])) {
+    grans = (int)(argv[1][0] - '0');
+    radix = (int)argv[1][1];
+    count = strtoul(argv[1]+2, NULL, 10);
+    if (argc != 3 || !is_hexaddr(argv[2]))
+      return KM_BADPARAM;
+    addr = strtoul(argv[2], NULL, 16);
+  } else {
+    addr = strtoul(argv[1], NULL, 16);
+  }
+
+  return __exec_md(addr, grans, radix, count);
+}
+
+// mdp <paddr>
+DEFINE_FUNC_EXEC(mdp)
+{
+  // radix: format of display
+  // grans: bytes of each count
+  // count: display total grans*count bytes
+  int radix='x', count=4, grans=8;
+  unsigned long addr;
+  check_has_param(mdp, argc);
+
+  if (!is_hexaddr(argv[1])) {
+    grans = (int)(argv[1][0] - '0');
+    radix = (int)argv[1][1];
+    count = strtoul(argv[1]+2, NULL, 10);
+    if (argc != 3 || !is_hexaddr(argv[2]))
+      return KM_BADPARAM;
+    addr = strtoul(argv[2], NULL, 16);
+  } else {
+    addr = strtoul(argv[1], NULL, 16);
+  }
+
+  printf("pa:%lx ==> va: %lx\n", addr, ptov(addr));
+  return __exec_md(ptov(addr), grans, radix, count);
 }
 
 // ft [opt]
@@ -169,18 +283,22 @@ DEFINE_FUNC_EXEC(slab)
 struct km_cmd allcmds[] = {
   {"bp", "Set breakpoints", exec_bp},
   {"bl", "List breakpoints", exec_bl},
-  {"bt", "Backtrace", exec_bt},
+  {"bt", "Stack backtrace", exec_bt},
+  {"md", "Memory display", exec_md},
+  {"mdp", "Memory display(physical)", exec_mdp},
   {"ft", "Function trace", exec_ft},
   {"hwt", "Hardware trace", exec_hwt},
   {"where", "Where i am", exec_where},
   {"ss", "Single step", exec_ss},
-  {"go", "Go on", exec_go},
+  {"go", "Go on execution", exec_go},
   {"regs", "Show registers", exec_regs},
   {"print", "Show var or func", exec_print},
   {"slab", "Show status of slab", exec_slab},
 };
 
 
+// Return 0 if can go on next cmd, <0 for IMPORTANT error, 
+// must stop KMonitor and check.
 int
 runcmd(int argc, char **argv)
 {
@@ -191,7 +309,10 @@ runcmd(int argc, char **argv)
 
   for (i = 0; i < nelem(allcmds); i++) {
     if (strcmp(argv[0], allcmds[i].name) == 0) {
-      return allcmds[i].exec(argc, argv);
+      if (allcmds[i].exec(argc, argv) < 0) 
+        return -1;
+      else 
+        return 0;
     }
   }
 
