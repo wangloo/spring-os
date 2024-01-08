@@ -3,6 +3,7 @@
 #include <ctx_arm64.h>
 #include <exception.h>
 #include <slab.h>
+#include <kmem.h>
 #include <kmon/kmon.h>
 
 extern struct econtext *cur_ectx;
@@ -39,6 +40,10 @@ DEFINE_FUNC_EXEC(bp)
 {
   unsigned long breakaddr;
   int breakid;
+  char *breakloc=NULL;
+  char *funcname, *filename;
+  int line;
+
   check_has_param(bp, argc);
 
   if (argc == 1 || !argv[1]) {
@@ -55,10 +60,18 @@ DEFINE_FUNC_EXEC(bp)
     breakaddr = strtoul(argv[1], NULL, 16);
   }
 
-  if ((breakid = brkpnt_add(breakaddr)) < 0)
-    return -1;
+  // Prepare location string
+  if (dgbinfo_get_func_loc(breakaddr, &funcname, &filename,NULL) == 0 &&
+      dbginfo_get_func_lineno(breakaddr, filename, &line) == 0) {
+    breakloc = kalloc(128);
+    sprintf(breakloc, "%s(%s:%d)", funcname, filename, line);
+    assert(strlen(breakloc) < 100);
+  }
 
+  if ((breakid = brkpnt_add(breakaddr, breakloc)) < 0)
+    return -1;
   brkpnt_enable(breakid);
+
   return 0;
 }
 

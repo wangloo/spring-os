@@ -63,7 +63,7 @@ unsigned long
 ftrace_timer_tick(void);
 
 int 
-brkpnt_add(unsigned long addr);
+brkpnt_add(unsigned long addr, char *locstr);
 int
 brkpnt_enable(int id);
 int

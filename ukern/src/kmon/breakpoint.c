@@ -15,6 +15,7 @@ struct brkpnt {
   int state;          // State of breakpoint
   int hit;            // Count of breakpoint hit
   unsigned long addr; // Binded virtual addr
+  char *locstr; // String of source location
 };
 
 struct brkpnt *allbrks[BRKPNT_MAX];
@@ -30,9 +31,12 @@ print_brkpnts(void)
   for (i = 0; i < BRKPNT_MAX; i++) {
     if ((b = allbrks[i])) {
       if (b->state == BRKPNT_ON)
-        printf("id: %u, ON, hit: %d, addr: %lx\n", b->id, b->hit, b->addr);
+        printf("id: %u, ON, hit: %d, addr: %lx", b->id, b->hit, b->addr);
       else
-        printf("id: %u, OFF, hit: %d, addr: %lx\n", b->id, b->hit, b->addr);
+        printf("id: %u, OFF, hit: %d, addr: %lx", b->id, b->hit, b->addr);
+      if (allbrks[i]->locstr)
+        printf(",%s", allbrks[i]->locstr);
+      printf("\n");
     }
   }
   printf("\n");
@@ -46,7 +50,7 @@ addr_can_brk(unsigned long addr)
 
 // Return breakpoint Id if success, -1 for error
 int 
-brkpnt_add(unsigned long addr)
+brkpnt_add(unsigned long addr, char *locstr)
 { 
   int id;
   struct brkpnt *b;
@@ -65,13 +69,17 @@ brkpnt_add(unsigned long addr)
   
   if (!(b = kalloc(sizeof(*b))))
     return -1;
+  b->locstr = locstr;
   b->addr = addr;
   b->id = id;
   b->hit = 0;
   b->state = BRKPNT_OFF;
   allbrks[id] = b;
 
-  LOG_INFO("Breakpoint add: #%d at %lx\n", id, addr);
+  printf("Add breakpoint #%d, at %lx", id, addr);
+  if (locstr)
+    printf(",%s", locstr);
+  printf("\n");
   return id;
 }
 
@@ -150,8 +158,6 @@ brkpnt_enable(int id)
     val = read_sysreg(dbgbcr0_el1);
     write_sysreg(allbrks[id]->addr, dbgbvr0_el1);
     write_sysreg((val | ((0xf<<5) | (0x3<<1) | 0x1)), dbgbcr0_el1);
-    
-    LOG_DEBUG("bcr: %lx\nbvr: %lx\n", read_sysreg(dbgbcr0_el1), read_sysreg(dbgbvr0_el1));
     break;
   case 1:
     val = read_sysreg(dbgbcr1_el1);
@@ -203,6 +209,8 @@ brkpnt_del(int id)
 
   if (brkpnt_disable(id) < 0)
     return -1;
+  if (allbrks[id]->locstr)
+    kfree(allbrks[id]->locstr);
 
   kfree(allbrks[id]);
   allbrks[id] = NULL;
@@ -217,7 +225,10 @@ brkpnt_hit_handler(unsigned long breakaddr)
   for (id = 0; id < BRKPNT_MAX; id++) {
     if (allbrks[id] && allbrks[id]->addr == breakaddr) {
       allbrks[id]->hit += 1;
-      printf("Hit breakpoint #%d, %lx\n", id, allbrks[id]->addr);
+      if (allbrks[id]->locstr)
+        printf("Hit breakpoint #%d, at %lx, %s\n", id, allbrks[id]->addr, allbrks[id]->locstr);
+      else
+        printf("Hit breakpoint #%d, at %lx\n", id, allbrks[id]->addr);
       break;
     }
   }
