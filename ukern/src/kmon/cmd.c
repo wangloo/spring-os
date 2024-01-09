@@ -10,25 +10,59 @@ extern struct econtext *cur_ectx;
 extern struct km_state cur_state;
 extern void load_ectx(struct econtext *ectx);
 
-struct km_cmd {
-  char *name;
-  char *desc;
-  int (*exec)(int argc, char **argv);
-};
-
-
 #define DEFINE_FUNC_EXEC(cmdname) int exec_##cmdname(int argc, char **argv)
 #define assert_no_param(argc) do {assert(argc==1);}while(0)
 #define assert_has_param(argc) do {assert(argc>1);}while(0)
 #define check_no_param(cmd, argc) do {if (argc!1) {return 0;}}while(0)
 #define check_has_param(cmd, argc) do {if (argc<=1) {return 0;}}while(0)
 
-enum kmon_cmd_errcode {
+struct km_cmd {
+  char *name;
+  char *desc;
+  int (*exec)(int argc, char **argv);
+};
+
+struct km_cmdmsg {
+  int diag;
+  char *msg;
+};
+
+#define KMCMDMSG(msgnum, text) \
+	{ KM_##msgnum, text }
+
+enum cmd_diag {
+  KM_NOTFOUND = 4,
   KM_BADGRANS = 10,
   KM_BADRADIX,
   KM_BADCOUNT,
   KM_BADPARAM,
 };
+
+static struct km_cmdmsg cmdmsgs[] = {
+  KMCMDMSG(NOTFOUND, "Command not found"),
+  KMCMDMSG(BADGRANS, "Illegal value for GRANS"),
+  KMCMDMSG(BADRADIX, "Illegal value for RADIX"),
+  KMCMDMSG(BADCOUNT, "Illegal value for COUNT"),
+  KMCMDMSG(BADPARAM, "Illegal param format or count"),
+};
+
+static void
+print_cmderror(int diag)
+{
+  if (diag == 0) {
+    printf("No error detected (diagnostic is %d\n", diag);
+    return;
+  }
+
+  for (int i = 0; i < nelem(cmdmsgs); i++) {
+    if (cmdmsgs[i].diag == diag) {
+      printf("diag: %d: %s\n", diag, cmdmsgs[i].msg);
+      return;
+    }
+  }
+  printf("Unknow diag: %d\n", diag);
+  assert(0);
+}
 
 static inline int
 is_dbgsym(char *str)
@@ -334,20 +368,24 @@ struct km_cmd allcmds[] = {
 int
 runcmd(int argc, char **argv)
 {
-  int i;
+  int i, cmdret;
 
   if (argc < 1)
     return -1;
 
   for (i = 0; i < nelem(allcmds); i++) {
     if (strcmp(argv[0], allcmds[i].name) == 0) {
-      if (allcmds[i].exec(argc, argv) < 0) 
+      if ((cmdret = allcmds[i].exec(argc, argv)) < 0) {
+        // Serious err, KMonitor must exit
         return -1;
-      else 
-        return 0;
+      } else if (cmdret > 0) {
+        // Don't affect execute other cmds
+        print_cmderror(cmdret);
+      }
+      return 0;
     }
   }
 
-  LOG_ERROR("Unspported cmd: %s\n", argv[0]);
+  print_cmderror(KM_NOTFOUND);
   return 0;
 }
