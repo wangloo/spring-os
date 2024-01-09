@@ -9,6 +9,10 @@ static char linestr[BUFLEN];
 static int init_ok = 0;
 static struct linebuf *readlbuf = 0;
 
+#define MAX_RECORD 4
+static char linerecord[MAX_RECORD][BUFLEN];
+static int record_windex=0, record_rindex=-1;
+
 
 #define cursorforwd(x) printf("\033[%dC", (x))
 #define cursorbackwd(x) printf("\033[%dD", (x))
@@ -19,6 +23,62 @@ backspace(int x)
     console_puts("\b \b", 3);
 }
 
+char *
+linerecord_prev(void)
+{
+  char *record = NULL;
+
+  // Maintain rindex to make recore[rindex] is prev history
+  
+  // Minimum value of rindex is 0. Otherwise,
+  // oldest item will return twice when rindex=-1 and press <down>
+  if (record_rindex == 0) {
+    record = linerecord[record_rindex];
+  } else if (record_rindex > 0) {
+    record = linerecord[record_rindex--];
+  }
+  return record;
+}
+
+char *
+linerecord_next(void)
+{
+  char *record = NULL;
+  
+  // Maintain rindex to make record[++rindex] is next history
+
+  // At first, rindex == windex-1, so modify it
+  if (record_rindex == record_windex-1)
+    record_rindex --;
+
+  if (record_rindex >= 0)
+    record = linerecord[++record_rindex];
+
+  // After ++rindex below, rindex might equal to windex-1,
+  // modify it mannually
+  if (record_rindex == record_windex-1)
+    record_rindex --;
+  return record;
+}
+
+int
+linerecord_add(char *item)
+{
+  // Move record and reserve one item for new.
+  // read pointer may be wrong after that,
+  // is fixed at end of function
+  if (record_windex >= MAX_RECORD) {
+    memmove(linerecord[0], linerecord[1], ((MAX_RECORD-1)*BUFLEN));
+    record_windex -= 1;
+  }
+
+  strcpy(linerecord[record_windex], item);
+  record_windex += 1;
+
+  // Reset read pointer
+  record_rindex = record_windex-1;
+  return 0;
+}
 
 #define EOF -1
 // Asynchronous recv, define EOF
@@ -103,26 +163,15 @@ readkey(void)
 }
 
 
-void
-init_readline(void)
-{
-  if (init_ok)
-    return;
-  
-  readlbuf = alloc_linebuf();
-  if (!readlbuf) {
-    LOG_ERROR("Error on init linebuf\n");
-    return ;
-  }
-  init_ok = 1;
-}
+
   
 // Return null-terminated line str
 char *
 readline(const char *prompt)
 {
-  // char c;
-  int c;
+  char *record;
+  int c,i;
+  int linelen;
 
   init_readline();
   printf("%s", prompt);
@@ -134,13 +183,38 @@ readline(const char *prompt)
     } else if (c == '\n' || c == '\r') { // End of line
       console_putc('\n');
       linebuf_to_str(readlbuf, linestr);
+      linerecord_add(linestr);
       break;
     } else if (c == ARROW_LEFT) {
       linebuf_cursor_dec(readlbuf);
     } else if (c == ARROW_RIGHT) {
       linebuf_cursor_inc(readlbuf);
     } else if (c == ARROW_UP) {
+      if ((record = linerecord_prev())) {
+        // Clear linebuf and display
+        linebuf_cursor_end(readlbuf);
+        for (i = 0, linelen = readlbuf->cursor_pos; i < linelen; i++)
+          linebuf_del(readlbuf);
+        for (i = 0; i < strlen(record); i++)
+          linebuf_insert(readlbuf, record[i]);
+      }
     } else if (c == ARROW_DOWN) {
+      if ((record = linerecord_next())) {
+        // Clear linebuf and display
+        linebuf_cursor_end(readlbuf);
+        for (i = 0, linelen = readlbuf->cursor_pos; i < linelen; i++)
+          linebuf_del(readlbuf);
+
+        for (i = 0; i < strlen(record); i++)
+          linebuf_insert(readlbuf, record[i]);
+      }
+    } else if (c == 0x3) { // Ctrl+c
+      console_putc('^');
+      console_putc('C');
+      console_putc('\n');
+      break;
+    } else if (c == 0x5) { // Ctrl+e
+      linebuf_cursor_end(readlbuf);
     } else if (c >= ' ') {
       linebuf_insert(readlbuf, c);
     } else {  // Error
@@ -159,32 +233,9 @@ readline(const char *prompt)
   return linestr;
 }
 
-struct linebuf *
-alloc_linebuf(void)
-{
-  struct linebuf *lb;
 
-  if ((lb = kalloc(sizeof(*lb))) == NULL)
-    return NULL;
-
-  lb->lbuf = alloc_buffer(128);
-  lb->rbuf = alloc_buffer(128);
-  if (!lb->lbuf || !lb->rbuf) {
-    kfree(lb);
-    return NULL;
-  }
-  lb->cursor_pos = 0;
-  return lb;
-}
-
-void
-free_linebuf(struct linebuf **lb)
-{
-  free_buffer(&((*lb)->rbuf));
-  free_buffer(&((*lb)->lbuf));
-  *lb = 0;
-}
-
+// Clear local buffer only, 
+// regardless of the console display
 void
 linebuf_clear(struct linebuf *lb)
 {
@@ -192,6 +243,18 @@ linebuf_clear(struct linebuf *lb)
   buffer_clear(lb->rbuf);
   lb->cursor_pos = 0;
 }
+
+ 
+// int
+// linebuf_empty(struct linebuf *lb)
+// {
+//   return (!lb->cursor_pos && 
+//           !lb->lbuf->cur_size && !lb->rbuf->cur_size);
+// }
+
+// Flush line display
+void
+linebuf_flush(struct linebuf *lb) { }
 
 int
 linebuf_to_str(struct linebuf *lb, char *str)
@@ -226,8 +289,18 @@ linebuf_cursor_dec(struct linebuf *lb)
   return 0;
 }
 
-// Cursor inc/dec only move lb->cursor_pos,
-// sync lbuf and rbuf to lb->cursor_pos
+// Move cursor to the end of line
+void
+linebuf_cursor_end(struct linebuf *lb)
+{
+  while (lb->cursor_pos < lb->rbuf->cur_size + lb->lbuf->cur_size) {
+    lb->cursor_pos += 1;
+    cursorforwd(1);
+  }
+}
+
+// linebuf_cursor_inc/dec() only move lb->cursor_pos.
+// Adjustment content in lbuf and rbuf according to lb->cursor_pos.
 static void
 linebuf_sync(struct linebuf *lb)
 {
@@ -300,4 +373,44 @@ linebuf_del(struct linebuf *lb)
     if (lb->rbuf->cur_size > 0) cursorbackwd(lb->rbuf->cur_size);
   }
   return 0;
+}
+
+struct linebuf *
+alloc_linebuf(void)
+{
+  struct linebuf *lb;
+
+  if ((lb = kalloc(sizeof(*lb))) == NULL)
+    return NULL;
+
+  lb->lbuf = alloc_buffer(128);
+  lb->rbuf = alloc_buffer(128);
+  if (!lb->lbuf || !lb->rbuf) {
+    kfree(lb);
+    return NULL;
+  }
+  lb->cursor_pos = 0;
+  return lb;
+}
+
+void
+free_linebuf(struct linebuf **lb)
+{
+  free_buffer(&((*lb)->rbuf));
+  free_buffer(&((*lb)->lbuf));
+  *lb = 0;
+}
+
+void
+init_readline(void)
+{
+  if (init_ok)
+    return;
+  
+  readlbuf = alloc_linebuf();
+  if (!readlbuf) {
+    LOG_ERROR("Error on init linebuf\n");
+    return ;
+  }
+  init_ok = 1;
 }

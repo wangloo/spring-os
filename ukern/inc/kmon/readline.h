@@ -19,7 +19,12 @@ int
 linebuf_cursor_inc(struct linebuf *lb);
 int
 linebuf_cursor_dec(struct linebuf *lb);
+void
+linebuf_cursor_end(struct linebuf *lb);
 int
 linebuf_insert(struct linebuf *lb, char c);
 int
 linebuf_del(struct linebuf *lb);
+
+void
+init_readline(void);
