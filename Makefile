@@ -120,6 +120,7 @@ libc:
 	$(Q) $(MAKE) $(MFLAGS) -C libc -j 16
 	$(Q) $(MAKE) $(MFLAGS) -C libc install
 
+# 以前用过，拷贝一些头文件到libc下，未来看看重新启用
 prepare: objdirs
 	$(Q) cd libc; ./build.sh $(OUT_DIR) $(ARCH) $(CROSS_COMPILE)
 #	$(Q) cd kernel; make $(TARGET_PLATFORM)_defconfig
