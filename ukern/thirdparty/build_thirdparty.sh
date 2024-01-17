@@ -11,6 +11,11 @@ if [ ! -d "$libelf_dir" ] || [ ! -d "$libdwarf_dir" ]; then
   exit 1
 fi
 
+if [ ! -d "$install_lib_dir" ] || [ ! -d "$install_inc_dir" ]; then
+  echo "Will create install directory first"
+  mkdir $install_lib_dir $install_inc_dir
+fi
+
 ## Build libelf(libdwarf need it)
 cd "$libelf_dir"
 rm -rf build install
