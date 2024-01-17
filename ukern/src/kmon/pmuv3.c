@@ -54,8 +54,82 @@ struct pmu {
   void (*stop_event)(struct pmu_event *pe);
 };
 
+////////////////////////
+
+// Configure the event type binded to counter
+void 
+pmuv3_write_counter_event(int counter, unsigned long event)
+{
+  if (counter == ARMV8_CYCLE_COUNTER)
+    write_pmccfiltr(event);
+  else {
+    event &= ARMV8_PMU_EVTYPE_MASK;
+    write_pmevtypern(counter, event);
+  }
+}
+
+// Value cause counter irq occurs
+void 
+pmuv3_write_counter_val(int counter, u64 val)
+{
+  if (counter == ARMV8_CYCLE_COUNTER)
+    // write_pmccntr(val);
+    return;
+  else {
+    val &= ARMV8_PMU_EVTYPE_MASK;
+    write_pmevcntrn(counter, val);
+  }
+}
+unsigned long
+pmuv3_read_counter_val(int counter)
+{
+  if (counter == ARMV8_CYCLE_COUNTER)
+    return read_pmccntr();
+  else
+    return read_pmevcntrn(counter);
+}
+
+void
+pmuv3_enable_counter(int counter)
+{
+	/*
+	 * Make sure event configuration register writes are visible before we
+	 * enable the counter.
+	 * */
+	isb();
+	write_pmcntenset(BIT(counter));
+}
+
+void
+pmuv3_disable_counter(int counter)
+{
+  write_pmcntenclr(BIT(counter));
+  /*
+   * Make sure the effects of disabling the counter are visible before we
+   * start configuring the event.
+   */
+  isb();
+}
+
+void
+pmuv3_enable(void)
+{
+  if (((read_sysreg(ID_AA64DFR0_EL1) >> 8) & 0xF) < 1) {
+    assert(0);
+  }
+  pmu_pmcr_write(pmu_pmcr_read() | ARMV8_PMU_PMCR_E);
+}
+
+void
+pmuv3_disable(void)
+{
+  pmu_pmcr_write(pmu_pmcr_read() & ~ARMV8_PMU_PMCR_E);
+}
 
 
+
+
+#if 0
 static int pmu_perf_counter;
 
 struct pmu_event *
@@ -80,51 +154,12 @@ new_pmu_event(u32 counter_type, u64 event)
 }
 
 
-// Value cause counter irq occurs
-static inline void 
-pmuv3_write_counter(u32 counter, u64 val)
-{
-  if (counter == ARMV8_CYCLE_COUNTER)
-    write_pmccntr(val);
-  else {
-    val &= ARMV8_PMU_EVTYPE_MASK;
-    write_pmevcntrn(counter, val);
-  }
-}
 
-// Configure the event type binded to counter
-static inline void 
-pmuv3_write_event_type(u32 counter, u64 val)
-{
-  if (counter == ARMV8_CYCLE_COUNTER)
-    write_pmccfiltr(val);
-  else {
-    val &= ARMV8_PMU_EVTYPE_MASK;
-    write_pmevtypern(counter, val);
-  }
-}
 
-static inline void
-pmuv3_enable_counter(u32 counter)
-{
-	/*
-	 * Make sure event configuration register writes are visible before we
-	 * enable the counter.
-	 * */
-	isb();
-	write_pmcntenset(BIT(counter));
-}
 
-static inline void
-pmuv3_disable_counter(u32 counter)
-{
-  write_pmcntenclr(BIT(counter));
-  /*
-   * Make sure the effects of disabling the counter are visible before we
-   * start configuring the event.
-   */
-  isb();
-}
+
+
+
 
 static inline void
 pmuv3_enable_counter_irq(u32 counter)
@@ -143,31 +178,7 @@ pmuv3_disable_counter_irq(u32 counter)
 	isb();
 }
 
-static inline void
-pmu_pmcr_write(u64 val)
-{
-	val &= ARMV8_PMU_PMCR_MASK;
-	isb();
-	write_pmcr(val);
-}
 
-static inline u64 
-pmu_pmcr_read(void)
-{
-	return read_pmcr();
-}
-
-static void
-pmuv3_enable(void)
-{
-  pmu_pmcr_write(pmu_pmcr_read() | ARMV8_PMU_PMCR_E);
-}
-
-static void
-pmuv3_disable(void)
-{
-  pmu_pmcr_write(pmu_pmcr_read() & ~ARMV8_PMU_PMCR_E);
-}
 
 
 static void
@@ -231,3 +242,4 @@ struct pmu curpmu = (struct pmu) {
   .install = NULL,
   .uninstall = NULL,
 };
+#endif

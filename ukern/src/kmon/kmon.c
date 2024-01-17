@@ -4,6 +4,8 @@
 #include <exception.h>
 #include <console.h>
 #include <cpu.h>
+#include <barrier.h>
+#include <kmon/pmuv3.h>
 #include <kmon/kmon.h>
 
 #define MAXARGS  8
@@ -130,12 +132,15 @@ init_kmon(void)
   if (init_ftrace_timer() < 0)
     return -1;
 
+  pmuv3_enable();
+
   // Do architecture config
   write_sysreg(0x0, oslar_el1);
   write_sysreg(0xa000, mdscr_el1);
   write_sysreg(read_sysreg(dbgbcr0_el1) & ~(0xf << 20), dbgbcr0_el1);
   write_sysreg(read_sysreg(dbgbcr1_el1) & ~(0xf << 20), dbgbcr1_el1);
   cpu_debug_on();
+
 
   LOG_INFO("Kmonitor init ok\n");
   cur_state.initok = 1;

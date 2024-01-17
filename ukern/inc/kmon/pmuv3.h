@@ -70,7 +70,16 @@
 static inline unsigned long read_pmevcntrn(int n)
 {
 	PMEVN_SWITCH(n, RETURN_READ_PMEVCNTRN);
-	return 0;
+  assert(0);
+  return -1;
+}
+#define RETURN_READ_PMEVTYPERN(n) \
+	return read_sysreg(pmevtyper##n##_el0)
+static inline unsigned long read_pmevtypern(int n)
+{
+	PMEVN_SWITCH(n, RETURN_READ_PMEVTYPERN);
+  assert(0);
+  return -1;
 }
 
 #define WRITE_PMEVCNTRN(n) \
@@ -112,6 +121,10 @@ static inline u64 read_pmccntr(void)
 static inline void write_pmcntenset(u32 val)
 {
 	write_sysreg(val, pmcntenset_el0);
+}
+static inline u32 read_pmcntenset(void)
+{
+	return read_sysreg(pmcntenset_el0);
 }
 
 static inline void write_pmcntenclr(u32 val)
@@ -158,6 +171,36 @@ static inline u64 read_pmceid1(void)
 {
 	return read_sysreg(pmceid1_el0);
 }
+
+static inline void
+pmu_pmcr_write(unsigned long val)
+{
+	val &= ARMV8_PMU_PMCR_MASK;
+	isb();
+	write_pmcr(val);
+}
+
+static inline unsigned long 
+pmu_pmcr_read(void)
+{
+	return read_pmcr();
+}
+
+
+void
+pmuv3_enable(void);
+void
+pmuv3_disable(void);
+void 
+pmuv3_write_counter_event(int counter, unsigned long event);
+void 
+pmuv3_write_counter_val(int counter, unsigned long val);
+unsigned long
+pmuv3_read_counter_val(int counter);
+void
+pmuv3_enable_counter(int counter);
+void
+pmuv3_disable_counter(int counter);
 
 
 /*
