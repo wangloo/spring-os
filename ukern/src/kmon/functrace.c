@@ -127,6 +127,10 @@ ftrace_end(unsigned long pc, unsigned long lr, unsigned long fp)
   }
   execus = tick2ns(tick-fh->tick_start)/1000;
   kfree(fh);
+  // Too verbose if record all function
+  if (execus < 2000) {
+    goto exit_ok;
+  }
 
   if (dgbinfo_get_func_loc(pc, &funcname, NULL, NULL) < 0)
     showname = 0;
@@ -191,6 +195,7 @@ ftrace_end(unsigned long pc, unsigned long lr, unsigned long fp)
   tracebuf_insert(functrace_buf, buf);
   kfree(buf);
 
+exit_ok:
   in_functrace = 0;
 }
 
@@ -286,7 +291,7 @@ functrace (unsigned long pc, unsigned long lr, unsigned long fp)
 int
 init_functrace(void)
 {
-  if ((functrace_buf = alloc_tracebuf(512)) == NULL) {
+  if ((functrace_buf = alloc_tracebuf(2048)) == NULL) {
     return -1;
   }
   return 0;
