@@ -106,6 +106,6 @@ DBG_pagetable_level0(struct pagetable *table)
 // pagetable: virtual address of pagetable
 void DBG_pagetable(struct pagetable *pagetable)
 {
-  printf("L0 table addr: %p\n", (vaddr_t)pagetable);
+  printf("L0 table addr: %lx\n", (vaddr_t)pagetable);
   DBG_pagetable_level0(pagetable);
 }
