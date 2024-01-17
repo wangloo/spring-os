@@ -15,6 +15,9 @@
 // #include <cfi.h>
 // #include <ramdisk.h>
 // #include <procinfo.h>
+#include <kmem.h> // For test
+#include <page.h>
+#include <pagetable.h> // For test
 #include <proc.h>
 #include <sched2.h>
 #include <exec.h>
@@ -91,6 +94,7 @@ failed:
 
 
 
+/**************** KMon test code BEGIN *****************/
 static inline void func2() {
     *(long *)0 = 0;
     // make it not leaf
@@ -112,6 +116,7 @@ docaculate(int a, int b)
 }
 
 
+int tempg = 10;
 void recur(int n)
 {
   if (!n)  {
@@ -119,8 +124,23 @@ void recur(int n)
     return;
   }
   printf("recur, n=%d\n", n);
+  tempg += 1;
   recur(n-1);
 }
+
+
+// Design a demo function.
+// Can test break and continue, exam memory
+char teststr[] = "I like bug";
+void testkm(int n)
+{
+  if (!n) 
+    return;
+
+  printf("recur, n=%d\n", n);
+  testkm(n-1);
+}
+/**************** KMon test code END *****************/
 
 void 
 kernel_init(void)
@@ -156,7 +176,13 @@ kernel_init(void)
 #endif
 
     
+    // printf("###### %d\n", read_pmccntr());
+    LOG_DEBUG("Addr of teststr: 0x%lx\n", teststr);
     kmon_enter();
+    printf("teststr: %s\n", teststr);
+
+    // pmu_event_enable(1, ARMV8_PMUV3_PERFCTR_MEM_ACCESS);
+    // pmu_event_enable(-1, 0);
 
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space
@@ -167,16 +193,16 @@ kernel_init(void)
     }
     // LOG_DEBUG("Test Ftrace\n");
     // functrace_enable();
-    recur(10);
+    // testkm(3);
     // functrace_disable();
     // print_functrace();
     // exit();
 
     // Cause sync exception from current el
     // Test kmonitor
-    LOG_DEBUG("Test KMonitor\n");
+    // LOG_DEBUG("Test KMonitor\n");
     // while(1);
-    func1();
+    // func1();
 
 
 
