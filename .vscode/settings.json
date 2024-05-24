@@ -1,0 +1,116 @@
+{
+    "files.associations": {
+      "*.in": "cpp",
+      "uart_pl011.h": "c",
+      "kernel.h": "c",
+      "types.h": "c",
+      "spinlock.h": "c",
+      "atomic.h": "c",
+      "irq.h": "c",
+      "qemu.h": "c",
+      "atomic": "c",
+      "*.tcc": "cpp",
+      "fstream": "cpp",
+      "ostream": "cpp",
+      "array": "c",
+      "string_view": "c",
+      "initializer_list": "c",
+      "utility": "c",
+      "proc.h": "c",
+      "kmem.h": "c",
+      "page.h": "c",
+      "compiler.h": "c",
+      "print.h": "c",
+      "utils.h": "c",
+      "string.h": "c",
+      "ctx_arm64.h": "c",
+      "log.h": "c",
+      "assert.h": "c",
+      "config.h": "c",
+      "sched.h": "c",
+      "cpu.h": "c",
+      "typeinfo": "c",
+      "pagetable.h": "c",
+      "sched2.h": "c",
+      "vspace.h": "c",
+      "mm.h": "c",
+      "esr.h": "c",
+      "exception.h": "c",
+      "arm64_sysreg.h": "c",
+      "gic_v3.h": "c",
+      "gic_v3_reg.h": "c",
+      "cpumask.h": "c",
+      "smp.h": "c",
+      "bitmap.h": "c",
+      "sys_size.h": "c",
+      "arm64_utils.h": "c",
+      "utils_arm64.h": "c",
+      "ramdisk.h": "c",
+      "cfi.h": "c",
+      "memattr.h": "c",
+      "slab.h": "c",
+      "list.h": "c",
+      "cpu_feature.h": "c",
+      "console.h": "c",
+      "dwarf_incl.h": "c",
+      "stdio.h": "c",
+      "libelf.h": "c",
+      "elf.h": "c",
+      "dwarf_elf_access.h": "c",
+      "libdwarf_ukern.h": "c",
+      "errno.h": "c",
+      "random": "c",
+      "buffer.h": "c",
+      "gtest.h": "c",
+      "unity_config.h": "c",
+      "unity.h": "c",
+      "chrono": "c",
+      "cmath": "c",
+      "kmon.h": "c",
+      "tracebuf.h": "c",
+      "cstdlib": "c",
+      "timer.h": "c",
+      "barrier.h": "c",
+      "intid.h": "c",
+      "math.h": "c",
+      "memory_resource": "c",
+      "tuple": "c",
+      "arch_timer.h": "c",
+      "time.h": "c",
+      "init.h": "c"
+    },
+    "search.exclude": {
+      // "ukern/thirdparty/libdwarf/dwarfdump":true,
+      // "ukern/thirdparty/libdwarf/dwarfgen":true,
+      // "ukern/thirdparty/libdwarf/dwarfexample":true,
+      "**/node_modules": true,
+      "**/bower_components": true,
+      "**/*.code-search": true
+    },
+    "window.title": "IMPORTANT",
+
+    "vim.autoSwitchInputMethod.enable": false,
+    
+// Clangd autocomplated
+// "C_Cpp.intelliSenseEngine": "disabled",
+// "clangd.detectExtensionConflicts": true,
+// "clangd.path": "/usr/bin/clangd-15",
+// "clangd.arguments": [
+//     "--background-index", /// 在后台自动分析文件（基于complie_commands)
+//     "--compile-commands-dir=.", /// 标记compelie_commands.json文件的目录位置
+//     "-j=12", /// 同时开启的任务数量
+//     "--clang-tidy", /// clang-tidy功能
+//     "--clang-tidy-checks=performance-*,bugprone-*",
+//     "--all-scopes-completion", /// 全局补全（会自动补充头文件）
+//     "--completion-style=detailed", /// 更详细的补全内容
+//     //    "--header-insertion=iwyu",       /// 补充头文件的形式
+//     "--header-insertion=never", // 禁止自动补全头文件
+//     "--pch-storage=memory", /// pch优化的位置
+//     // 启用这项时，补全函数时，将会给参数提供占位符，键入后按 Tab 可以切换到下一占位符，乃至函数末
+//     "--function-arg-placeholders=false",
+//     "--inlay-hints=true",
+// ],
+
+  
+
+}

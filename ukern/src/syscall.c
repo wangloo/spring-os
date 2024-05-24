@@ -104,7 +104,9 @@ __sys_unsupport(struct gp_regs *regs)
   
   regs->x0 = -ENOENT;
   LOG_ERROR("Unsupported syscall:%d\n", nr);
-  exit();
+
+  // Exit system for easy debug
+  exit(); 
 }
 
 static syscall_handler_t __syscall_table[] = {

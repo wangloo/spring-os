@@ -2,6 +2,7 @@
 #include <console.h>
 #include <kernel.h>
 
+static char pbuf[4096];
 
 static const char xdigitmap[] = "0123456789abcdef";
 static const char Xdigitmap[] = "0123456789ABCDEF";
@@ -311,37 +312,33 @@ int sprintf(char *buf, const char *fmt, ...)
 
 int printf(char *fmt, ...)
 {
-  char buf[128]; 
   va_list ap;
   int count;
-  char *cur = buf;  
+  char *cur = pbuf;  
 
   va_start(ap, fmt);
-  count = vsnprintf(buf, sizeof(buf), fmt, ap);
+  count = vsnprintf(pbuf, sizeof(pbuf), fmt, ap);
   va_end(ap);
 
-  while(count > 0)
-  {
+  while(count > 0) {
     console_putc(*cur);
     ++cur, --count;
   }
-  return cur - buf; 
+  return cur - pbuf; 
 }
 
 int vprintf(const char *fmt, va_list ap)
 {
-  char buf[128]; 
   int count;
-  char *cur = buf;
+  char *cur = pbuf;
 
-  count =  vsnprintf(buf, sizeof(buf), fmt, ap);
+  count =  vsnprintf(pbuf, sizeof(pbuf), fmt, ap);
 
-  while(count > 0)
-  {
+  while(count > 0) {
     console_putc(*cur);
     ++cur, --count;
   }
-  return cur - buf;  
+  return cur - pbuf;  
 }
 
 

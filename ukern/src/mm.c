@@ -104,7 +104,10 @@ init_mm(void)
   // System memory allocator init
   // After do this, kalloc() can work
   page_init(kmem_base, kmem_size>>PAGE_SHIFT);
-  slab_init();
+  if (init_slab() < 0) {
+    LOG_ERROR("Slab system is bad\n");
+    assert(0);
+  }
   
 
   kvspace_init();

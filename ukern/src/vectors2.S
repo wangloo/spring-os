@@ -74,7 +74,7 @@ endfunc __sync_from_lower_el
 // only trigger for starting scheduler.
 // Will not back, context doesn't matter 
 func __irq_from_current_el
-  // SAVE_ECTX
+  SAVE_ECTX
 
   // Process switch could happen before exception return
   // So must update the current process's kernel stack pointer 
@@ -86,6 +86,7 @@ func __irq_from_current_el
   // We can call C function after here
   // SWITCHTO_INTR_STACK x0
 
+  mov x0, sp   // function paramter
   bl irq_from_current_el
 
   // Before return from interrupt, always check 

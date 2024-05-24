@@ -2,6 +2,8 @@
 #include <kernel.h>
 #include <barrier.h>
 #include <math.h>
+#include <init.h>
+#include <irq.h>
 #include <timer.h>
 
 #define CNT_CTL_ISTATUS (1 << 2)
@@ -20,6 +22,21 @@
 
 static u64 alarm_tick = 0;
 static u64 cpukhz = 0;
+
+static void 
+timer_handler(int intid)
+{
+    printf("timer!!\n");
+    timer_stop();
+}
+
+static int 
+timer_irq_init(void)
+{
+  return irq_register(INTID_VTIMER, timer_handler, "timer");
+}
+irqhook_initcall(timer_irq_init);
+
 
 void
 timer_setup(u64 ns)

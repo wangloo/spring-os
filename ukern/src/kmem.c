@@ -7,9 +7,9 @@ void *kalloc(size_t size)
 {
   int pages;
 
-  assert(size > 0);
+  // assert(size > 0);
 
-  if (size <= PAGE_SIZE/4) {
+  if (size <= PAGE_SIZE/8) {
     return slab_alloc(size);
   }
   pages = align_page_up(size) >> PAGE_SHIFT;

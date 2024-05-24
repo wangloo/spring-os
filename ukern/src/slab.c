@@ -6,7 +6,6 @@
 #define MAX_MEM_POOLS       32
 #define SLAB_MAGIC			(0xdeadbeef)
 
-#define freelist_update(freelist, idx, val)  *((int *)(freelist)+idx) = (val)
 
 // Only this pool is staticlly created pool
 // Used to allocate memory for other pre-defined slab pools
@@ -15,19 +14,29 @@ static struct slab_pool root_pool = {
     .obj_size = sizeof(struct slab_pool),
     .size = sizeof(struct slab_pool),
     .gfporder = 0,
+    .cache = NULL,
+};
+
+static struct slab_pool cache_pool = {
+    .name = "[cache-pool]",
+    .obj_size = sizeof(struct slab_cache),
+    .size = sizeof(struct slab_cache),
+    .gfporder = 0,
+    .cache = NULL,
 };
 
 // System pre-defined general pools
 static struct pool_info general_pools[] = {
     {"slabpool-8",               8},   {"slabpool-16",             16},   
-    {"slabpool-32",             32},   {"slabpool-64",             64},   
+    {"slabpool-32",             32},   {"slabpool-64",             64},
     {"slabpool-128",           128},   {"slabpool-256",           256},  
-    {"slabpool-512",           512},   {"slabpool-1024",         1024},  
+    {"slabpool-512",           512},   
 };
 
 // index 0 ==> root_pool
 static struct slab_pool *pool_ptrs[MAX_MEM_POOLS];
-static int nr_pools = 1;
+static int nr_pools = 0;
+static int normal_pool_start = 2;
 
 
 
@@ -35,81 +44,30 @@ static int nr_pools = 1;
 void 
 slab_pool_free(struct slab_pool *pool)
 {
-    int pool_index = -1;
-    int i;
+  int pool_index = -1;
+  int i;
 
-    // 确定没有slab挂在上面了
-    assert(pool);
-    assert(list_empty(&pool->full) && 
-            list_empty(&pool->partial));
+  // 确定没有slab挂在上面了
+  assert(pool);
+  assert(pool->cache || ((&pool->full) && list_empty(&pool->partial)));
 
-    for (i = 0; i < nr_pools; i++) {
-        if (pool_ptrs[i] == pool) {
-            pool_index = i;
-            break;
-        }
+  // TODO
+  if (pool->cache) {
+    return;
+  }
+
+  for (i = 0; i < nr_pools; i++) {
+    if (pool_ptrs[i] == pool) {
+      pool_index = i;
+      break;
     }
-    assert(pool_index > 0); // boot pool can't be destory
+  }
+  assert(pool_index > 0); // boot pool can't be destory
 
-    memmove(pool_ptrs+pool_index, 
-            pool_ptrs+pool_index+1, 
-            nr_pools-pool_index-1);
-    nr_pools -= 1;
-    slab_free((void *)pool);
-}
-
-// Allocate a slab pool
-struct slab_pool *
-slab_pool_alloc(char *name, size_t obj_size)
-{
-    struct slab_pool *pool;
-    
-    // TODO: 检查是否存在 obj_size 重复的 pool
-
-    pool = slab_alloc_pool(pool_ptrs[0]);
-    if (!pool)
-        return NULL;
-    
-    pool->name = name;
-    pool->obj_size = obj_size;
-    pool->size = pool->obj_size;
-    pool->gfporder = 0;
-    INIT_LIST_HEAD(&pool->partial);
-    INIT_LIST_HEAD(&pool->full);
-
-    return pool;
-}
-
-
-// Init the slab allocator.
-// After call this, slab_alloc() can work
-void 
-slab_init(void)
-{
-    int nr_static_pool = nelem(general_pools);
-    int i;
-
-    assert(nr_pools + nr_static_pool <= MAX_MEM_POOLS);
-    
-    // Root pool needs to be initialized first
-    // So other pools' descriptor can be allocated
-    pool_ptrs[0] = &root_pool;
-    INIT_LIST_HEAD(&pool_ptrs[0]->partial);
-    INIT_LIST_HEAD(&pool_ptrs[0]->full);
-
-    for (i = 0; i < nr_static_pool; i++) {
-        pool_ptrs[nr_pools++] = 
-                      slab_pool_alloc(general_pools[i].name, general_pools[i].size);
-    }
-}
-
-
-static int 
-mem_in_slab(void *addr)
-{
-    // TODO: 可以划出一块 va 为mempool, 这样所有
-    //       从mempool分配的内存都可以定位了
-    return 1;
+  memmove(pool_ptrs + pool_index, pool_ptrs + pool_index + 1,
+          nr_pools - pool_index - 1);
+  nr_pools -= 1;
+  slab_free((void *)pool);
 }
 
 
@@ -118,148 +76,60 @@ mem_in_slab(void *addr)
 static int 
 caculate_nr_object(struct slab *slab, int order, int obj_size)
 {
-    int nr_obj;
-    size_t freelist_size;
-    void *obj_start;
-    void *page_end;
+  int nr_obj;
+  unsigned long page_end, obj_start;
 
-    page_end = (void *)((unsigned long)slab + PAGE_SIZE*(1<<order));
+  page_end = (unsigned long)slab + PAGE_SIZE * (1 << order);
 
-    // 不可能达到的上限肯定是所有的空间都用来存 object
-    // 由于此版本只考虑freelist放在slab内部的情况, 
-    // 所以实际上还是要为freelist留出空间
-    nr_obj = (page_end - slab->freelist) / obj_size;
-    freelist_size = sizeof(int) * nr_obj;
+  // 不可能达到的上限肯定是所有的空间都用来存 object
+  // 由于此版本只考虑freelist放在slab内部的情况,
+  // 所以实际上还是要为freelist留出空间
+  nr_obj = (page_end - (unsigned long)(slab->freelist)) / obj_size;
 
-    // 保证满足最大的对齐要求 
-    obj_start = (void *)align_up((vaddr_t)(slab->freelist)+freelist_size, 8);
-    while (obj_start+nr_obj*obj_size > page_end) {
-        nr_obj--;
-        freelist_size -= sizeof(int);
-        obj_start = (void *)align_up((vaddr_t)(slab->freelist)+freelist_size, 8);
-    }
-    assert(nr_obj > 0);
-    return nr_obj;
-}
-
-// Allocate a descriptor of slab
-static struct slab *
-slab_desc_alloc()
-{
-    struct slab *new;
-    void *page;
-
-    page = page_alloc();
-    new = (struct slab *)(page);
-    // new->page = page;
-    new->freelist = page + sizeof(*new);
-    return new;
+  // 保证满足最大的对齐要求
+  obj_start = align_up((vaddr_t)(slab->freelist+nr_obj), obj_size);
+  while (obj_start + nr_obj * obj_size > page_end) {
+    nr_obj--;
+    obj_start = align_up((vaddr_t)(slab->freelist+nr_obj), obj_size);
+  }
+  assert(nr_obj > 0);
+  // printf("caculate result: nrobj: %d \n", nr_obj);
+  return nr_obj;
 }
 
 // slab 系统的核心函数
-static int slab_refill(struct slab_pool *pool)
+static int 
+slab_refill(struct slab_pool *pool)
 {
-    struct slab *new;
-    int nr_obj;
-    void *freelist_end;
+  struct slab *slab;
+  int nr_obj;
 
-    LOG_DEBUG("mempool <%s> has been refilled\n", pool->name);
-    // 从系统中索取几页 物理页面
-    // page, freelist 成员会被赋值
-    new = slab_desc_alloc(pool->gfporder);
-    new->magic = SLAB_MAGIC;
-    // 初始化object的分布, 这部分是重点
-    // 确定这个页面可以存放多少个 object?
-    nr_obj = caculate_nr_object(new, pool->gfporder, pool->size);
-    freelist_end = new->freelist + nr_obj*sizeof(int);
-    new->nr_free = nr_obj;
-    new->nr_obj = nr_obj;
-    new->obj_start = (void *)align_up((vaddr_t)freelist_end, 8);
-    new->pool = pool;
-    
-    for (int i = 0; i < nr_obj; i++) {
-        freelist_update(new->freelist, i, i);
-    }
-    
-    list_add(&new->lru, &pool->partial);
-    return 0;
-}
+  // LOG_DEBUG("mempool <%s> has been refilled\n", pool->name);
 
-// Allocate slab from specified slab-pool
-// Also global function, make sense when creating
-// special slab-pool(eg: from some descriptor)
-void *
-slab_alloc_pool(struct slab_pool *pool)
-{
-    struct slab *slab;
-    void *obj;
-    int res, idx;
+  if (!(slab = page_alloc()))
+    return -1;
+  slab->freelist = (void *)slab+sizeof(*slab);
+  slab->magic = SLAB_MAGIC;
 
-    assert(pool);
+  // 初始化object的分布, 这部分是重点
+  // 确定这个页面可以存放多少个 object?
+  nr_obj = caculate_nr_object(slab, pool->gfporder, pool->size);
+  slab->active = 0;
+  slab->nr_free = nr_obj;
+  slab->nr_obj = nr_obj;
+  slab->obj_start = (void *)align_up((vaddr_t)(slab->freelist+nr_obj), pool->size);
+  slab->pool = pool;
 
-    // LOG_INFO("alloc from pool: %s\n", pool->name);
+  for (int i = 0; i < nr_obj; i++)
+    slab->freelist[i] = i;
 
-realloc:
-    // 找到有空闲object的slab,
-    // 先编译 partial, 再遍历 free
-    slab = NULL;
-    if (!list_empty(&pool->partial)) {
-        list_for_each_entry(slab, &pool->partial, lru) {
-            if (slab->nr_free > 0) 
-                break;
-        }
-    }
-
-    // 此mempool中没有空闲的object了
-    if (slab == NULL) {
-        res = slab_refill(pool);
-        if (res)
-            assert(0);
-        goto realloc;
-    }
-
-    // 有空闲的object, 现在开始提取, 并维护好剩下的
-    idx = *((int *)(slab->freelist)+slab->active);
-    obj = slab->obj_start + pool->size*idx;
-    slab->active += 1;
-    slab->nr_free -= 1;
-
-    // 该slab所处的链表位置可能已经改变
-    if (slab->nr_free == 0) {
-        // move to full list
-        list_del(&slab->lru);
-        list_add(&slab->lru, &pool->full);
-    }
-    return obj;
+  list_add(&slab->lru, &pool->partial);
+  return 0;
 }
 
 
-// Allocate bytes in slab system
-// Return pointer to va that kernel can acess
-// Return NULL if no more free space
-void *
-slab_alloc(int bytes)
-{
-    // Strictly speaking, allocate request more that PAGE_SIZE
-    // should be servered by page_alloc()
-    assert(bytes < PAGE_SIZE);
 
-    // Just make sure mem_pool_init() has been called
-    // before any slab allocate request
-    assert(pool_ptrs[0] && pool_ptrs[0]->obj_size);
-    
-    // Slab pool is arranged size-descending
-    // So the first fit == best fit
-    for (int i = 1; i <= nelem(general_pools); i++) {
-        if (pool_ptrs[i]->obj_size >= bytes) {
-            return slab_alloc_pool(pool_ptrs[i]);
-            break;
-        }
-    }
-    LOG_ERROR("Can't find usable slab pool for %d bytes \n", bytes);
 
-    return NULL;
-}
 
 // TODO: check is header of slab object
 int 
@@ -292,34 +162,226 @@ found:
   return 1;
 }
 
+
+
+void
+print_slab_info(void)
+{
+  struct slab_pool *pool;
+  struct slab *slab;
+  int i,slab_index;
+
+  for (i = 0; i < nr_pools; i++) {
+    pool = pool_ptrs[i];
+    slab_index = 0;
+    printf("\nPool [%s]:\n", pool->name);
+    printf("Partial:\n");
+    list_for_each_entry(slab, &pool->partial, lru) {
+      assert(slab->magic == SLAB_MAGIC);
+      printf("slab%d\nnr_obj: %d\nnr_free:%d\n", slab_index, slab->nr_obj, slab->nr_free);
+      slab_index += 1;
+    }
+  }
+  
+}
+
+
 // Free the slab memory to slab-pool
 void 
 slab_free(void *ptr)
 {
-    struct slab *slab;
-
-    // Check ptr is allocated from slab-pool
-    assert(mem_in_slab(ptr));
-
-    // Size of each slab always == PAGE_SIZE
-    // So page_down alignment can get slab desciptor address
-    slab = (struct slab *)align_page_down((vaddr_t)ptr);
-
-    // Check the slab descriptor is valid
-    assert(slab->magic == SLAB_MAGIC);
-    assert(slab->obj_start <= ptr);
+  struct slab_cache *cache;
+  struct slab *slab;
+  int obj_index;
 
 
-    // Update slab descriptor
-    slab->active --;
-    slab->nr_free ++;
-    int idx = (ptr - slab->obj_start) / slab->pool->obj_size;
-    freelist_update(slab->freelist, slab->active, idx);
-    
-    // Return the whole slab to page allocator 
-    // if all of its objects are free
-    if (slab->nr_free == slab->nr_obj) {
-        list_del(&slab->lru);
-        page_free(slab);
-    }
+  // Size of each slab always == PAGE_SIZE
+  // So page_down alignment can get slab desciptor address
+  slab = (struct slab *)align_page_down((vaddr_t)ptr);
+
+  // Check the slab descriptor is valid
+  assert(slab->magic == SLAB_MAGIC);
+  assert(slab->obj_start <= ptr);
+  assert(slab->nr_free < slab->nr_obj);
+  assert(isaligned(ptr, slab->pool->obj_size));
+
+  cache = slab_alloc_pool(&cache_pool);
+  cache->obj = ptr;
+  cache->next = slab->pool->cache;
+  slab->pool->cache = cache;
+  return;
+
+  // Update slab descriptor
+  slab->active--;
+  slab->nr_free++;
+  obj_index = (ptr - slab->obj_start) / slab->pool->obj_size;
+  slab->freelist[slab->active] = (short)obj_index;
+
+  // Return the whole slab to page allocator
+  // if all of its objects are free
+  if (slab->nr_free == slab->nr_obj) {
+    list_del(&slab->lru);
+    page_free(slab);
+  }
 }
+
+void
+slab_magic_check(void)
+{
+  struct slab_pool *pool;
+  struct slab *slab;
+  for (int i = 0; i < nr_pools; i++) {
+    pool = pool_ptrs[i];
+    list_for_each_entry(slab, &pool->partial, lru) {
+      assert(slab->magic == SLAB_MAGIC);
+    }
+    list_for_each_entry(slab, &pool->full, lru) {
+      assert(slab->magic == SLAB_MAGIC);
+    }
+  }
+}
+
+// Allocate slab from specified slab-pool
+// Also global function, make sense when creating
+// special slab-pool(eg: from some descriptor)
+void *
+slab_alloc_pool(struct slab_pool *pool)
+{
+  struct slab_cache *cache;
+  struct slab *slab;
+  void *obj;
+  short obj_index;
+
+  assert(pool);
+  // LOG_INFO("alloc from pool: %s\n", pool->name);
+
+  if (pool->cache) {
+    cache = pool->cache;
+    obj = cache->obj;
+    pool->cache = cache->next;
+    // slab_free(cache); // Make it leak
+    return obj;
+  };
+realloc:
+  slab = NULL;
+
+  // Search partial list first
+  if (!list_empty(&pool->partial)) {
+    list_for_each_entry(slab, &pool->partial, lru) {
+      if (slab->nr_free > 0) break;
+    }
+    // Should not be here
+    // At least one slab in partial list
+    if (&slab->lru == &pool->partial)
+      assert(0); 
+  }
+
+  // Slab pool is full now, refill it
+  if (!slab) {
+    if (slab_refill(pool) < 0) {
+      LOG_ERROR("IMPORTANT! slab refill err\n");
+      assert(0);
+    }
+    goto realloc;
+  }
+
+  // 有空闲的object, 现在开始提取, 并维护好剩下的
+  obj_index = slab->freelist[slab->active];
+  obj = slab->obj_start + pool->size * obj_index;
+  slab->active += 1;
+  slab->nr_free -= 1;
+
+  if (!slab->nr_free) {
+    list_del(&slab->lru);
+    list_add(&slab->lru, &pool->full);
+  }
+  // memset(obj, 0xff,pool->obj_size);
+  // slab_magic_check();
+  return obj;
+}
+
+// Allocate bytes in slab system
+// Return pointer to va that kernel can acess
+// Return NULL if no more free space
+void *
+slab_alloc(int bytes)
+{
+  // Strictly speaking, allocate request more that PAGE_SIZE
+  // should be servered by page_alloc()
+  assert(bytes < PAGE_SIZE);
+
+  // Just make sure mem_pool_init() has been called
+  // before any slab allocate request
+  assert(pool_ptrs[0] && pool_ptrs[0]->obj_size);
+
+  // Slab pool is arranged size-descending
+  // So the first fit == best fit
+  for (int i = normal_pool_start; i <= normal_pool_start+nelem(general_pools); i++) {
+    if (pool_ptrs[i]->obj_size >= bytes)
+      return slab_alloc_pool(pool_ptrs[i]);
+  }
+  LOG_ERROR("Can't find usable slab pool for %d bytes \n", bytes);
+  return NULL;
+}
+
+static int
+slab_pool_init(struct slab_pool *pool, char *name, int objsize)
+{
+  if (nr_pools >= MAX_MEM_POOLS) {
+    LOG_ERROR("Too many slab pools\n");
+    return -1;
+  }
+
+  pool->name = name;
+  pool->obj_size = objsize;
+  pool->size = pool->obj_size;
+  pool->gfporder = 0;
+  pool->cache = NULL;
+  INIT_LIST_HEAD(&pool->partial);
+  INIT_LIST_HEAD(&pool->full);
+
+  pool_ptrs[nr_pools++] = pool;
+  return 0;
+}
+
+struct slab_pool *
+slab_pool_create(char *name, int objsize)
+{
+  struct slab_pool *pool;
+
+  if (!(pool = slab_alloc_pool(&root_pool)))
+    return NULL;
+  if (slab_pool_init(pool, name, objsize) < 0)
+    return NULL;
+  return pool;
+}
+
+// Init the slab allocator.
+// After call this, slab_alloc() can work
+int 
+init_slab(void)
+{
+  int nr_static_pool = nelem(general_pools);
+  int i;
+
+
+  // Root pool needs to be initialized first
+  // So other pools' descriptor can be allocated
+  pool_ptrs[nr_pools++] = &root_pool;
+  INIT_LIST_HEAD(&root_pool.partial);
+  INIT_LIST_HEAD(&root_pool.full);
+
+  pool_ptrs[nr_pools++] = &cache_pool;
+  INIT_LIST_HEAD(&cache_pool.partial);
+  INIT_LIST_HEAD(&cache_pool.full);
+
+
+  LOG_DEBUG("Create general pools...\n");
+  for (i = 0; i < nr_static_pool; i++) {
+    if (!slab_pool_create(general_pools[i].name, general_pools[i].size))
+      return -1;
+  }
+
+  return 0;
+}
+

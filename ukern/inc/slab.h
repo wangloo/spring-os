@@ -8,14 +8,19 @@
 //  - struct slab和freelist均放到slab指向的物理页帧中
 //  - object后没有添加padding，即没有越界的检查
 
+struct slab_cache {
+  void *obj;
+  struct slab_cache *next;
+};
 struct slab_pool {
     char *name;
-    int size;     // plus padding
+    int size;     // plus padding NOT USED
     int obj_size; // without padding
     int gfporder; // NOT USED
 
     struct list_head partial;
     struct list_head full;
+    struct slab_cache *cache;
 };
 
 struct slab {
@@ -24,9 +29,9 @@ struct slab {
     //                     // Not always equal to end of page, might have padding
     // void *page;        
     struct slab_pool *pool; // slab-pool it belongs
-    void *freelist; 
+    short *freelist; 
     unsigned long magic;
-    int active;
+    int active;            // Number of used objs / Index of next freed obj
     int nr_free, nr_obj;
     struct list_head lru;
 };
@@ -36,8 +41,8 @@ struct pool_info {
     unsigned long size;
 };
 
-void 
-slab_init(void);
+int 
+init_slab(void);
 void 
 slab_free(void *ptr);
 void *
@@ -45,7 +50,7 @@ slab_alloc(int bytes);
 void *
 slab_alloc_pool(struct slab_pool *pool);
 struct slab_pool *
-slab_pool_alloc(char *name, size_t obj_size);
+slab_pool_create(char *name, int objsize);
 void 
 slab_pool_free(struct slab_pool *pool);
 int 
@@ -54,3 +59,5 @@ slab_own_addr(void *ptr);
 // debug
 // void DBG_mem_pool(struct mem_pool *pool);
 // void DBG_mem_pools();
+void
+print_slab_info(void);

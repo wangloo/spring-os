@@ -3,27 +3,24 @@ all:
 
 Q = @ 
 
-
-
 ROOT_DIR = .
-OBJ_DIR = ./build
+BUILD_DIR = ../out/kern
 SRC_DIR = ./src
 INC_DIR = . \
-		   ./inc \
-		   $(UAPI_INC_DIR)
-BIN_DIR = ./build
+					./inc \
+					$(UAPI_INC_DIR)
 LIB_DIR = ./lib
 INSTALL_DIR = ramdisk # install out
 
-BINARY = $(BIN_DIR)/$(NAME)
+BINARY = $(BUILD_DIR)/$(NAME)
 SRCS := $(shell find $(SRC_DIR) -name '*.c' -or -name '*.S')
-OBJS := $(SRCS:$(SRC_DIR)/%=$(OBJ_DIR)/%.o) 
+OBJS := $(SRCS:$(SRC_DIR)/%=$(BUILD_DIR)/%.o) 
 INCS := $(addprefix -I, $(INC_DIR))
 LIBS := $(shell find $(LIB_DIR) -name '*.a' -or -name '*.so')
 DEPS := $(OBJS:.o=.d)
 
 offset_h  := $(ROOT_DIR)/asm/asm_offset.h
-offset_s  := $(OBJ_DIR)/asm_offset.S
+offset_s  := $(BUILD_DIR)/asm_offset.S
 offset_c  := $(ROOT_DIR)/tools/asm_offset.c
 
 # 临时的，保留进入ukern编译的合法性
@@ -44,7 +41,7 @@ CC		= $(CROSS_COMPILE)gcc
 
 
 
-SPRING_LDS = $(OBJ_DIR)/spring.lds
+SPRING_LDS = $(BUILD_DIR)/spring.lds
 
 
 
@@ -56,23 +53,21 @@ CFLAGS += -Wall \
 					-Wno-unused-function \
 					-fno-asynchronous-unwind-tables \
 					-fno-unwind-tables \
+					-fno-omit-frame-pointer \
 					-ffixed-x18
-
 					
 LDFLAGS += -T $(SPRING_LDS) -L$(ROOT_DIR)/lib --start-group -lelf -ldwarf --end-group
 
+ifeq ($(UNITTEST),1)
+	CFLAGS += -DUNITTEST_ON
+endif
+
 -include kern_macro.mk
 
-PHONY += install thirdparty
+PHONY += install 
+
 
 all: $(offset_h) $(BINARY)
-
-install: $(BINARY)
-	$(Q) cp $(BINARY) $(TARGET_OUT_DIR)/$(INSTALL_DIR)
-
-
-thirdparty:
-	$(Q) $(MAKE) $(MFLAGS) -C thirdparty
 
 $(BINARY): $(OBJS) $(SPRING_LDS)
 	@echo "LD      $@"
@@ -81,11 +76,11 @@ $(BINARY): $(OBJS) $(SPRING_LDS)
 # $(OBJS): thirdparty # 虽然thirdparty没用这种方式，保留以后扩展使用
 
 
-$(OBJ_DIR)/%.c.o: $(SRC_DIR)/%.c
+$(BUILD_DIR)/%.c.o: $(SRC_DIR)/%.c
 	@echo "CC      $<"
 	@mkdir -p $(dir $@)
 	$(Q) $(CC) $(CFLAGS) -D__KERNEL__ $(INCS) -c -o $@ $<
-$(OBJ_DIR)/%.S.o: $(SRC_DIR)/%.S
+$(BUILD_DIR)/%.S.o: $(SRC_DIR)/%.S
 	@echo "CC      $<"
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -D__ASSEMBLY__ $(INCS) -c -o $@ $<
@@ -113,8 +108,7 @@ $(offset_h): $(offset_s)
 .PHONY: clean distclean $(PHONY)
 
 clean:
-	$(Q) $(MAKE) $(MFLAGS) -C thirdparty clean
-	-rm -rf $(BINARY) $(OBJ_DIR) $(offset_h)
+	-rm -rf $(BINARY) $(BUILD_DIR) $(offset_h)
 
 # lib and header from thirdparty
 distclean: clean

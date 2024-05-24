@@ -14,30 +14,35 @@
 #define WRITE_ONCE(x, y) (x) = (y)
 
 
-static inline void set_pte(pte_t *ptep, pte_t new_pte)
+static inline void 
+set_pte(pte_t *ptep, pte_t new_pte)
 {
   WRITE_ONCE(*ptep, new_pte);
   __dsb(ishst);
 }
-static inline void set_pmde(pte_t *pmdep, pte_t new_pmde)
+static inline void 
+set_pmde(pte_t *pmdep, pte_t new_pmde)
 {
   WRITE_ONCE(*pmdep, new_pmde);
   __dsb(ishst);
 }
-static inline void set_pude(pte_t *pudep, pte_t new_pude)
+static inline void 
+set_pude(pte_t *pudep, pte_t new_pude)
 {
   WRITE_ONCE(*pudep, new_pude);
   __dsb(ishst);
 }
-static inline void set_pgde(pte_t *pgdep, pte_t new_pgde)
+static inline void 
+set_pgde(pte_t *pgdep, pte_t new_pgde)
 {
   WRITE_ONCE(*pgdep, new_pgde);
   __dsb(ishst);
 }
 
-static void pagetable_change_pgde(pte_t *pgdep, void *addr, u64 flags)
+static inline void 
+pagetable_change_pgde(pte_t *pgdep, void *addr, uint64_t flags)
 {
-  u64 attr = 0;
+  uint64_t attr = 0;
 
   attr |= S1_DES_TABLE;
   if (flags & VM_KERN)
@@ -205,7 +210,8 @@ static void pagetable_change_pte(pte_t *ptep, void *addr,  int flags)
   set_pte(ptep, (pte_t)(vtop(addr) | attr));
 }
 
-static bool can_map_pud_huge(pte_t pude, 
+static bool 
+can_map_pud_huge(pte_t pude, 
               vaddr_t va, paddr_t pa, size_t size, int flags)
 {
   if (!(flags & __VM_HUGE_1G) || !(pte_is_null(pude)))
@@ -307,7 +313,7 @@ map_pmd_range(struct pagetable *pmd, u64 base, u64 pa, size_t size, int flags)
 }
 
 static int 
-map_pud_range(struct pagetable *pud, u64 va, u64 pa, size_t size, int flags)
+map_pud_range(struct pagetable *pud, uint64_t va, uint64_t pa, size_t size, int flags)
 {
   pte_t *pudep;
   void *pmd;
@@ -349,7 +355,7 @@ map_pud_range(struct pagetable *pud, u64 va, u64 pa, size_t size, int flags)
 
 
 static int 
-map_pgd_range(struct pagetable *pagetable, u64 va, u64 pa, size_t size, int flags)
+map_pgd_range(struct pagetable *pagetable, uint64_t va, uint64_t pa, size_t size, int flags)
 {
   pte_t *pgdep;
   void *pud;
@@ -361,7 +367,7 @@ map_pgd_range(struct pagetable *pagetable, u64 va, u64 pa, size_t size, int flag
     if (pte_is_null(*pgdep)) {
       pud = page_alloc();
       if (!pud)
-        return -ENOMEM;
+        return -1;
       memset(pud, 0, PAGE_SIZE);
       pagetable_change_pgde(pgdep, pud, flags);
     }

@@ -93,6 +93,15 @@ SECTIONS
 
   . = ALIGN(4096);
   __stop_initcall = .;
+
+  __start_ut_call = .;
+  .__ut_call : {
+    *(.__ut_call)
+  }
+  __stop_ut_call_used = .;
+  . = ALIGN(4096);
+  __stop_ut_call = .;
+
   __start_data = .;
   .data : 
   {

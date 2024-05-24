@@ -32,6 +32,7 @@
 #define div_round_up(n, d)  (((n) + (d)-1) / (d))
 #define align_up(addr, x)   (((addr) + ((x)-1)) & (~((typeof(addr))(x)-1)))
 #define align_down(addr, x) ((addr) & (~((typeof(addr))(x)-1)))
+#define isaligned(addr, x)    (!((unsigned long)(addr) & (x - 1)))
 
 #define bits_to_long(x)  div_round_up(x, 8*sizeof(long))
 #define stringify_no_expansion(x) #x

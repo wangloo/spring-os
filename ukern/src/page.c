@@ -45,7 +45,7 @@ page_section_init(struct page_section *ps, paddr_t base, int pages)
 void 
 page_init(paddr_t base, int pages)
 {
-  LOG_INFO("kernel page section add %d pages, base :0x%lx\n", pages, base); 
+  LOG_INFO("kernel page section add %d pages, range[%lx, %lx]\n", pages, base, base+pages*PAGE_SIZE); 
   page_section_init(&page_sections[0], base, pages);
 }
 
@@ -64,8 +64,8 @@ __page_allocn_sect(struct page_section *ps, int count)
   page->pa = (void *)ps->pa_base + pos*PAGE_SIZE;
   ps->free -= count;
 
-  LOG_DEBUG("allocate %d page(s), base pa: 0x%lx, left %d pages\n", 
-              count, page->pa, ps->free);
+  // LOG_DEBUG("allocate %d page(s), base pa: 0x%lx, left %d pages\n", 
+  //             count, page->pa, ps->free);
   return page;
 }
 
@@ -83,7 +83,7 @@ __page_allocn(int pages)
     }
   }
 
-  panic("no more pages in all section!\n");
+  LOG_ERROR("no more pages in all section!\n");
   return NULL;
 }
 
@@ -93,11 +93,15 @@ __page_allocn(int pages)
 void *
 page_allocn(int count)
 {
-  struct page *page = __page_allocn(count);
-
+  struct page *page;
+  
+  if (count > 512) {
+    LOG_ERROR("Allocate %d pages at once is forbidden\n", count);
+    exit();
+  }
+  page = __page_allocn(count);
   if (page)
     return (void *)ptov((paddr_t)page->pa);
-  
   return NULL;
 }
 
@@ -128,6 +132,34 @@ page_allocz(void)
 }
 
 
+void
+page_show_state(void)
+{
+  struct page_section *ps;
+  struct page *p;
+  int i, pos=0;
+
+  LOG_DEBUG("PAGE LIST: \n");
+  for (i = 0; i < 1; i++) {
+    ps = page_sections+i;
+    while ((pos = bitmap_find_next_1(ps->bitmap, BITMAP_SIZE(ps->nr_pages), pos)) != -1) {
+      p = ps->pages+pos;
+
+      // When continuous pages are allocated,
+      // all bits in bitmap are set, 
+      // but use only the first page descriptor
+      if (!p->pa) {
+        pos += 1;
+        continue;
+      }
+
+      LOG_DEBUG("[pos: %d] pa: 0x%lx, count: %d\n", pos, p->pa, p->count);
+      pos += 1;
+    } 
+  } 
+
+}
+
 void 
 page_free(void *ptr)
 {
@@ -137,15 +169,26 @@ page_free(void *ptr)
 
   assert(page_aligned(ptr));
   
+  // LOG_DEBUG("Do page free to 0x%lx\n", ptr);
+  // page_show_state();
+
   for (i = 0; i < 1; i++) {
     ps = page_sections+i;
     while ((pos = bitmap_find_next_1(ps->bitmap, BITMAP_SIZE(ps->nr_pages), pos)) != -1) {
       p = ps->pages+pos;
-      // LOG_DEBUG("pa: 0x%lx\n", p->pa);
+
+      // When continuous pages are allocated,
+      // all bits in bitmap are set, 
+      // but use only the first page descriptor
+      if (!p->pa) {
+        pos += 1;
+        continue;
+      }
 
       if ((unsigned long)ptr >= ptov(p->pa) && 
           (unsigned long)ptr < (ptov(p->pa)+p->count*PAGE_SIZE)) {
         ps->free += p->count;
+        // LOG_DEBUG("Release %d pages, base: %lx, %d pages left\n", p->count, p->pa, ps->free);
         bitmap_clear_bit(ps->bitmap, pos);
         memset(p, 0, sizeof(*p));
         return;

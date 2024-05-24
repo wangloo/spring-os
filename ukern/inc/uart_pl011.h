@@ -49,6 +49,5 @@ struct uart_pl011 {
 int uart_init();
 char uart_getc(void);
 void uart_putc(char c);
-
 void
-uart_irq_handler(void);
+uart_irq_init(void);

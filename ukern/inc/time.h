@@ -1,21 +1,19 @@
 #pragma once
-#include <arm64_timer.h>
 #include <math.h>
 
-#define SECONDS(s)     		((uint64_t)((s)  * 1000000000ULL))
-#define MILLISECS(ms)  		((uint64_t)((ms) * 1000000ULL))
-#define MICROSECS(us)  		((uint64_t)((us) * 1000ULL))
+#define SECONDS(s)     		((unsigned long)((s)  * 1000000000ULL))
+#define MILLISECS(ms)  		((unsigned long)((ms) * 1000000ULL))
+#define MICROSECS(us)  		((unsigned long)((us) * 1000ULL))
 
-static inline unsigned long ticks_to_ns(uint64_t ticks)
+extern unsigned long cpukhz;
+
+static inline unsigned long
+tick2ns(unsigned long ticks)
 {
-	return muldiv64(ticks, SECONDS(1), 1000 * cpu_khz);
+  return muldiv64(ticks, SECONDS(1), 1000*cpukhz);
 }
-
-static inline uint64_t ns_to_ticks(unsigned long ns)
+static inline unsigned long 
+ns2tick(unsigned long ns)   
 {
-	return muldiv64(ns, 1000 * cpu_khz, SECONDS(1));
+  return muldiv64(ns, 1000*cpukhz, SECONDS(1));
 }
-
-unsigned long get_sys_tick(void);
-unsigned long get_sys_time(void);
-unsigned long get_current_time(void);

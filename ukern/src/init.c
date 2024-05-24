@@ -6,16 +6,9 @@
 #include <cfi.h>
 #include <ramdisk.h>
 #include <timer.h>
-// #include <pagetable.h>
-// #include <mm.h>
-// #include <gic_v3.h>
-// #include <sched.h>
-// #include <task.h>
-// #include <pcpu.h>
-// #include <cfi.h>
-// #include <ramdisk.h>
-// #include <procinfo.h>
+#include <page.h>
 #include <proc.h>
+#include <sched2.h>
 #include <exec.h>
 #include <irq.h>
 #include <init.h>
@@ -48,6 +41,12 @@ init_uspace(void)
                   (unsigned long)&__init_func_6_start);
 }
 
+void
+init_irqhooks(void)
+{
+  call_init_func((unsigned long)&__init_func_3_start,
+                  (unsigned long)&__init_func_4_start);
+}
 
 
 
@@ -61,7 +60,7 @@ load_root_service(void)
 {
     struct proc *proc = 0;
     char *argv[] = {"roots.elf", 0};
-    int ret;
+    // int ret;
 
 	
     if ((proc = create_root_proc()) == NULL) {
@@ -73,18 +72,8 @@ load_root_service(void)
     }
     return 0;
 
-	// LOG_INFO("Root service load successfully prepare to run...");
-
-	// return wake_up_process(proc);
-
 failed:
 	return -EFAULT;
-}
-
-void timer_handler(int intid)
-{
-    printf("timer!!\n");
-    timer_stop();
 }
 
 void 
@@ -94,8 +83,9 @@ kernel_init(void)
     init_mm();
     init_gicv3();
     init_cpus();
-    init_timer();
+    init_sched_timer();
     init_uspace();
+    init_irqhooks();
     
     
     if (init_cfi() < 0) {
@@ -107,8 +97,13 @@ kernel_init(void)
        LOG_ERROR("Init RAMDISK ERROR\n"); 
        goto init_failed;
     }
-    printf("before\n");
-    init_libdwarf();
+
+    
+#ifdef UNITTEST_ON
+    unittest(); 
+#endif
+
+    
 
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space
@@ -118,12 +113,17 @@ kernel_init(void)
         goto init_failed;
     }
 
+
+
+
+
+
+
+
     // Start scheduling
-    timer_setup(MILLISECS(500));
-    if (irq_register(INTID_VTIMER, timer_handler, "timer") < 0)
-        goto init_failed;
+    sched_timer_setup(MILLISECS(500));
     cpu_intr_on();
-    timer_start();
+    sched_timer_start();
     while (1);
     
 

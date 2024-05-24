@@ -7,6 +7,8 @@
 #include <esr.h>
 #include <irq.h>
 #include <syscall.h>
+#include <kmon/kmon.h>
+
 
 void 
 sync_from_current_el(struct econtext *ectx)
@@ -18,15 +20,16 @@ sync_from_current_el(struct econtext *ectx)
   // So use cur_proc() will enable interrupt improperly
   // ectx = proc_ectx(cur_cpu()->proc);
   ec = ectx->esr.ec;
-  
-  printf("SYNC FROM CURRENT EL\n");
-  printf("EC: 0x%lx\n", ec);
-  printf("      \"%s\"\n", get_ec_string(ec));
-  printf("ELR: 0x%lx\n", ectx->ctx.elr);
-  printf("Sp : 0x%lx\n", ectx->ctx.sp);
-  printf("FAR: 0x%lx\n", ectx->far);
-  panic("SPRING-OS oops!\n");
 
+
+    printf("SYNC FROM CURRENT EL\n");
+    printf("EC: 0x%lx\n", ec);
+    printf("      \"%s\"\n", get_ec_string(ec));
+    printf("ELR: %lx\n", ectx->ctx.elr);
+    printf("Sp : %lx\n", ectx->ctx.sp);
+    printf("FAR: %lx\n", ectx->far);
+
+    panic("SPRING-OS oops!\n");
 }
 
 
@@ -59,9 +62,10 @@ sync_from_lower_el(void)
 
 
 void 
-irq_from_current_el(void)
+irq_from_current_el(struct econtext *ectx)
 {
-  printf("IRQ FROM CURRENT EL\n");
+  // printf("IRQ FROM CURRENT EL\n");
+  kmon_sync(ectx, 1);
   do_irq_handler();
   // panic("SPRING-OS oops!\n");
 }
