@@ -59,12 +59,13 @@ SERVS_TARGETS = $(filter-out $(SERVS_DIR),$(SERVS_SUB_DIR))
 
 _all: all
 
-PHONY += kernel servs libc prepare
+PHONY += kern servs libc
 
-all: ramdisk kernel servs dump
+all: ramdisk kern servs dump
 
-objdirs:
+prepare:
 	$(Q) mkdir -p $(srctree)/out
+	$(Q) mkdir -p $(srctree)/out/kern
 	$(Q) mkdir -p $(srctree)/out/include
 	$(Q) mkdir -p $(srctree)/out/lib
 	$(Q) mkdir -p $(srctree)/out/ramdisk
@@ -72,6 +73,9 @@ objdirs:
 	$(Q) mkdir -p $(srctree)/out/rootfs/sbin
 	$(Q) mkdir -p $(srctree)/out/rootfs/driver
 	$(Q) mkdir -p $(srctree)/out/rootfs/etc
+mkrmd:
+	$(Q)$(MAKE) $(MFLAGS) -C tools/mkrmd 
+	$(Q) chmod +x ./tools/mkrmd/mkrmd 
 
 servs: libc
 	$(Q) set -e;					\
@@ -86,47 +90,40 @@ roots: libc
 	$(Q) echo "\n\033[32m ---> Compiling Root Service ... \033[0m \n";	
 	$(Q)$(MAKE) $(MFLAGS) -C roots
 	$(Q)$(MAKE) $(MFLAGS) -C roots install
-dump: kernel servs
+dump: kern servs
 	$(Q)$(OBJDUMP) --dwarf=info out/ramdisk/spring.elf > out/spring_dwarf_info.dump
 	$(Q)$(OBJDUMP) --dwarf=frames out/ramdisk/spring.elf > out/spring_dwarf_frames.dump
 	$(Q)$(OBJDUMP) --dwarf=frames-interp out/ramdisk/spring.elf > out/spring_dwarf_frames_interp.dump
 	$(Q)$(OBJDUMP) --dwarf=line out/ramdisk/spring.elf > out/spring_dwarf_lines.dump
 	$(Q)$(OBJDUMP) -S out/ramdisk/spring.elf > out/spring.dump
 	$(Q)$(OBJDUMP) -S out/ramdisk/roots.elf > out/roots.dump
-ramdisk: kernel servs
-	$(Q)$(MAKE) $(MFLAGS) -C tools/mkrmd 
+ramdisk: kern servs mkrmd
+	$(Q) echo "\n\033[32m ---> Copy kernel image to ramdisk dir ... \033[0m \n"
+	cp out/kern/spring.elf out/ramdisk/
 	$(Q) echo "\n\033[32m ---> Packing Ramdisk image ... \033[0m \n"
 	$(Q) qemu-img create -f raw out/ramdisk.bin 64M  > /dev/null
-	$(Q) chmod +x ./tools/mkrmd/mkrmd 
 	$(Q) ./tools/mkrmd/mkrmd -d out/ramdisk.bin out/ramdisk
-#	$(Q) qemu-img -q resize ramdisk.bin 64M  2> /dev/null
 
-kernel:
+kern: prepare
 	$(Q)echo "\n\033[32m ---> Build Kernel ... \033[0m \n"
-# Thirdparty don't need to compile every time
-# But this can avoid forgetting now, delete it later
-	$(Q)$(MAKE) $(MFLAGS) -C ukern thirdparty
 	$(Q)$(MAKE) $(MFLAGS) -C ukern
 	$(Q)$(MAKE) $(MFLAGS) -C ukern install
-kernel-ut:
+kern-ut:
 	$(Q)echo "\n\033[32m ---> Build Kernel(Ut) ... \033[0m \n"
-	$(Q)$(MAKE) $(MFLAGS) -C ukern thirdparty
 	$(Q)$(MAKE) $(MFLAGS) -C ukern UNITTEST=1
 	$(Q)$(MAKE) $(MFLAGS) -C ukern install
 	
-
-libc:
+# 编译C库
+libc: prepare
+	$(Q) echo "\n\033[32m---> Share some headers to libc ... \033[0m \n"
+	$(Q) cp -f generic/include/uapi/* libc/include/minos/
 	$(Q) echo "\n\033[32m---> Build LIBC ... \033[0m \n"
 	$(Q) $(MAKE) $(MFLAGS) -C libc -j 16
 	$(Q) $(MAKE) $(MFLAGS) -C libc install
 
-# 以前用过，拷贝一些头文件到libc下，未来看看重新启用
-prepare: objdirs
-	$(Q) cd libc; ./build.sh $(OUT_DIR) $(ARCH) $(CROSS_COMPILE)
-#	$(Q) cd kernel; make $(TARGET_PLATFORM)_defconfig
-	cp -f generic/include/uapi/* libc/include/minos/
 
-run: ramdisk kernel dump
+
+run: ramdisk
 	$(Q) bash ./tools/run-qemu.sh
 run-gdb: ramdisk kernel
 	$(Q) bash ./tools/run-qemu.sh -S
@@ -135,8 +132,8 @@ gdb-client: ramdisk kernel
 
 .PHONY: clean $(PHONY)
 clean: clean-libc clean-servs clean-ukern
-
-	@$(MAKE) $(MFLAGS) -C tools/mkrmd clean
+	$(Q) $(MAKE) $(MFLAGS) -C tools/mkrmd clean
+	$(Q) rm -rf $(srctree)/out
 
 clean-ukern:
 	$(Q) echo "\033[32m Clean ukern \033[0m"
@@ -152,3 +149,4 @@ clean-servs:
 clean-libc:
 	$(Q) echo "\033[32m Clean libc \033[0m"
 	$(Q) $(MAKE) $(MFLAGS) -C libc clean
+	rm -rf libc/include/minos

@@ -6,24 +6,12 @@
 #include <cfi.h>
 #include <ramdisk.h>
 #include <timer.h>
-// #include <pagetable.h>
-// #include <mm.h>
-// #include <gic_v3.h>
-// #include <sched.h>
-// #include <task.h>
-// #include <pcpu.h>
-// #include <cfi.h>
-// #include <ramdisk.h>
-// #include <procinfo.h>
-#include <kmem.h> // For test
 #include <page.h>
-#include <pagetable.h> // For test
 #include <proc.h>
 #include <sched2.h>
 #include <exec.h>
 #include <irq.h>
 #include <init.h>
-#include <kmon/kmon.h>
 
 
 
@@ -84,63 +72,9 @@ load_root_service(void)
     }
     return 0;
 
-	// LOG_INFO("Root service load successfully prepare to run...");
-
-	// return wake_up_process(proc);
-
 failed:
 	return -EFAULT;
 }
-
-
-
-/**************** KMon test code BEGIN *****************/
-static inline void func2() {
-    *(long *)0 = 0;
-    // make it not leaf
-    // func2();
-}
-  
-void func1(void) {
-  // docaculate(1, 2);
-  func2();
-}
-
-int
-docaculate(int a, int b)
-{
-  int c = b+a;
-  c *= a;
-    // *(long *)0 = 0;
-  return c;
-}
-
-
-int tempg = 10;
-void recur(int n)
-{
-  if (!n)  {
-    docaculate(n, n+1);
-    return;
-  }
-  printf("recur, n=%d\n", n);
-  tempg += 1;
-  recur(n-1);
-}
-
-
-// Design a demo function.
-// Can test break and continue, exam memory
-char teststr[] = "I like bug";
-void testkm(int n)
-{
-  if (!n) 
-    return;
-
-  printf("recur, n=%d\n", n);
-  testkm(n-1);
-}
-/**************** KMon test code END *****************/
 
 void 
 kernel_init(void)
@@ -164,25 +98,12 @@ kernel_init(void)
        goto init_failed;
     }
 
-#ifndef UNITTEST_ON
-    if (init_kmon() < 0) {
-      LOG_ERROR("Init KMonitor ERROR\n");
-      goto init_failed;
-    }
-#endif
     
 #ifdef UNITTEST_ON
     unittest(); 
 #endif
 
     
-    // printf("###### %d\n", read_pmccntr());
-    LOG_DEBUG("Addr of teststr: 0x%lx\n", teststr);
-    kmon_enter();
-    printf("teststr: %s\n", teststr);
-
-    // pmu_event_enable(1, ARMV8_PMUV3_PERFCTR_MEM_ACCESS);
-    // pmu_event_enable(-1, 0);
 
     // Kernel component init ok, load No.0 user process
     // Load root service and enter user space
@@ -191,18 +112,7 @@ kernel_init(void)
         LOG_ERROR("Load root service err\n");
         goto init_failed;
     }
-    // LOG_DEBUG("Test Ftrace\n");
-    // functrace_enable();
-    // testkm(3);
-    // functrace_disable();
-    // print_functrace();
-    // exit();
 
-    // Cause sync exception from current el
-    // Test kmonitor
-    // LOG_DEBUG("Test KMonitor\n");
-    // while(1);
-    // func1();
 
 
 
