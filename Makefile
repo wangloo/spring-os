@@ -149,4 +149,4 @@ clean-servs:
 clean-libc:
 	$(Q) echo "\033[32m Clean libc \033[0m"
 	$(Q) $(MAKE) $(MFLAGS) -C libc clean
-	rm -rf libc/include/minos
+#	rm -rf libc/include/minos/*    # 现在删掉minos下面的会报错，因为两边没统一
