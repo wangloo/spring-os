@@ -86,10 +86,7 @@ servs: libc
 			$(MAKE) $(MFLAGS) -C $$i install;	\
 		fi					\
 	done
-roots: libc
-	$(Q) echo "\n\033[32m ---> Compiling Root Service ... \033[0m \n";	
-	$(Q)$(MAKE) $(MFLAGS) -C roots
-	$(Q)$(MAKE) $(MFLAGS) -C roots install
+
 dump: kern servs
 	$(Q)$(OBJDUMP) --dwarf=info out/ramdisk/spring.elf > out/spring_dwarf_info.dump
 	$(Q)$(OBJDUMP) --dwarf=frames out/ramdisk/spring.elf > out/spring_dwarf_frames.dump
