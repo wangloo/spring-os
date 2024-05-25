@@ -112,13 +112,13 @@ kern-ut:
 	$(Q)echo "\n\033[32m ---> Build Kernel(Ut) ... \033[0m \n"
 	$(Q)$(MAKE) $(MFLAGS) -C ukern UNITTEST=1
 	$(Q)$(MAKE) $(MFLAGS) -C ukern install
-	
+
 # 编译C库
 libc: prepare
 	$(Q) echo "\n\033[32m---> Share some headers to libc ... \033[0m \n"
 	$(Q) cp -f generic/include/uapi/* libc/include/minos/
 	$(Q) echo "\n\033[32m---> Build LIBC ... \033[0m \n"
-	$(Q) $(MAKE) $(MFLAGS) -C libc -j 16
+	$(Q) $(MAKE) $(MFLAGS) ARCH=aarch64 -C libc -j 16
 	$(Q) $(MAKE) $(MFLAGS) -C libc install
 
 
