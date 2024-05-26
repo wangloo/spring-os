@@ -1,5 +1,4 @@
-#ifndef __MINOS_COMPILER_H_
-#define __MINOS_COMPILER_H_
+#pragma once	
 
 #define __section(S)		__attribute__((__section__(#S)))
 #define __used			__attribute__((__used__))
@@ -37,4 +36,3 @@
         extern __typeof(old) new __attribute__((__weak__, __alias__(#old)))
 #endif
 
-#endif

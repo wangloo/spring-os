@@ -65,12 +65,16 @@ kobject_create_proc(struct kobject **kobj, right_t *right, unsigned long data)
   int ret;
 
   // Only root service can create process directly
-  if (!proc_is_roots(cur_proc()))
+  if (!proc_is_roots(cur_proc())) {
+	LOG_ERROR("Only rootserver can create process\n");
     return -EPERM;
+  }
   
   ret = copy_from_user(&args, (void *)data, sizeof(args));
-  if (ret <= 0)
+  if (ret <= 0) {
+	LOG_ERROR("can't get create args\n");
     return -EFAULT;
+  }
   
   p = create_proc(NULL, args.pid, args.prio);
   if (!p)

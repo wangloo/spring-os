@@ -10,6 +10,7 @@
 #include <minos/utils.h>
 #include <minos/types.h>
 #include <minos/page.h>
+#include <minos/compiler.h>
 #include <halloc.h>
 
 

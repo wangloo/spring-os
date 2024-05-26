@@ -321,8 +321,10 @@ sys_kobject_create(int type, unsigned long data)
 	int ret;
 
 	ret = kobject_create(type, &kobj, &right, data);
-	if (ret)
+	if (ret) {
+		LOG_ERROR("create kobj failed\n");
 		return ret;
+	}
 
 	/*
 	 * visable for all the threads in this process, and

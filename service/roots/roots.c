@@ -1,15 +1,21 @@
 // #include <string.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include <elf.h>
 
 #include <minos/service.h>
 #include <minos/types.h>
 #include <minos/list.h>
+#include <minos/utils.h>
 #include <minos/debug.h>
+#include <minos/compiler.h>
 #include <halloc.h>
 #include <ramdisk.h>
 #include <exec.h>
+
+
+char allzero[512];
 
 
 // Load service: sh
@@ -37,6 +43,11 @@ int main(int argc, char *argv[], char *envp[])
 
     puts("\n\nRoots service start...\n\n");
     
+	printf("Checking bss clean\n"); // BUG? first \n not work
+	for (i = 0; i < nelem(allzero)/sizeof(long); i++) {
+		assert(*((long *)allzero+i) == 0);
+	}
+	
     // Print all arguements
     printf("argc: %d\n", argc);
     for (i = 0; i < argc; i++) {

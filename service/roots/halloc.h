@@ -1,4 +1,4 @@
-#include <minos/compiler.h>
+// #include <minos/compiler.h>
 struct slab_header {
   unsigned long size;
   union {

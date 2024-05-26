@@ -7,6 +7,7 @@
 #include <minos/debug.h>
 #include <minos/kobject.h>
 #include <minos/kobject_uapi.h>
+#include <minos/compiler.h>
 #include <memlayout.h>
 #include <halloc.h>
 #include <proc.h>
@@ -27,7 +28,6 @@ create_new_proc(char *name, struct proc *parent, unsigned long entry)
   args.aff = -1;
   args.prio = -1;
   args.pid = 2;  // FIXME
-  pr_debug("do syscall\n");
   p->handle = kobject_create(KOBJ_TYPE_PROCESS, (unsigned long)&args);
   return p;
 }

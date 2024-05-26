@@ -35,23 +35,24 @@ print_imageinfo(void)
   extern unsigned long __get__stop_bss();
   extern unsigned long __get__start_rodata();
   extern unsigned long __get__stop_kernel();
-  LOG_INFO("[__start_boot_code      ]: 0x%lx\n", __get__start_boot_code());
-  LOG_INFO("[__stop_boot_code       ]: 0x%lx\n", __get__stop_boot_code());
-  LOG_INFO("[__start_boot_data      ]: 0x%lx\n", __get__start_boot_data());
-  LOG_INFO("[__kernel_page_table    ]: 0x%lx\n", __get__kernel_page_table());
-  LOG_INFO("[__identity_page_table  ]: 0x%lx\n", __get__identity_page_table());
-  LOG_INFO("[__pagetable_base       ]: 0x%lx\n", __get__pagetable_base());
-  LOG_INFO("[__stop_boot_data       ]: 0x%lx\n", __get__stop_boot_data());
-  LOG_INFO("[__start_kernel         ]: 0x%lx\n", __get__start_kernel());
-  LOG_INFO("[__start_code           ]: 0x%lx\n", __get__start_code());
-  LOG_INFO("[__stop_code            ]: 0x%lx\n", __get__stop_code());
-  LOG_INFO("[__kobj_type_desc_start ]: 0x%lx\n", __get__kobj_type_desc_start());
-  LOG_INFO("[__kobj_type_desc_stop  ]: 0x%lx\n", __get__kobj_type_desc_stop());
-  LOG_INFO("[__start_data           ]: 0x%lx\n", __get__start_data());
-  LOG_INFO("[__start_bss            ]: 0x%lx\n", __get__start_bss());
-  LOG_INFO("[__stop_bss             ]: 0x%lx\n", __get__stop_bss());
-  LOG_INFO("[__start_rodata         ]: 0x%lx\n", __get__start_rodata());
-  LOG_INFO("[__stop_kernel          ]: 0x%lx\n", __get__stop_kernel());
+  printf("Symbals in link script:\n");
+  printf("\t[__start_boot_code      ]: 0x%lx\n", __get__start_boot_code());
+  printf("\t[__stop_boot_code       ]: 0x%lx\n", __get__stop_boot_code());
+  printf("\t[__start_boot_data      ]: 0x%lx\n", __get__start_boot_data());
+  printf("\t[__kernel_page_table    ]: 0x%lx\n", __get__kernel_page_table());
+  printf("\t[__identity_page_table  ]: 0x%lx\n", __get__identity_page_table());
+  printf("\t[__pagetable_base       ]: 0x%lx\n", __get__pagetable_base());
+  printf("\t[__stop_boot_data       ]: 0x%lx\n", __get__stop_boot_data());
+  printf("\t[__start_kernel         ]: 0x%lx\n", __get__start_kernel());
+  printf("\t[__start_code           ]: 0x%lx\n", __get__start_code());
+  printf("\t[__stop_code            ]: 0x%lx\n", __get__stop_code());
+  printf("\t[__kobj_type_desc_start ]: 0x%lx\n", __get__kobj_type_desc_start());
+  printf("\t[__kobj_type_desc_stop  ]: 0x%lx\n", __get__kobj_type_desc_stop());
+  printf("\t[__start_data           ]: 0x%lx\n", __get__start_data());
+  printf("\t[__start_bss            ]: 0x%lx\n", __get__start_bss());
+  printf("\t[__stop_bss             ]: 0x%lx\n", __get__stop_bss());
+  printf("\t[__start_rodata         ]: 0x%lx\n", __get__start_rodata());
+  printf("\t[__stop_kernel          ]: 0x%lx\n", __get__stop_kernel());
 }
 
 // Print memory partition done at boot stage
@@ -67,13 +68,14 @@ print_meminfo(void)
   extern uint64_t deref_kernel_stack_top();
   extern uint64_t deref_boot_pgtbl_base();
   extern uint64_t deref_boot_pgtbl_ptr();
-  LOG_INFO("[kernel_start       ]: 0x%lx\n", deref_kernel_start()); 
-  LOG_INFO("[kernel_end         ]: 0x%lx\n", deref_kernel_end()); 
-  LOG_INFO("[kernel_bootmem_base]: 0x%lx\n", deref_kernel_bootmem_base()); 
-  LOG_INFO("[kernel_stack_bottom]: 0x%lx\n", deref_kernel_stack_bottom()); 
-  LOG_INFO("[kernel_stack_top   ]: 0x%lx\n", deref_kernel_stack_top()); 
-  LOG_INFO("[boot_pgtbl_base    ]: 0x%lx\n", deref_boot_pgtbl_base()); 
-  LOG_INFO("[boot_pgtbl_ptr     ]: 0x%lx\n", deref_boot_pgtbl_ptr()); 
+  printf("Symbals in assembly boot code: \n");
+  printf("\t[kernel_start       ]: 0x%lx\n", deref_kernel_start()); 
+  printf("\t[kernel_end         ]: 0x%lx\n", deref_kernel_end()); 
+  printf("\t[kernel_bootmem_base]: 0x%lx\n", deref_kernel_bootmem_base()); 
+  printf("\t[kernel_stack_bottom]: 0x%lx\n", deref_kernel_stack_bottom()); 
+  printf("\t[kernel_stack_top   ]: 0x%lx\n", deref_kernel_stack_top()); 
+  printf("\t[boot_pgtbl_base    ]: 0x%lx\n", deref_boot_pgtbl_base()); 
+  printf("\t[boot_pgtbl_ptr     ]: 0x%lx\n", deref_boot_pgtbl_ptr()); 
 }
 
 void 

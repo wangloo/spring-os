@@ -10,6 +10,7 @@
 #include <minos/list.h>
 #include <minos/debug.h>
 #include <minos/kobject_uapi.h>
+#include <minos/compiler.h>
 #include <ramdisk.h>
 #include <proc.h>
 #include <vmm.h>
@@ -70,16 +71,21 @@ exec(char *path, char **argv)
   }
 
   elf_map_size = align_page_up(elf_load_vend-elf_load_vbase);
+
+  pr_debug("Ready to create new process, ELF info:\n");
   pr_debug("elf_load_vbase: 0x%lx\n", elf_load_vbase);
   pr_debug("elf_load_vend : 0x%lx\n", elf_load_vend);
   pr_debug("elf_map_size : 0x%lx\n", elf_map_size);
+  pr_debug("entry point: %lx\n", elf.e_entry);
 
   // Create process control block
   struct proc *p;
   if ((p = create_new_proc("sh", NULL, elf.e_entry)) == NULL) {
     goto bad;
   }
+  pr_debug("New process metadata created\n");
 
+	pr_debug("Ready to create memory map for LOAD segments\n");
   if (vspace_init(p, elf_load_vbase, elf_map_size) < 0) {
     goto bad;
   }

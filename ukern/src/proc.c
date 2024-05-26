@@ -173,6 +173,8 @@ create_proc(char *name, int pid, int prio)
   p->state = RUNNABLE;
   if (name)
     strcpy(p->name, name);
+	
+	LOG_DEBUG("Kernel handle process creation, pid: %d, priv: %d\n",p->pid, p->prio);
 
   return p;
 }
